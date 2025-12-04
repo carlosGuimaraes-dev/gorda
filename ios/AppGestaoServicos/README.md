@@ -1,21 +1,26 @@
-# App Gestao de Serviços (SwiftUI)
+# Service Management App (SwiftUI)
 
-Pequeno protótipo em SwiftUI cobrindo login, agenda por funcionário, cadastro de clientes e visão financeira com suporte offline simplificado (JSON local). Abra a pasta `ios/AppGestaoServicos` no Xcode 15+ e rode em um simulador iOS 16+.
+Small SwiftUI prototype covering login, role-based dashboard (Employee/Manager), schedule, client management and basic finance, with offline support backed by Core Data (SQLite). Open `ios/AppGestaoServicos` in Xcode 15+ and run on an iOS 16+ simulator.
 
-## Funcionalidades
-- Login simples com persistência local de sessão.
-- Agenda diária por funcionário com status, horário, criação de novos serviços e detalhe editável (notificações rápidas).
-- Cadastro de clientes via formulário modal com telefone, e-mail, preferências de horário e notas de acesso.
-- Visão financeira separando itens a pagar e receber, com status pendente/pago, método (Pix, cartão, dinheiro) e criação de novos lançamentos.
-- Botão de sincronização que registra o horário do último sync (ponto de integração com backend).
+## Features
+- Simple login with local session (Employee or Manager profile).
+- Role-based dashboard:
+  - Employee: workload summary and upcoming services for the current period (day/week/month).
+  - Manager: task completion by team and basic financial cards (receivables/payables/net cash).
+- Schedule (Agenda) per employee with daily/monthly view, status, time slots and inline editing.
+- Client management with contact info, property details, access notes and preferred schedules.
+- Finance view listing receivables and payables with status (pending/paid), method (Pix, card, cash) and creation of new entries.
+- Offline support: local persistence via Core Data/SQLite plus a simple sync queue with “last write wins” conflict policy.
+- Notifications: basic local/push notification preferences, and quick actions on service detail to notify client/team.
 
-Wireframes textuais e campos detalhados estão em [`Wireframes.md`](./Wireframes.md).
-O backlog etiquetado por status está em [`BACKLOG.md`](./BACKLOG.md).
+Wireframes are in [`Wireframes.md`](./Wireframes.md).  
+The labeled backlog is in [`BACKLOG.md`](./BACKLOG.md).  
+The data model used for Core Data is documented in [`DATA_MODEL.md`](./DATA_MODEL.md).
 
-## Como testar
-1. Abra `AppGestaoServicosApp.swift` no Xcode e rode no simulador.
-2. Faça login com qualquer usuário/senha para abrir as abas.
-3. Inclua novos clientes e veja-os listados.
-4. Na Agenda, crie um novo serviço, escolhendo cliente/funcionário/horário/status, e valide que ele aparece na lista.
-5. Toque em um serviço existente para editar status, horários e notificações rápidas.
-6. Na aba Financeiro, cadastre um novo lançamento (a pagar ou a receber) e use o menu para marcar pago (Pix/Cartão/Dinheiro) ou voltar para pendente.
+## How to test
+1. Open `AppGestaoServicosApp.swift` in Xcode and run on a simulator.
+2. On the login screen, enter any user/password, select Employee or Manager, and sign in.
+3. As Employee, check the dashboard workload cards and upcoming services, then open the Schedule tab.
+4. As Manager, check the dashboard team summary and finance cards, then open the Finance tab.
+5. Create new clients and verify they appear in the Clients tab and client detail screen.
+6. In the Schedule tab, create a new service, selecting client/employee/time/status, and confirm it appears in the list and detail.

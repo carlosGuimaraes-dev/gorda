@@ -6,7 +6,16 @@
 - ✅ Financeiro com status pago/pendente e método (Pix/Cartão/Dinheiro)
 - ✅ Inclusão de novos serviços a partir da Agenda (formulário com cliente/funcionário, horários, status, notificações)
 - ✅ Cadastro de novos lançamentos financeiros (título, valor, tipo, vencimento, método)
-- ⬜ Visão mensal da agenda e filtros por equipe
-- ⬜ Tela de detalhe do cliente com histórico de serviços e botão "Criar serviço"
-- ⬜ Fila de sincronização offline/online com resolução de conflitos
-- ⬜ Integração de notificações push/Siri e preferências de notificação
+- ✅ Visão mensal da agenda e filtros por equipe
+- ✅ Tela de detalhe do cliente com histórico de serviços e botão "Criar serviço"
+- ✅ Fila de sincronização offline/online com resolução de conflitos
+- ✅ Integração de notificações locais/push e preferências de notificação
+- ✅ Revisão de textos/labels para remover dependências de PT-BR e preparar tradução futura opcional para Português do Brasil
+- ⬜ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
+- ⬜ Suporte a múltiplas moedas (USD e EUR) no módulo financeiro, sem exibição em BRL
+- ✅ Dashboard inicial após login, diferenciado por perfil (Employee/Manager), com resumo de agenda e indicadores principais
+- ⬜ Cadastro de funcionários com foto, documentos e informações de remuneração
+- ✅ Migração do armazenamento local (JSON) para Core Data ou SQLite com suporte offline robusto
+- ⬜ Armazenamento seguro de credenciais no Keychain e comunicação criptografada
+- ⬜ Ajustes de acessibilidade (Dynamic Type, VoiceOver e contraste) nas principais telas
+- ⬜ Integração com Siri para criação de serviços por comando de voz

@@ -16,10 +16,14 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 ## Funcionalidades
 - **Cadastro de Clientes e Imóveis**: dados pessoais, contatos, endereços e detalhes do imóvel administrado.
 - **Cadastro de Funcionários**: perfil com foto, documentos e informações de remuneração.
-- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária e mensal.
+- **Perfis de Usuário (Employee/Manager)**: o usuário escolhe seu perfil no primeiro acesso; toda a experiência (dashboard, agenda, financeiro) é filtrada de acordo com o papel.
+- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal.
 - **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos prioritária para dados mais recentes do servidor quando houver conflito não resolvido localmente.
 - **Notificações e Siri**: comandos de voz para agendar; push/local notifications para chegadas, cancelamentos e alterações.
-- **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos.
+- **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão).
+- **Dashboard**:
+  - Para funcionários (Employee): visão diária/semanal/mensal da agenda, serviços concluídos no período e valor estimado a receber apenas para tasks com check-in/check-out efetivos.
+  - Para gestores (Manager): visão por equipe da realização das tarefas e cards financeiros com Contas a Pagar/Receber e fluxo de caixa.
 - **Autenticação**: Splash Screen minimalista e login seguro.
 
 ## Requisitos Não Funcionais
@@ -28,6 +32,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Segurança: armazenamento seguro de credenciais (Keychain) e comunicação criptografada.
 - Performance: respostas em menos de 200 ms para navegação principal em dispositivos-alvo recentes.
 - Acessibilidade: suporte a Dynamic Type, VoiceOver e contrastes adequados.
+- Internacionalização: interface e conteúdo em **Inglês Americano (en-US)** e **Espanhol da Espanha (es-ES)**; sem suporte a Português do Brasil na primeira versão (tradução PT-BR avaliada como melhoria futura).
 
 ## Fluxos Principais
 1. Login → sincronização inicial → acesso à home com resumo de agenda e notificações.

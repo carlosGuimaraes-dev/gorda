@@ -231,4 +231,11 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
 struct UserSession: Codable {
     var token: String
     var name: String
+
+    enum Role: String, Codable {
+        case employee
+        case manager
+    }
+
+    var role: Role
 }

@@ -1,0 +1,126 @@
+# Data Model - App Gestão de Serviços
+
+Visão de alto nível das entidades principais, pensando em uma implementação com Core Data (SQLite por baixo).
+
+## User / Session
+
+- **User**
+  - `id: UUID`
+  - `name: String`
+  - `email: String?`
+  - `role: String` (`"employee"` ou `"manager"`)
+  - Relacionamentos:
+    - `employeeProfile: Employee?`
+
+- **UserSession** (pode ser apenas em memória, mas pode ser persistida se necessário)
+  - `token: String`
+  - `user: User`
+  - `createdAt: Date`
+
+## Employee / Team
+
+- **Team**
+  - `id: UUID`
+  - `name: String`
+
+- **Employee**
+  - `id: UUID`
+  - `name: String`
+  - `roleTitle: String?` (ex.: Supervisor, Técnico)
+  - `hourlyRate: Decimal` (valor da hora)
+  - `currency: String` (`"USD"` ou `"EUR"`)
+  - `extraEarningsDescription: String?` (outros recebíveis)
+  - `team: Team?`
+  - Relacionamentos:
+    - `user: User?`
+    - `tasks: [ServiceTask]`
+
+## Client / Property
+
+- **Client**
+  - `id: UUID`
+  - `name: String`
+  - `contactName: String`
+  - `phone: String`
+  - `email: String`
+  - `accessNotes: String`
+  - `preferredSchedule: String`
+  - Relacionamentos:
+    - `properties: [Property]`
+    - `serviceTasks: [ServiceTask]`
+    - `financeEntries: [FinanceEntry]`
+
+- **Property**
+  - `id: UUID`
+  - `label: String` (ex.: "Apartamento 302")
+  - `addressLine: String`
+  - `details: String` (tipo, metragem, bloco)
+  - Relacionamentos:
+    - `client: Client`
+    - `serviceTasks: [ServiceTask]`
+
+## ServiceType / ServiceTask / Check-in
+
+- **ServiceType**
+  - `id: UUID`
+  - `name: String`
+  - `description: String?`
+  - `basePrice: Decimal`
+  - `currency: String` (`"USD"` ou `"EUR"`)
+  - `defaultDurationMinutes: Int?`
+  - Relacionamentos:
+    - `tasks: [ServiceTask]`
+
+- **ServiceTask**
+  - `id: UUID`
+  - `title: String`
+  - `date: Date`
+  - `startTime: Date?`
+  - `endTime: Date?`
+  - `status: String` (`"scheduled"`, `"inProgress"`, `"completed"`, `"canceled"`)
+  - `notes: String`
+  - `checkInTime: Date?`
+  - `checkOutTime: Date?`
+  - Relacionamentos:
+    - `employee: Employee`
+    - `client: Client`
+    - `property: Property?`
+    - `serviceType: ServiceType?`
+    - `financeEntryClient: FinanceEntry?` (recebível do cliente)
+    - `financeEntryEmployee: FinanceEntry?` (pagamento ao funcionário, se houver)
+
+## Finance / Cash Flow
+
+- **FinanceEntry**
+  - `id: UUID`
+  - `title: String`
+  - `amount: Decimal`
+  - `currency: String` (`"USD"` ou `"EUR"`)
+  - `type: String` (`"payable"` ou `"receivable"`)
+  - `dueDate: Date`
+  - `status: String` (`"pending"` ou `"paid"`)
+  - `method: String?` (`"pix"`, `"card"`, `"cash"` — ou equivalente internacional)
+  - `notes: String?`
+  - Relacionamentos:
+    - `client: Client?`
+    - `employee: Employee?`
+    - `serviceTask: ServiceTask?`
+
+## Offline / Sync / Notifications
+
+- **PendingChange**
+  - `id: UUID`
+  - `operation: String`
+  - `entityType: String`
+  - `entityId: UUID`
+  - `timestamp: Date`
+
+- **NotificationPreferences**
+  - `id: UUID`
+  - `enableClientNotifications: Bool`
+  - `enableTeamNotifications: Bool`
+  - `enablePush: Bool`
+  - `enableSiri: Bool`
+
+> Implementação Core Data: cada entidade acima pode virar uma `NSEntityDescription` em um modelo programático ou em um `.xcdatamodeld`. O app atual continuará usando o `OfflineStore` como fachada, mas por baixo os dados passam a ser persistidos em Core Data/SQLite ao invés de um JSON único.
+
