@@ -57,6 +57,11 @@ final class PersistenceController {
         employeeHourlyRate.attributeType = .doubleAttributeType
         employeeHourlyRate.isOptional = true
 
+        let employeePhone = NSAttributeDescription()
+        employeePhone.name = "phone"
+        employeePhone.attributeType = .stringAttributeType
+        employeePhone.isOptional = true
+
         let employeeCurrency = NSAttributeDescription()
         employeeCurrency.name = "currency"
         employeeCurrency.attributeType = .stringAttributeType
@@ -78,6 +83,7 @@ final class PersistenceController {
             employeeRoleTitle,
             employeeTeam,
             employeeHourlyRate,
+            employeePhone,
             employeeCurrency,
             employeeExtra,
             employeeDocuments
@@ -302,6 +308,16 @@ final class PersistenceController {
         financeMethod.attributeType = .stringAttributeType
         financeMethod.isOptional = true
 
+        let financeClientName = NSAttributeDescription()
+        financeClientName.name = "clientName"
+        financeClientName.attributeType = .stringAttributeType
+        financeClientName.isOptional = true
+
+        let financeEmployeeName = NSAttributeDescription()
+        financeEmployeeName.name = "employeeName"
+        financeEmployeeName.attributeType = .stringAttributeType
+        financeEmployeeName.isOptional = true
+
         finance.properties = [
             financeId,
             financeTitle,
@@ -310,7 +326,9 @@ final class PersistenceController {
             financeType,
             financeDueDate,
             financeStatus,
-            financeMethod
+            financeMethod,
+            financeClientName,
+            financeEmployeeName
         ]
 
         model.entities = [employee, client, serviceType, serviceTask, finance]

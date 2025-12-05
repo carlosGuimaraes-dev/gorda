@@ -64,6 +64,7 @@ struct Employee: Identifiable, Codable, Hashable {
     var name: String
     var role: String
     var team: String
+    var phone: String?
     var hourlyRate: Double?
     var currency: Currency?
     var extraEarningsDescription: String?
@@ -211,6 +212,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var status: Status
     var method: PaymentMethod?
     var currency: Currency
+    var clientName: String?
+    var employeeName: String?
 
     init(
         id: UUID = UUID(),
@@ -220,7 +223,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         dueDate: Date,
         status: Status = .pending,
         method: PaymentMethod? = nil,
-        currency: Currency = .usd
+        currency: Currency = .usd,
+        clientName: String? = nil,
+        employeeName: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -230,6 +235,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.status = status
         self.method = method
         self.currency = currency
+        self.clientName = clientName
+        self.employeeName = employeeName
     }
 
     enum EntryType: String, Codable {
@@ -287,6 +294,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case status
         case method
         case currency
+        case clientName
+        case employeeName
     }
 
     init(from decoder: Decoder) throws {
@@ -299,6 +308,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.status = try container.decodeIfPresent(Status.self, forKey: .status) ?? .pending
         self.method = try container.decodeIfPresent(PaymentMethod.self, forKey: .method)
         self.currency = try container.decodeIfPresent(Currency.self, forKey: .currency) ?? .usd
+        self.clientName = try container.decodeIfPresent(String.self, forKey: .clientName)
+        self.employeeName = try container.decodeIfPresent(String.self, forKey: .employeeName)
     }
 }
 

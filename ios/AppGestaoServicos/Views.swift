@@ -1,4 +1,22 @@
 import SwiftUI
+import Charts
+
+struct AppCard<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.cardBackground)
+            .cornerRadius(AppTheme.cornerRadius)
+            .shadow(color: Color.black.opacity(0.04), radius: 12, x: 0, y: 6)
+    }
+}
 
 struct LoginView: View {
     @EnvironmentObject private var store: OfflineStore
@@ -8,45 +26,78 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Text("Service Management")
-                    .font(.largeTitle.bold())
-                VStack(spacing: 12) {
-                    TextField("User", text: $user)
-                        .textContentType(.username)
-                        .textInputAutocapitalization(.never)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
-                    SecureField("Password", text: $password)
-                        .textContentType(.password)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
-                    Picker("Profile", selection: $role) {
-                        Text("Employee").tag(UserSession.Role.employee)
-                        Text("Manager").tag(UserSession.Role.manager)
+            ZStack {
+                AppTheme.background
+                    .ignoresSafeArea()
+
+                VStack {
+                    Spacer(minLength: 40)
+
+                    VStack(alignment: .leading, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Welcome back")
+                                .font(.title.bold())
+                                .foregroundColor(AppTheme.primaryText)
+                                .accessibilityAddTraits(.isHeader)
+                            Text("Sign in to manage your services")
+                                .font(.subheadline)
+                                .foregroundColor(AppTheme.secondaryText)
+                        }
+
+                        VStack(spacing: 16) {
+                            TextField("User", text: $user)
+                                .textContentType(.username)
+                                .textInputAutocapitalization(.never)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(AppTheme.fieldBackground)
+                                .cornerRadius(AppTheme.cornerRadius)
+
+                            SecureField("Password", text: $password)
+                                .textContentType(.password)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(AppTheme.fieldBackground)
+                                .cornerRadius(AppTheme.cornerRadius)
+
+                            Picker("Profile", selection: $role) {
+                                Text("Employee").tag(UserSession.Role.employee)
+                                Text("Manager").tag(UserSession.Role.manager)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+
+                        Button(action: {
+                            store.login(user: user, password: password, role: role)
+                        }) {
+                            Text("Sign in")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .foregroundColor(.white)
+                                .background(AppTheme.primary)
+                                .cornerRadius(AppTheme.cornerRadius)
+                                .shadow(color: AppTheme.primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                                .accessibilityLabel("Sign in to Service Management")
+                        }
+
+                        if let lastSync = store.lastSync {
+                            Text("Last sync: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.secondaryText)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                    .pickerStyle(.segmented)
+                    .padding(24)
+                    .frame(maxWidth: 480)
+                    .background(AppTheme.cardBackground)
+                    .cornerRadius(AppTheme.cornerRadius * 1.25)
+                    .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 8)
+
+                    Spacer()
                 }
-                Button(action: { store.login(user: user, password: password, role: role) }) {
-                    Text("Sign in")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                if let lastSync = store.lastSync {
-                    Text("Last sync: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                NavigationLink(destination: HomeView().environmentObject(store), isActive: .constant(store.session != nil)) {
-                    EmptyView()
-                }
+                .padding(.horizontal, 24)
             }
-            .padding()
         }
     }
 }
@@ -67,6 +118,7 @@ struct HomeView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
+        .background(AppTheme.background.ignoresSafeArea())
     }
 }
 
@@ -74,7 +126,7 @@ struct DashboardView: View {
     @EnvironmentObject private var store: OfflineStore
     @State private var scope: TimeScope = .day
 
-    private enum TimeScope: String, CaseIterable, Identifiable {
+    enum TimeScope: String, CaseIterable, Identifiable {
         case day
         case week
         case month
@@ -92,27 +144,32 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                Picker("Scope", selection: $scope) {
-                    ForEach(TimeScope.allCases) { value in
-                        Text(value.label).tag(value)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+            ZStack {
+                AppTheme.background
+                    .ignoresSafeArea()
 
-                if let session = store.session {
-                    switch session.role {
-                    case .employee:
-                        EmployeeDashboardView(scope: scope)
-                    case .manager:
-                        ManagerDashboardView(scope: scope)
+                VStack(spacing: 16) {
+                    Picker("Scope", selection: $scope) {
+                        ForEach(TimeScope.allCases) { value in
+                            Text(value.label).tag(value)
+                        }
                     }
-                } else {
-                    Text("No active session")
-                        .foregroundColor(.secondary)
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+
+                    if let session = store.session {
+                        switch session.role {
+                        case .employee:
+                            EmployeeDashboardView(scope: scope)
+                        case .manager:
+                            ManagerDashboardView(scope: scope)
+                        }
+                    } else {
+                        Text("No active session")
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer()
             }
             .navigationTitle("Dashboard")
         }
@@ -265,6 +322,8 @@ private struct EmployeeDashboardView: View {
                 }
             }
         }
+        .padding(.vertical, 20)
+        .background(AppTheme.background.ignoresSafeArea())
     }
 }
 
@@ -320,69 +379,116 @@ private struct ManagerDashboardView: View {
         return formatter
     }
 
+    private var statusSummary: [(status: ServiceTask.Status, count: Int)] {
+        ServiceTask.Status.allCases.map { status in
+            let count = tasksForScope.filter { $0.status == status }.count
+            return (status, count)
+        }.filter { $0.count > 0 }
+    }
+
+    private var financeOverview: [(label: String, value: Double)] {
+        [
+            ("Receivables", receivablesPending),
+            ("Payables", payablesPending)
+        ]
+    }
+
+    private func color(for status: ServiceTask.Status) -> Color {
+        switch status {
+        case .scheduled: return .blue
+        case .inProgress: return .orange
+        case .completed: return .green
+        case .canceled: return .red
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                GroupBox("Operations") {
-                    HStack {
-                        VStack {
-                            Text("Total tasks")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("\(tasksForScope.count)")
-                                .font(.title2.bold())
+                AppCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Operations")
+                            .font(.headline)
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Total tasks")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(tasksForScope.count)")
+                                    .font(.title2.bold())
+                            }
+                            Spacer()
+                            let completed = tasksForScope.filter { $0.status == .completed }.count
+                            VStack(alignment: .trailing) {
+                                Text("Completed")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(completed)")
+                                    .font(.title2.bold())
+                            }
                         }
-                        Spacer()
-                        let completed = tasksForScope.filter { $0.status == .completed }.count
-                        VStack {
-                            Text("Completed")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("\(completed)")
-                                .font(.title2.bold())
+                        if !statusSummary.isEmpty {
+                            Chart {
+                                ForEach(statusSummary, id: \.status) { item in
+                                    BarMark(
+                                        x: .value("Status", item.status.label),
+                                        y: .value("Tasks", item.count)
+                                    )
+                                    .foregroundStyle(color(for: item.status))
+                                }
+                            }
+                            .frame(height: 150)
                         }
                     }
-                    .padding()
                 }
                 .padding(.horizontal)
 
                 if !teamsSummary.isEmpty {
-                    GroupBox("By team") {
-                        ForEach(teamsSummary, id: \.team) { summary in
-                            HStack {
-                                Text(summary.team)
-                                Spacer()
-                                Text("\(summary.completed)/\(summary.total) completed")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("By team")
+                                .font(.headline)
+                            ForEach(teamsSummary, id: \.team) { summary in
+                                HStack {
+                                    Text(summary.team)
+                                    Spacer()
+                                    Text("\(summary.completed)/\(summary.total) completed")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
                             }
-                            .padding(.vertical, 4)
                         }
                     }
                     .padding(.horizontal)
                 }
 
-                GroupBox("Finance") {
-                    VStack(alignment: .leading, spacing: 8) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Finance")
+                            .font(.headline)
+
                         HStack {
-                            Text("Receivables")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            VStack(alignment: .leading) {
+                                Text("Receivables")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(currencyFormatter.string(from: NSNumber(value: receivablesPending)) ?? "-")
+                                    .bold()
+                                    .foregroundColor(.green)
+                            }
                             Spacer()
-                            Text(currencyFormatter.string(from: NSNumber(value: receivablesPending)) ?? "-")
-                                .bold()
-                                .foregroundColor(.green)
+                            VStack(alignment: .trailing) {
+                                Text("Payables")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(currencyFormatter.string(from: NSNumber(value: payablesPending)) ?? "-")
+                                    .bold()
+                                    .foregroundColor(.red)
+                            }
                         }
-                        HStack {
-                            Text("Payables")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text(currencyFormatter.string(from: NSNumber(value: payablesPending)) ?? "-")
-                                .bold()
-                                .foregroundColor(.red)
-                        }
+
                         Divider()
+
                         HStack {
                             Text("Net cash (pending)")
                                 .font(.caption)
@@ -392,12 +498,23 @@ private struct ManagerDashboardView: View {
                                 .bold()
                                 .foregroundColor(netCashFlow >= 0 ? .green : .red)
                         }
+
+                        Chart {
+                            ForEach(financeOverview, id: \.label) { item in
+                                BarMark(
+                                    x: .value("Category", item.label),
+                                    y: .value("Amount", item.value)
+                                )
+                                .foregroundStyle(item.label == "Receivables" ? .green : .red)
+                            }
+                        }
+                        .frame(height: 150)
                     }
-                    .padding()
                 }
                 .padding(.horizontal)
             }
         }
+        .background(AppTheme.background.ignoresSafeArea())
     }
 }
 
@@ -489,6 +606,8 @@ struct AgendaView: View {
                             }
                         }
                     }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
                 } else {
                     List {
                         ForEach(groupedMonthlyTasks, id: \.date) { group in
@@ -501,8 +620,11 @@ struct AgendaView: View {
                             }
                         }
                     }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Schedule")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -562,38 +684,48 @@ struct ClientsView: View {
         NavigationStack {
             List {
                 ForEach(store.clients) { client in
+                    let hasPendingReceivables = store.finance.contains {
+                        $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
+                    }
+
                     NavigationLink(destination: ClientDetailView(client: client)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(client.name).bold()
-                            Text("Contact: \(client.contact)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Text("Phone: \(client.phone)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                            Text("Email: \(client.email)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                            Text(client.address)
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                            Text("Property: \(client.propertyDetails)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                            if !client.preferredSchedule.isEmpty {
-                                Text("Preferred schedule: \(client.preferredSchedule)")
+                        HStack(spacing: 12) {
+                            ContactAvatarView(name: client.name, phone: client.phone, size: 44)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(client.name).bold()
+                                if !client.phone.isEmpty {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "phone.fill")
+                                            .font(.caption)
+                                            .foregroundColor(AppTheme.primary)
+                                        Text(client.phone)
+                                            .font(.footnote)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else if !client.email.isEmpty {
+                                    Text(client.email)
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
+                                Text(client.address)
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                             }
-                            if !client.accessNotes.isEmpty {
-                                Text("Access notes: \(client.accessNotes)")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                            }
+
+                            Spacer()
+
+                            PaymentStatusIcon(hasPending: hasPendingReceivables)
                         }
+                        .padding(10)
+                        .background(AppTheme.cardBackground)
+                        .cornerRadius(AppTheme.cornerRadius)
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Clients")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -631,6 +763,9 @@ struct FinanceView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Finance")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -749,6 +884,8 @@ struct ServiceFormView: View {
                     Toggle("Notify team", isOn: $notifyTeam)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("New Service")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -860,6 +997,8 @@ struct FinanceFormView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("New Entry")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -932,10 +1071,13 @@ struct SettingsView: View {
                             if enabled {
                                 store.requestPushAuthorizationIfNeeded()
                             }
-                        }
+                    }
                     Toggle("Siri suggestions", isOn: $store.notificationPreferences.enableSiri)
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Settings")
         }
     }
@@ -960,7 +1102,6 @@ struct ClientDetailView: View {
         List {
             Section("Client") {
                 Text(client.name).bold()
-                Text("Contact: \(client.contact)")
                 if !client.phone.isEmpty {
                     Text("Phone: \(client.phone)")
                         .font(.footnote)
@@ -1023,6 +1164,9 @@ struct ClientDetailView: View {
                 }
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle(client.name)
         .sheet(isPresented: $showingServiceForm) {
             ServiceFormView(initialDate: Date(), client: client)
@@ -1041,6 +1185,7 @@ private struct StatusBadge: View {
             .background(backgroundColor)
             .foregroundColor(.white)
             .cornerRadius(8)
+            .accessibilityLabel(status.label)
     }
 
     private var backgroundColor: Color {
@@ -1053,6 +1198,17 @@ private struct StatusBadge: View {
     }
 }
 
+struct PaymentStatusIcon: View {
+    let hasPending: Bool
+
+    var body: some View {
+        Image(systemName: hasPending ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+            .font(.title3)
+            .foregroundColor(hasPending ? .orange : .green)
+            .accessibilityLabel(hasPending ? "Pending payments" : "No pending payments")
+    }
+}
+
 struct FinanceRow: View {
     let entry: FinanceEntry
     var onStatusChange: (_ status: FinanceEntry.Status, _ method: FinanceEntry.PaymentMethod?) -> Void
@@ -1061,9 +1217,16 @@ struct FinanceRow: View {
         HStack {
             VStack(alignment: .leading) {
                 Text(entry.title).bold()
-                Text(entry.dueDate, style: .date)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    if let name = entry.clientName ?? entry.employeeName {
+                        Text(name)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    Text(entry.dueDate, style: .date)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
                 HStack(spacing: 6) {
                     StatusPill(label: entry.status.label, color: entry.status == .paid ? .green : .orange)
                     if let method = entry.method {
@@ -1129,97 +1292,99 @@ struct ServiceDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Status") {
-                Picker("Status", selection: $status) {
-                    ForEach(ServiceTask.Status.allCases) { value in
-                        Text(value.label).tag(value)
+        VStack(spacing: 0) {
+            Form {
+                Section("Status") {
+                    Picker("Status", selection: $status) {
+                        ForEach(ServiceTask.Status.allCases) { value in
+                            Text(value.label).tag(value)
+                        }
                     }
                 }
-            }
 
-            Section("Schedule") {
-                DatePicker("Start", selection: $startTime, displayedComponents: [.hourAndMinute, .date])
-                DatePicker("End", selection: $endTime, displayedComponents: [.hourAndMinute, .date])
-            }
+                Section("Schedule") {
+                    DatePicker("Start", selection: $startTime, displayedComponents: [.hourAndMinute, .date])
+                    DatePicker("End", selection: $endTime, displayedComponents: [.hourAndMinute, .date])
+                }
 
-            Section("Client") {
-                Text(task.clientName).bold()
-                Text(task.address)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                Text(task.assignedEmployee.name)
-                    .font(.subheadline)
-            }
-
-            Section("Notes") {
-                TextEditor(text: $notes)
-                    .frame(minHeight: 120)
-            }
-
-            Section("Check-in / Check-out") {
-                if let checkInTime {
-                    Text("Checked in: \(checkInTime.formatted(date: .omitted, time: .shortened))")
+                Section("Client") {
+                    Text(task.clientName).bold()
+                    Text(task.address)
                         .font(.footnote)
                         .foregroundColor(.secondary)
+                    Text(task.assignedEmployee.name)
+                        .font(.subheadline)
                 }
-                if let checkOutTime {
-                    Text("Checked out: \(checkOutTime.formatted(date: .omitted, time: .shortened))")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                HStack {
-                    Button("Check-in now") {
-                        checkInTime = Date()
-                    }
-                    Button("Check-out now") {
-                        checkOutTime = Date()
-                    }
-                }
-            }
 
-            Section("Quick actions") {
-                Button("Mark as completed") { status = .completed }
-                Button("Cancel service", role: .destructive) { status = .canceled }
-                Button("Notify client") {
-                    guard store.notificationPreferences.enableClientNotifications else { return }
-                    showClientAlert = true
-                    if store.notificationPreferences.enablePush {
-                        store.sendLocalNotification(
-                            title: "Notification to client",
-                            body: "Service \"\(task.title)\" updated for \(task.clientName)."
-                        )
+                Section("Notes") {
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 120)
+                }
+
+                Section("Check-in / Check-out") {
+                    if let checkInTime {
+                        Text("Checked in: \(checkInTime.formatted(date: .omitted, time: .shortened))")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    if let checkOutTime {
+                        Text("Checked out: \(checkOutTime.formatted(date: .omitted, time: .shortened))")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Button("Check-in now") {
+                            checkInTime = Date()
+                        }
+                        Button("Check-out now") {
+                            checkOutTime = Date()
+                        }
                     }
                 }
-                Button("Notify team") {
-                    guard store.notificationPreferences.enableTeamNotifications else { return }
-                    showTeamAlert = true
-                    if store.notificationPreferences.enablePush {
-                        store.sendLocalNotification(
-                            title: "Notification to team",
-                            body: "Service \"\(task.title)\" updated for \(task.assignedEmployee.name)."
-                        )
+
+                Section("Quick actions") {
+                    Button("Mark as completed") { status = .completed }
+                    Button("Cancel service", role: .destructive) { status = .canceled }
+                    Button("Notify client") {
+                        guard store.notificationPreferences.enableClientNotifications else { return }
+                        showClientAlert = true
+                        if store.notificationPreferences.enablePush {
+                            store.sendLocalNotification(
+                                title: "Notification to client",
+                                body: "Service \"\(task.title)\" updated for \(task.clientName)."
+                            )
+                        }
+                    }
+                    Button("Notify team") {
+                        guard store.notificationPreferences.enableTeamNotifications else { return }
+                        showTeamAlert = true
+                        if store.notificationPreferences.enablePush {
+                            store.sendLocalNotification(
+                                title: "Notification to team",
+                                body: "Service \"\(task.title)\" updated for \(task.assignedEmployee.name)."
+                            )
+                        }
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+
+            PrimaryButton(title: "Save") {
+                store.updateTask(
+                    task,
+                    status: status,
+                    startTime: startTime,
+                    endTime: endTime,
+                    notes: notes,
+                    checkInTime: checkInTime,
+                    checkOutTime: checkOutTime
+                )
+                dismiss()
+            }
+            .padding()
         }
+        .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle(task.title)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    store.updateTask(
-                        task,
-                        status: status,
-                        startTime: startTime,
-                        endTime: endTime,
-                        notes: notes,
-                        checkInTime: checkInTime,
-                        checkOutTime: checkOutTime
-                    )
-                    dismiss()
-                }
-            }
-        }
         .alert("Notification sent to client", isPresented: $showClientAlert) {
             Button("OK", role: .cancel) { }
         }
@@ -1244,67 +1409,97 @@ private struct StatusPill: View {
     }
 }
 
+struct PrimaryButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            AppTheme.primary,
+                            AppTheme.primary.opacity(0.85)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(AppTheme.cornerRadius)
+                .shadow(color: AppTheme.primary.opacity(0.25), radius: 8, x: 0, y: 4)
+        }
+    }
+}
+
 struct ClientForm: View {
     @EnvironmentObject private var store: OfflineStore
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
-    @State private var contact = ""
     @State private var address = ""
     @State private var propertyDetails = ""
-    @State private var phone = ""
+    @State private var phoneLocal = ""
+    @State private var phoneCode: CountryCode = .defaultCode
     @State private var email = ""
     @State private var preferredSchedule = ""
     @State private var accessNotes = ""
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Identification") {
-                    TextField("Name", text: $name)
-                    TextField("Primary contact", text: $contact)
+            VStack(spacing: 0) {
+                Form {
+                    Section("Identification") {
+                        TextField("Name", text: $name)
+                    }
+                    Section("Contact") {
+                        HStack {
+                            CountryCodePicker(selection: $phoneCode)
+                            TextField("Phone", text: $phoneLocal)
+                                .keyboardType(.phonePad)
+                        }
+                        TextField("Email", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                    }
+                    Section("Property & schedule") {
+                        TextField("Address", text: $address)
+                        TextField("Property (type, block, size)", text: $propertyDetails)
+                        TextField("Preferred schedule", text: $preferredSchedule)
+                    }
+                    Section("Access") {
+                        TextField("Access instructions / front desk", text: $accessNotes)
+                    }
                 }
-                Section("Contact") {
-                    TextField("Phone", text: $phone)
-                        .keyboardType(.phonePad)
-                    TextField("Email", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
+                .scrollContentBackground(.hidden)
+
+                PrimaryButton(title: "Save") {
+                    let fullPhone = phoneLocal.isEmpty ? "" : "\(phoneCode.dialCode) \(phoneLocal)"
+                    store.addClient(
+                        name: name,
+                        contact: name,
+                        address: address,
+                        propertyDetails: propertyDetails,
+                        phone: fullPhone,
+                        email: email,
+                        accessNotes: accessNotes,
+                        preferredSchedule: preferredSchedule
+                    )
+                    dismiss()
                 }
-                Section("Property & schedule") {
-                    TextField("Address", text: $address)
-                    TextField("Property (type, block, size)", text: $propertyDetails)
-                    TextField("Preferred schedule", text: $preferredSchedule)
-                }
-                Section("Access") {
-                    TextField("Access instructions / front desk", text: $accessNotes)
-                }
+                .padding()
+                .disabled(name.isEmpty)
             }
+            .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("New Client")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        store.addClient(
-                            name: name,
-                            contact: contact,
-                            address: address,
-                            propertyDetails: propertyDetails,
-                            phone: phone,
-                            email: email,
-                            accessNotes: accessNotes,
-                            preferredSchedule: preferredSchedule
-                        )
-                        dismiss()
-                    }
-                    .disabled(name.isEmpty || contact.isEmpty)
-                }
             }
         }
     }
-}
-
-#Preview {
-    LoginView().environmentObject(OfflineStore())
 }

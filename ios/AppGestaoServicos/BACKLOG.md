@@ -19,6 +19,13 @@
 - ✅ Check-in/Check-out em tarefas para calcular horas trabalhadas e ganhos do funcionário
 - ✅ Suporte a múltiplas moedas (USD e EUR) no módulo financeiro, sem exibição em BRL
 - ✅ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
-- ⬜ Armazenamento seguro de credenciais no Keychain e comunicação criptografada
-- ⬜ Ajustes de acessibilidade (Dynamic Type, VoiceOver e contraste) nas principais telas
-- ⬜ Integração com Siri para criação de serviços por comando de voz
+- ✅ Armazenamento seguro de credenciais no Keychain e comunicação criptografada
+- ✅ Ajustes de acessibilidade (Dynamic Type, VoiceOver e contraste) nas principais telas
+- ✅ Integração com Siri para criação de serviços por comando de voz
+- ✅ Splash Screen da AG Home Organizer International antes do login
+- ✅ Redesign completo do login, dashboard, agenda, clientes, financeiro e configurações com cards e tema azul
+- ✅ Cards de clientes e funcionários com avatar, telefone e indicador visual de pendências financeiras
+- ✅ Integração com Contatos do iOS para exibir foto de cliente/funcionário quando disponível
+- ✅ Importação de dados básicos de funcionários a partir dos Contatos (nome e telefone)
+- ✅ Campos de telefone de cliente e funcionário com seletor de DDI por bandeira (CountryCodePicker)
+- ✅ Dashboard de manager com gráficos (Charts) para tarefas por status e visão comparativa de Recebíveis x Pagáveis

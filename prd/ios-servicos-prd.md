@@ -14,17 +14,20 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Administradoras de serviços residenciais e suas equipes operacionais.
 
 ## Funcionalidades
-- **Cadastro de Clientes e Imóveis**: dados pessoais, contatos, endereços e detalhes do imóvel administrado.
-- **Cadastro de Funcionários**: perfil com foto, documentos e informações de remuneração.
+- **Cadastro de Clientes e Imóveis**: dados pessoais, telefone (com DDI), e-mail, endereços e detalhes do imóvel administrado.
+- **Cadastro de Funcionários**: perfil com foto (a partir dos Contatos do iOS quando disponível), documentos, telefone (com DDI) e informações de remuneração.
 - **Perfis de Usuário (Employee/Manager)**: o usuário escolhe seu perfil no primeiro acesso; toda a experiência (dashboard, agenda, financeiro) é filtrada de acordo com o papel.
-- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal.
+- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe.
 - **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos prioritária para dados mais recentes do servidor quando houver conflito não resolvido localmente.
 - **Notificações e Siri**: comandos de voz para agendar; push/local notifications para chegadas, cancelamentos e alterações.
-- **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão).
-- **Dashboard**:
+- **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão), com vínculo automático entre serviços, clientes e funcionários quando houver preço base de serviço.
+- **Dashboard** (cards + gráficos):
   - Para funcionários (Employee): visão diária/semanal/mensal da agenda, serviços concluídos no período e valor estimado a receber apenas para tasks com check-in/check-out efetivos.
-  - Para gestores (Manager): visão por equipe da realização das tarefas e cards financeiros com Contas a Pagar/Receber e fluxo de caixa.
-- **Autenticação**: Splash Screen minimalista e login seguro.
+  - Para gestores (Manager): visão por equipe da realização das tarefas (cards por equipe + gráfico de tarefas por status) e cards financeiros com Contas a Pagar/Receber e fluxo de caixa, incluindo gráfico comparando Recebíveis x Pagáveis.
+- **Autenticação e onboarding visual**: Splash Screen da AG Home Organizer International, seguida de login seguro em SwiftUI com tema azul moderno.
+- **Integração com Contatos do iOS**:
+  - Exibir avatar/foto de cliente e funcionário a partir dos Contatos, quando existir correspondência por nome/telefone.
+  - Permitir importar dados básicos (nome, telefone) de um contato na criação/edição de funcionário e cliente.
 
 ## Requisitos Não Funcionais
 - Plataforma: iOS (Swift, UIKit/SwiftUI conforme padrão do projeto).
