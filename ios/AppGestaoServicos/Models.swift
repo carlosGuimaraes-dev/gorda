@@ -214,6 +214,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var currency: Currency
     var clientName: String?
     var employeeName: String?
+    var kind: Kind
+    var isDisputed: Bool
+    var receiptData: Data?
 
     init(
         id: UUID = UUID(),
@@ -225,7 +228,10 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         method: PaymentMethod? = nil,
         currency: Currency = .usd,
         clientName: String? = nil,
-        employeeName: String? = nil
+        employeeName: String? = nil,
+        kind: Kind = .general,
+        isDisputed: Bool = false,
+        receiptData: Data? = nil
     ) {
         self.id = id
         self.title = title
@@ -237,11 +243,21 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.currency = currency
         self.clientName = clientName
         self.employeeName = employeeName
+        self.kind = kind
+        self.isDisputed = isDisputed
+        self.receiptData = receiptData
     }
 
     enum EntryType: String, Codable {
         case payable
         case receivable
+    }
+
+    enum Kind: String, Codable {
+        case general
+        case invoiceClient
+        case payrollEmployee
+        case expenseOutOfPocket
     }
 
     enum Status: String, Codable {
@@ -296,6 +312,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case currency
         case clientName
         case employeeName
+        case kind
+        case isDisputed
+        case receiptData
     }
 
     init(from decoder: Decoder) throws {
@@ -310,6 +329,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.currency = try container.decodeIfPresent(Currency.self, forKey: .currency) ?? .usd
         self.clientName = try container.decodeIfPresent(String.self, forKey: .clientName)
         self.employeeName = try container.decodeIfPresent(String.self, forKey: .employeeName)
+        self.kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .general
+        self.isDisputed = try container.decodeIfPresent(Bool.self, forKey: .isDisputed) ?? false
+        self.receiptData = try container.decodeIfPresent(Data.self, forKey: .receiptData)
     }
 }
 

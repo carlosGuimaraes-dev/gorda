@@ -146,7 +146,12 @@ final class OfflineStore: ObservableObject {
         type: FinanceEntry.EntryType,
         dueDate: Date,
         method: FinanceEntry.PaymentMethod? = nil,
-        currency: FinanceEntry.Currency = .usd
+        currency: FinanceEntry.Currency = .usd,
+        clientName: String? = nil,
+        employeeName: String? = nil,
+        kind: FinanceEntry.Kind = .general,
+        receiptData: Data? = nil,
+        isDisputed: Bool = false
     ) {
         let entry = FinanceEntry(
             title: title,
@@ -155,7 +160,12 @@ final class OfflineStore: ObservableObject {
             dueDate: dueDate,
             status: .pending,
             method: method,
-            currency: currency
+            currency: currency,
+            clientName: clientName,
+            employeeName: employeeName,
+            kind: kind,
+            isDisputed: isDisputed,
+            receiptData: receiptData
         )
         finance.append(entry)
         pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
@@ -169,6 +179,119 @@ final class OfflineStore: ObservableObject {
         finance[index].method = method
         pendingChanges.append(PendingChange(operation: .markFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
+        persist()
+    }
+
+    func generateInvoices(from startDate: Date, to endDate: Date, dueDate: Date, clientName: String? = nil) {
+        let calendar = Calendar.current
+
+        let relevantTasks = tasks.filter { task in
+            guard task.status != .canceled else { return false }
+            guard calendar.isDate(task.date, inSameDayAs: task.date) else { return false }
+            return (task.date >= startDate && task.date <= endDate)
+        }
+
+        let groupedByClient = Dictionary(grouping: relevantTasks) { $0.clientName }
+        let targetClientNames: [String]
+        if let specific = clientName {
+            targetClientNames = [specific]
+        } else {
+            targetClientNames = Array(groupedByClient.keys)
+        }
+
+        for name in targetClientNames {
+            guard let clientTasks = groupedByClient[name], !clientTasks.isEmpty else { continue }
+
+            var total: Double = 0
+            var currency: FinanceEntry.Currency = .eur
+
+            for task in clientTasks {
+                guard let typeId = task.serviceTypeId,
+                      let serviceType = serviceTypes.first(where: { $0.id == typeId }) else { continue }
+                total += serviceType.basePrice
+                currency = serviceType.currency
+            }
+
+            guard total > 0 else { continue }
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM yyyy"
+            let periodLabel = formatter.string(from: startDate)
+
+            let title = "Invoice \(name) \(periodLabel)"
+
+            let entry = FinanceEntry(
+                title: title,
+                amount: total,
+                type: .receivable,
+                dueDate: dueDate,
+                status: .pending,
+                method: nil,
+                currency: currency,
+                clientName: name,
+                employeeName: nil,
+                kind: .invoiceClient
+            )
+            finance.append(entry)
+            pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
+            saveFinanceEntryToCoreData(entry)
+        }
+
+        persist()
+    }
+
+    func generatePayrolls(from startDate: Date, to endDate: Date, dueDate: Date, employeeName: String? = nil) {
+        let calendar = Calendar.current
+
+        let targetEmployees: [Employee]
+        if let specific = employeeName {
+            targetEmployees = employees.filter { $0.name == specific }
+        } else {
+            targetEmployees = employees
+        }
+
+        for employee in targetEmployees {
+            guard let rate = employee.hourlyRate, let currency = employee.currency else { continue }
+
+            let employeeTasks = tasks.filter { task in
+                task.assignedEmployee.name == employee.name &&
+                task.date >= startDate && task.date <= endDate &&
+                task.checkInTime != nil && task.checkOutTime != nil
+            }
+
+            let totalHours: Double = employeeTasks.compactMap { task in
+                guard let checkIn = task.checkInTime, let checkOut = task.checkOutTime else { return nil }
+                let interval = checkOut.timeIntervalSince(checkIn)
+                return interval > 0 ? interval / 3600.0 : nil
+            }.reduce(0, +)
+
+            guard totalHours > 0 else { continue }
+
+            let totalAmount = totalHours * rate
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM yyyy"
+            let periodLabel = formatter.string(from: startDate)
+
+            let title = "Payroll \(employee.name) \(periodLabel)"
+
+            let entry = FinanceEntry(
+                title: title,
+                amount: totalAmount,
+                type: .payable,
+                dueDate: dueDate,
+                status: .pending,
+                method: nil,
+                currency: currency,
+                clientName: nil,
+                employeeName: employee.name,
+                kind: .payrollEmployee
+            )
+            finance.append(entry)
+            pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
+            saveFinanceEntryToCoreData(entry)
+        }
+
         persist()
     }
 
@@ -397,32 +520,45 @@ final class OfflineStore: ObservableObject {
         employees = [employeeAna, employeeJohn, employeeMaria]
         employees.forEach(saveEmployeeToCoreData)
 
-        // Service types
-        let standardClean = ServiceType(
+        // Service types (default catalog)
+        let standardCleaning = ServiceType(
             name: "Standard cleaning",
-            description: "Regular weekly cleaning service",
+            description: "Regular home cleaning service",
             basePrice: 90,
             currency: .eur
         )
-        let deepClean = ServiceType(
-            name: "Deep cleaning",
-            description: "Intensive cleaning for first visit",
-            basePrice: 180,
+        let groceriesShopping = ServiceType(
+            name: "Groceries shopping",
+            description: "Shopping for groceries and supplies",
+            basePrice: 40,
             currency: .eur
         )
-        let officeVisit = ServiceType(
-            name: "Office visit",
-            description: "Office cleaning and inspection",
-            basePrice: 140,
-            currency: .usd
-        )
-        let gardenMaintenance = ServiceType(
-            name: "Garden maintenance",
-            description: "Lawn and garden care",
-            basePrice: 80,
+        let lightbulbReplacement = ServiceType(
+            name: "Lightbulb replacement",
+            description: "Replace bulbs in the property",
+            basePrice: 15,
             currency: .eur
         )
-        serviceTypes = [standardClean, deepClean, officeVisit, gardenMaintenance]
+        let rugPurchase = ServiceType(
+            name: "Rug purchase",
+            description: "Select and purchase rugs for the home",
+            basePrice: 120,
+            currency: .eur
+        )
+        let laundryService = ServiceType(
+            name: "Laundry",
+            description: "Laundry service (per batch / pieces)",
+            basePrice: 35,
+            currency: .eur
+        )
+
+        serviceTypes = [
+            standardCleaning,
+            groceriesShopping,
+            lightbulbReplacement,
+            rugPurchase,
+            laundryService
+        ]
         serviceTypes.forEach(saveServiceTypeToCoreData)
 
         // Clients
@@ -470,7 +606,7 @@ final class OfflineStore: ObservableObject {
 
         let tasksDemo: [ServiceTask] = [
             ServiceTask(
-                title: "Weekly cleaning - Carla",
+                title: "Standard cleaning - Carla",
                 date: makeDate(dayOffset: 0, hour: 9, minute: 0),
                 startTime: makeDate(dayOffset: 0, hour: 9, minute: 0),
                 endTime: makeDate(dayOffset: 0, hour: 11, minute: 0),
@@ -479,12 +615,12 @@ final class OfflineStore: ObservableObject {
                 clientName: clientCarla.name,
                 address: clientCarla.address,
                 notes: "Focus on kitchen and balcony.",
-                serviceTypeId: standardClean.id,
+                serviceTypeId: standardCleaning.id,
                 checkInTime: makeDate(dayOffset: 0, hour: 9, minute: 5),
                 checkOutTime: nil
             ),
             ServiceTask(
-                title: "Deep cleaning - Lucía",
+                title: "Groceries - Lucía",
                 date: makeDate(dayOffset: 1, hour: 14, minute: 0),
                 startTime: makeDate(dayOffset: 1, hour: 14, minute: 0),
                 endTime: makeDate(dayOffset: 1, hour: 18, minute: 0),
@@ -492,11 +628,11 @@ final class OfflineStore: ObservableObject {
                 assignedEmployee: employeeMaria,
                 clientName: clientLucia.name,
                 address: clientLucia.address,
-                notes: "First visit, check windows and oven.",
-                serviceTypeId: deepClean.id
+                notes: "Weekly groceries shopping and restock.",
+                serviceTypeId: groceriesShopping.id
             ),
             ServiceTask(
-                title: "Office visit - James",
+                title: "Lightbulb replacement - James",
                 date: makeDate(dayOffset: 0, hour: 18, minute: 0),
                 startTime: makeDate(dayOffset: 0, hour: 18, minute: 0),
                 endTime: makeDate(dayOffset: 0, hour: 20, minute: 0),
@@ -504,11 +640,11 @@ final class OfflineStore: ObservableObject {
                 assignedEmployee: employeeJohn,
                 clientName: clientJames.name,
                 address: clientJames.address,
-                notes: "Bring access card from reception.",
-                serviceTypeId: officeVisit.id
+                notes: "Replace bulbs in hallway and kitchen.",
+                serviceTypeId: lightbulbReplacement.id
             ),
             ServiceTask(
-                title: "Garden maintenance - Carla",
+                title: "Rug purchase - Carla",
                 date: makeDate(dayOffset: 2, hour: 10, minute: 30),
                 startTime: makeDate(dayOffset: 2, hour: 10, minute: 30),
                 endTime: makeDate(dayOffset: 2, hour: 12, minute: 0),
@@ -516,11 +652,11 @@ final class OfflineStore: ObservableObject {
                 assignedEmployee: employeeAna,
                 clientName: clientCarla.name,
                 address: clientCarla.address,
-                notes: "Check irrigation system.",
-                serviceTypeId: gardenMaintenance.id
+                notes: "Help choose new rugs for living room.",
+                serviceTypeId: rugPurchase.id
             ),
             ServiceTask(
-                title: "Weekly cleaning - James",
+                title: "Standard cleaning - James",
                 date: makeDate(dayOffset: -2, hour: 9, minute: 0),
                 startTime: makeDate(dayOffset: -2, hour: 9, minute: 0),
                 endTime: makeDate(dayOffset: -2, hour: 12, minute: 0),
@@ -529,12 +665,12 @@ final class OfflineStore: ObservableObject {
                 clientName: clientJames.name,
                 address: clientJames.address,
                 notes: "Client requested focus on living room.",
-                serviceTypeId: standardClean.id,
+                serviceTypeId: standardCleaning.id,
                 checkInTime: makeDate(dayOffset: -2, hour: 9, minute: 5),
                 checkOutTime: makeDate(dayOffset: -2, hour: 11, minute: 50)
             ),
             ServiceTask(
-                title: "Deep cleaning - Carla",
+                title: "Laundry - Carla",
                 date: makeDate(dayOffset: -5, hour: 13, minute: 0),
                 startTime: makeDate(dayOffset: -5, hour: 13, minute: 0),
                 endTime: makeDate(dayOffset: -5, hour: 17, minute: 0),
@@ -542,8 +678,8 @@ final class OfflineStore: ObservableObject {
                 assignedEmployee: employeeMaria,
                 clientName: clientCarla.name,
                 address: clientCarla.address,
-                notes: "Post-renovation cleaning.",
-                serviceTypeId: deepClean.id,
+                notes: "Laundry service for ~25 pieces.",
+                serviceTypeId: laundryService.id,
                 checkInTime: makeDate(dayOffset: -5, hour: 13, minute: 10),
                 checkOutTime: makeDate(dayOffset: -5, hour: 16, minute: 45)
             )
@@ -557,37 +693,43 @@ final class OfflineStore: ObservableObject {
 
         financeEntries.append(
             FinanceEntry(
-                title: "Invoice - Weekly cleaning Carla",
-                amount: standardClean.basePrice,
+                title: "Invoice - Standard cleaning Carla",
+                amount: standardCleaning.basePrice,
                 type: .receivable,
                 dueDate: makeDate(dayOffset: 1, hour: 0, minute: 0),
                 status: .pending,
                 method: nil,
-                currency: standardClean.currency
+                currency: standardCleaning.currency,
+                clientName: clientCarla.name,
+                employeeName: employeeAna.name
             )
         )
 
         financeEntries.append(
             FinanceEntry(
-                title: "Invoice - Deep cleaning Lucía",
-                amount: deepClean.basePrice,
+                title: "Invoice - Groceries Lucía",
+                amount: groceriesShopping.basePrice,
                 type: .receivable,
                 dueDate: makeDate(dayOffset: 3, hour: 0, minute: 0),
                 status: .pending,
                 method: nil,
-                currency: deepClean.currency
+                currency: groceriesShopping.currency,
+                clientName: clientLucia.name,
+                employeeName: employeeMaria.name
             )
         )
 
         financeEntries.append(
             FinanceEntry(
-                title: "Invoice - Office visit James",
-                amount: officeVisit.basePrice,
+                title: "Invoice - Lightbulb replacement James",
+                amount: lightbulbReplacement.basePrice,
                 type: .receivable,
                 dueDate: makeDate(dayOffset: 2, hour: 0, minute: 0),
                 status: .pending,
                 method: .card,
-                currency: officeVisit.currency
+                currency: lightbulbReplacement.currency,
+                clientName: clientJames.name,
+                employeeName: employeeJohn.name
             )
         )
 
@@ -649,13 +791,15 @@ final class OfflineStore: ObservableObject {
 
         financeEntries.append(
             FinanceEntry(
-                title: "Invoice - Deep cleaning Carla",
-                amount: deepClean.basePrice,
+                title: "Invoice - Laundry Carla",
+                amount: laundryService.basePrice,
                 type: .receivable,
                 dueDate: makeDate(dayOffset: -2, hour: 0, minute: 0),
                 status: .paid,
                 method: .cash,
-                currency: deepClean.currency
+                currency: laundryService.currency,
+                clientName: clientCarla.name,
+                employeeName: employeeMaria.name
             )
         )
 
@@ -820,6 +964,9 @@ private func saveClientToCoreData(_ client: Client) {
         object.setValue(entry.method?.rawValue, forKey: "method")
         object.setValue(entry.clientName, forKey: "clientName")
         object.setValue(entry.employeeName, forKey: "employeeName")
+        object.setValue(entry.kind.rawValue, forKey: "kind")
+        object.setValue(entry.isDisputed, forKey: "isDisputed")
+        object.setValue(entry.receiptData, forKey: "receiptData")
 
         saveContext()
     }
@@ -999,6 +1146,10 @@ private func saveClientToCoreData(_ client: Client) {
         let currency = currencyRaw.flatMap { FinanceEntry.Currency(rawValue: $0) } ?? .usd
         let clientName = object.value(forKey: "clientName") as? String
         let employeeName = object.value(forKey: "employeeName") as? String
+        let kindRaw = object.value(forKey: "kind") as? String
+        let kind = kindRaw.flatMap { FinanceEntry.Kind(rawValue: $0) } ?? .general
+        let isDisputed = object.value(forKey: "isDisputed") as? Bool ?? false
+        let receiptData = object.value(forKey: "receiptData") as? Data
 
         return FinanceEntry(
             id: id,
@@ -1010,7 +1161,10 @@ private func saveClientToCoreData(_ client: Client) {
             method: method,
             currency: currency,
             clientName: clientName,
-            employeeName: employeeName
+            employeeName: employeeName,
+            kind: kind,
+            isDisputed: isDisputed,
+            receiptData: receiptData
         )
     }
 }

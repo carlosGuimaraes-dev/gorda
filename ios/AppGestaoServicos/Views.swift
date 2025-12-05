@@ -571,12 +571,19 @@ struct AgendaView: View {
         }
     }
 
+    private var datesWithTasks: Set<Date> {
+        let calendar = Calendar.current
+        let allTasks = store.tasks
+        let days = allTasks.map { calendar.startOfDay(for: $0.date) }
+        return Set(days)
+    }
+
     var body: some View {
         NavigationStack {
             VStack {
-                DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .padding()
+                AgendaCalendar(selectedDate: $selectedDate, eventDates: datesWithTasks)
+                    .frame(maxHeight: 360)
+                    .padding(.horizontal)
                 Picker("Scope", selection: $scope) {
                     ForEach(Scope.allCases) { value in
                         Text(value.label).tag(value)
@@ -744,10 +751,26 @@ struct ClientsView: View {
 struct FinanceView: View {
     @EnvironmentObject private var store: OfflineStore
     @State private var showingForm = false
+    @State private var showingInvoiceGenerator = false
+    @State private var showingPayrollGenerator = false
 
     var body: some View {
         NavigationStack {
             List {
+                if store.session?.role == .manager {
+                    Section("End of month") {
+                        Button {
+                            showingInvoiceGenerator = true
+                        } label: {
+                            Label("Generate client invoices", systemImage: "doc.text.fill")
+                        }
+                        Button {
+                            showingPayrollGenerator = true
+                        } label: {
+                            Label("Generate payroll", systemImage: "person.badge.clock.fill")
+                        }
+                    }
+                }
                 Section(header: Text("Receivables")) {
                     ForEach(store.finance.filter { $0.type == .receivable }) { entry in
                         FinanceRow(entry: entry) { status, method in
@@ -777,6 +800,12 @@ struct FinanceView: View {
             }
             .sheet(isPresented: $showingForm) {
                 FinanceFormView()
+            }
+            .sheet(isPresented: $showingInvoiceGenerator) {
+                InvoiceGeneratorView()
+            }
+            .sheet(isPresented: $showingPayrollGenerator) {
+                PayrollGeneratorView()
             }
         }
     }
@@ -964,38 +993,79 @@ struct FinanceFormView: View {
     @State private var dueDate: Date = Date()
     @State private var method: FinanceEntry.PaymentMethod? = nil
     @State private var currency: FinanceEntry.Currency = .usd
+    @State private var isOutOfPocket = false
+    @State private var selectedClientName: String = ""
+    @State private var receiptImage: UIImage? = nil
+    @State private var showingImagePicker = false
+    @State private var showingShareSheet = false
+
+    @State private var shareItems: [Any] = []
+
+    private var clientNames: [String] {
+        Array(Set(store.clients.map { $0.name })).sorted()
+    }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Entry") {
-                    TextField("Title", text: $title)
-                    TextField("Amount", text: $amount)
-                        .keyboardType(.decimalPad)
-                    Picker("Currency", selection: $currency) {
-                        ForEach(FinanceEntry.Currency.allCases) { curr in
-                            Text(curr.code).tag(curr)
+            VStack(spacing: 0) {
+                Form {
+                    Section("Entry") {
+                        TextField("Title", text: $title)
+                        TextField("Amount", text: $amount)
+                            .keyboardType(.decimalPad)
+                        Picker("Currency", selection: $currency) {
+                            ForEach(FinanceEntry.Currency.allCases) { curr in
+                                Text(curr.code).tag(curr)
+                            }
+                        }
+                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                    }
+
+                    Section("Type") {
+                        Picker("", selection: $type) {
+                            Text("Receivable").tag(FinanceEntry.EntryType.receivable)
+                            Text("Payable").tag(FinanceEntry.EntryType.payable)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    Section("Method (optional)") {
+                        Picker("Method", selection: $method) {
+                            Text("Do not set now").tag(nil as FinanceEntry.PaymentMethod?)
+                            ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                                Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                            }
                         }
                     }
-                    DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
-                }
 
-                Section("Type") {
-                    Picker("", selection: $type) {
-                        Text("Receivable").tag(FinanceEntry.EntryType.receivable)
-                        Text("Payable").tag(FinanceEntry.EntryType.payable)
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section("Method (optional)") {
-                    Picker("Method", selection: $method) {
-                        Text("Do not set now").tag(nil as FinanceEntry.PaymentMethod?)
-                        ForEach(FinanceEntry.PaymentMethod.allCases) { method in
-                            Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                    if type == .payable {
+                        Section("Out-of-pocket expense") {
+                            Toggle("I paid this out of pocket", isOn: $isOutOfPocket)
+                            if isOutOfPocket {
+                                Picker("Client", selection: $selectedClientName) {
+                                    Text("Select client").tag("")
+                                    ForEach(clientNames, id: \.self) { name in
+                                        Text(name).tag(name)
+                                    }
+                                }
+                                Button {
+                                    showingImagePicker = true
+                                } label: {
+                                    Label(
+                                        receiptImage == nil ? "Capture receipt photo" : "Retake receipt photo",
+                                        systemImage: "camera.fill"
+                                    )
+                                }
+                            }
                         }
                     }
                 }
+
+                PrimaryButton(title: "Save") {
+                    save()
+                }
+                .padding()
+                .disabled(!canSave)
             }
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
@@ -1004,10 +1074,12 @@ struct FinanceFormView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(!canSave)
-                }
+            }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePickerView(image: $receiptImage)
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                ActivityView(items: shareItems)
             }
         }
     }
@@ -1024,8 +1096,36 @@ struct FinanceFormView: View {
 
     private func save() {
         guard let value = parsedAmount else { return }
-        store.addFinanceEntry(title: title, amount: value, type: type, dueDate: dueDate, method: method, currency: currency)
-        dismiss()
+        let clientName = isOutOfPocket ? (selectedClientName.isEmpty ? nil : selectedClientName) : nil
+        let kind: FinanceEntry.Kind = (type == .payable && isOutOfPocket) ? .expenseOutOfPocket : .general
+        let receiptData = receiptImage?.jpegData(compressionQuality: 0.7)
+
+        store.addFinanceEntry(
+            title: title,
+            amount: value,
+            type: type,
+            dueDate: dueDate,
+            method: method,
+            currency: currency,
+            clientName: clientName,
+            employeeName: nil,
+            kind: kind,
+            receiptData: receiptData
+        )
+
+        if let image = receiptImage, let clientName {
+            var items: [Any] = []
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            let dateString = formatter.string(from: dueDate)
+            let text = "Expense receipt for \(clientName)\n\n\(title)\nAmount: \(currency.code) \(value)\nDue date: \(dateString)"
+            items.append(text)
+            items.append(image)
+            shareItems = items
+            showingShareSheet = true
+        } else {
+            dismiss()
+        }
     }
 }
 
@@ -1079,6 +1179,114 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Settings")
+        }
+    }
+}
+
+struct InvoiceGeneratorView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var startDate: Date = {
+        let calendar = Calendar.current
+        let now = Date()
+        let comps = calendar.dateComponents([.year, .month], from: now)
+        return calendar.date(from: comps) ?? now
+    }()
+    @State private var endDate: Date = Date()
+    @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+    @State private var selectedClientName: String = ""
+
+    private var clientNames: [String] {
+        Array(Set(store.clients.map { $0.name })).sorted()
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Period") {
+                    DatePicker("From", selection: $startDate, displayedComponents: .date)
+                    DatePicker("To", selection: $endDate, displayedComponents: .date)
+                }
+                Section("Due date") {
+                    DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                }
+                Section("Client") {
+                    Picker("Client", selection: $selectedClientName) {
+                        Text("All clients").tag("")
+                        ForEach(clientNames, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Generate invoices")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Generate") {
+                        let clientName = selectedClientName.isEmpty ? nil : selectedClientName
+                        store.generateInvoices(from: startDate, to: endDate, dueDate: dueDate, clientName: clientName)
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct PayrollGeneratorView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var startDate: Date = {
+        let calendar = Calendar.current
+        let now = Date()
+        let comps = calendar.dateComponents([.year, .month], from: now)
+        return calendar.date(from: comps) ?? now
+    }()
+    @State private var endDate: Date = Date()
+    @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+    @State private var selectedEmployeeName: String = ""
+
+    private var employeeNames: [String] {
+        Array(Set(store.employees.map { $0.name })).sorted()
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Period") {
+                    DatePicker("From", selection: $startDate, displayedComponents: .date)
+                    DatePicker("To", selection: $endDate, displayedComponents: .date)
+                }
+                Section("Due date") {
+                    DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                }
+                Section("Employee") {
+                    Picker("Employee", selection: $selectedEmployeeName) {
+                        Text("All employees").tag("")
+                        ForEach(employeeNames, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Generate payroll")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Generate") {
+                        let employeeName = selectedEmployeeName.isEmpty ? nil : selectedEmployeeName
+                        store.generatePayrolls(from: startDate, to: endDate, dueDate: dueDate, employeeName: employeeName)
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

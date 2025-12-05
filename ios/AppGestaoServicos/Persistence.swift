@@ -318,6 +318,21 @@ final class PersistenceController {
         financeEmployeeName.attributeType = .stringAttributeType
         financeEmployeeName.isOptional = true
 
+        let financeKind = NSAttributeDescription()
+        financeKind.name = "kind"
+        financeKind.attributeType = .stringAttributeType
+        financeKind.isOptional = true
+
+        let financeIsDisputed = NSAttributeDescription()
+        financeIsDisputed.name = "isDisputed"
+        financeIsDisputed.attributeType = .booleanAttributeType
+        financeIsDisputed.isOptional = true
+
+        let financeReceiptData = NSAttributeDescription()
+        financeReceiptData.name = "receiptData"
+        financeReceiptData.attributeType = .binaryDataAttributeType
+        financeReceiptData.isOptional = true
+
         finance.properties = [
             financeId,
             financeTitle,
@@ -328,7 +343,10 @@ final class PersistenceController {
             financeStatus,
             financeMethod,
             financeClientName,
-            financeEmployeeName
+            financeEmployeeName,
+            financeKind,
+            financeIsDisputed,
+            financeReceiptData
         ]
 
         model.entities = [employee, client, serviceType, serviceTask, finance]

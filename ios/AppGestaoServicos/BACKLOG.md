@@ -29,3 +29,15 @@
 - ✅ Importação de dados básicos de funcionários a partir dos Contatos (nome e telefone)
 - ✅ Campos de telefone de cliente e funcionário com seletor de DDI por bandeira (CountryCodePicker)
 - ✅ Dashboard de manager com gráficos (Charts) para tarefas por status e visão comparativa de Recebíveis x Pagáveis
+- ✅ Catálogo de tipos de serviço padrão (limpeza, groceries, troca de lâmpada, compra de tapete, lavanderia) com preços base em ServiceType
+- ✅ Geração de invoices e folha de pagamento a partir das tasks (end of month) com criação automática de contas a receber/pagar
+- ✅ Cadastro de despesas extras com opção de despesa "out-of-pocket" para o manager, incluindo captura de foto do recibo e envio imediato via share sheet
+- ✅ Agenda com calendário destacando dias que possuem serviços agendados
+
+## Pendentes / Próximas entregas
+
+- ⬜ Tela dedicada de "Invoices" (lista de FinanceEntry.kind == invoiceClient) com CRUD completo: editar título/valor/vencimento/método, marcar como contestado e reemitir/enviar novamente
+- ⬜ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
+- ⬜ Fluxo de contestação de faturas pelo cliente: marcar invoice como `disputed`, registrar motivo e permitir ajustes até 1 dia antes do vencimento
+- ⬜ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
+- ⬜ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura

@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(Contacts)
+import Contacts
+#endif
+
 struct EmployeesView: View {
     @EnvironmentObject private var store: OfflineStore
     @State private var showingForm = false
