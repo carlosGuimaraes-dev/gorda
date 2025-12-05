@@ -54,7 +54,7 @@ final class PersistenceController {
 
         let employeeHourlyRate = NSAttributeDescription()
         employeeHourlyRate.name = "hourlyRate"
-        employeeHourlyRate.attributeType = .decimalAttributeType
+        employeeHourlyRate.attributeType = .doubleAttributeType
         employeeHourlyRate.isOptional = true
 
         let employeeCurrency = NSAttributeDescription()
@@ -62,13 +62,25 @@ final class PersistenceController {
         employeeCurrency.attributeType = .stringAttributeType
         employeeCurrency.isOptional = true
 
+        let employeeExtra = NSAttributeDescription()
+        employeeExtra.name = "extraEarningsDescription"
+        employeeExtra.attributeType = .stringAttributeType
+        employeeExtra.isOptional = true
+
+        let employeeDocuments = NSAttributeDescription()
+        employeeDocuments.name = "documentsDescription"
+        employeeDocuments.attributeType = .stringAttributeType
+        employeeDocuments.isOptional = true
+
         employee.properties = [
             employeeId,
             employeeName,
             employeeRoleTitle,
             employeeTeam,
             employeeHourlyRate,
-            employeeCurrency
+            employeeCurrency,
+            employeeExtra,
+            employeeDocuments
         ]
 
         // Client
@@ -216,6 +228,11 @@ final class PersistenceController {
         serviceTaskAddress.attributeType = .stringAttributeType
         serviceTaskAddress.isOptional = true
 
+        let serviceTaskServiceTypeId = NSAttributeDescription()
+        serviceTaskServiceTypeId.name = "serviceTypeId"
+        serviceTaskServiceTypeId.attributeType = .UUIDAttributeType
+        serviceTaskServiceTypeId.isOptional = true
+
         let serviceTaskCheckIn = NSAttributeDescription()
         serviceTaskCheckIn.name = "checkInTime"
         serviceTaskCheckIn.attributeType = .dateAttributeType
@@ -235,6 +252,7 @@ final class PersistenceController {
             serviceTaskStatus,
             serviceTaskNotes,
             serviceTaskAddress,
+            serviceTaskServiceTypeId,
             serviceTaskCheckIn,
             serviceTaskCheckOut
         ]
@@ -256,7 +274,7 @@ final class PersistenceController {
 
         let financeAmount = NSAttributeDescription()
         financeAmount.name = "amount"
-        financeAmount.attributeType = .decimalAttributeType
+        financeAmount.attributeType = .doubleAttributeType
         financeAmount.isOptional = false
 
         let financeCurrency = NSAttributeDescription()
@@ -299,4 +317,3 @@ final class PersistenceController {
         return model
     }
 }
-

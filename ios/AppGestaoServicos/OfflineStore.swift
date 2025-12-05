@@ -9,6 +9,7 @@ final class OfflineStore: ObservableObject {
     @Published private(set) var employees: [Employee] = []
     @Published private(set) var tasks: [ServiceTask] = []
     @Published private(set) var finance: [FinanceEntry] = []
+    @Published private(set) var serviceTypes: [ServiceType] = []
     @Published private(set) var pendingChanges: [PendingChange] = []
     @Published var notificationPreferences = NotificationPreferences()
     @Published var session: UserSession?
@@ -48,7 +49,8 @@ final class OfflineStore: ObservableObject {
         clientName: String,
         address: String,
         notes: String,
-        status: ServiceTask.Status = .scheduled
+        status: ServiceTask.Status = .scheduled,
+        serviceTypeId: UUID? = nil
     ) {
         let task = ServiceTask(
             title: title,
@@ -59,11 +61,27 @@ final class OfflineStore: ObservableObject {
             assignedEmployee: employee,
             clientName: clientName,
             address: address,
-            notes: notes
+            notes: notes,
+            serviceTypeId: serviceTypeId
         )
         tasks.append(task)
         pendingChanges.append(PendingChange(operation: .addTask, entityId: task.id))
         saveTaskToCoreData(task)
+
+        if let typeId = serviceTypeId, let serviceType = serviceTypes.first(where: { $0.id == typeId }) {
+            let financeEntry = FinanceEntry(
+                title: serviceType.name,
+                amount: serviceType.basePrice,
+                type: .receivable,
+                dueDate: date,
+                status: .pending,
+                method: nil,
+                currency: serviceType.currency
+            )
+            finance.append(financeEntry)
+            pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: financeEntry.id))
+            saveFinanceEntryToCoreData(financeEntry)
+        }
         persist()
     }
 
@@ -72,13 +90,17 @@ final class OfflineStore: ObservableObject {
         status: ServiceTask.Status,
         startTime: Date? = nil,
         endTime: Date? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        checkInTime: Date? = nil,
+        checkOutTime: Date? = nil
     ) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
         tasks[index].status = status
         tasks[index].startTime = startTime ?? tasks[index].startTime
         tasks[index].endTime = endTime ?? tasks[index].endTime
         tasks[index].notes = notes ?? tasks[index].notes
+        tasks[index].checkInTime = checkInTime ?? tasks[index].checkInTime
+        tasks[index].checkOutTime = checkOutTime ?? tasks[index].checkOutTime
         pendingChanges.append(PendingChange(operation: .updateTask, entityId: task.id))
         saveTaskToCoreData(tasks[index])
         persist()
@@ -116,9 +138,10 @@ final class OfflineStore: ObservableObject {
         amount: Double,
         type: FinanceEntry.EntryType,
         dueDate: Date,
-        method: FinanceEntry.PaymentMethod? = nil
+        method: FinanceEntry.PaymentMethod? = nil,
+        currency: FinanceEntry.Currency = .usd
     ) {
-        let entry = FinanceEntry(title: title, amount: amount, type: type, dueDate: dueDate, method: method)
+        let entry = FinanceEntry(title: title, amount: amount, type: type, dueDate: dueDate, status: .pending, method: method, currency: currency)
         finance.append(entry)
         pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(entry)
@@ -131,6 +154,31 @@ final class OfflineStore: ObservableObject {
         finance[index].method = method
         pendingChanges.append(PendingChange(operation: .markFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
+        persist()
+    }
+
+    func addEmployee(
+        name: String,
+        roleTitle: String,
+        team: String,
+        hourlyRate: Double?,
+        currency: Employee.Currency?,
+        extraEarningsDescription: String?,
+        documentsDescription: String?
+    ) {
+        let employee = Employee(
+            id: UUID(),
+            name: name,
+            role: roleTitle,
+            team: team,
+            hourlyRate: hourlyRate,
+            currency: currency,
+            extraEarningsDescription: extraEarningsDescription,
+            documentsDescription: documentsDescription
+        )
+        employees.append(employee)
+        pendingChanges.append(PendingChange(operation: .addClient, entityId: employee.id))
+        saveEmployeeToCoreData(employee)
         persist()
     }
 
@@ -206,16 +254,22 @@ final class OfflineStore: ObservableObject {
     private func load() {
         // Primeiro tenta Core Data; se estiver vazio, cai para o JSON antigo.
         let requestClients = NSFetchRequest<NSManagedObject>(entityName: "ClientEntity")
+        let requestEmployees = NSFetchRequest<NSManagedObject>(entityName: "EmployeeEntity")
+        let requestServiceTypes = NSFetchRequest<NSManagedObject>(entityName: "ServiceTypeEntity")
         let requestTasks = NSFetchRequest<NSManagedObject>(entityName: "ServiceTaskEntity")
         let requestFinance = NSFetchRequest<NSManagedObject>(entityName: "FinanceEntryEntity")
 
         do {
             let clientObjects = try context.fetch(requestClients)
+            let employeeObjects = try context.fetch(requestEmployees)
+            let serviceTypeObjects = try context.fetch(requestServiceTypes)
             let taskObjects = try context.fetch(requestTasks)
             let financeObjects = try context.fetch(requestFinance)
 
-            if !clientObjects.isEmpty || !taskObjects.isEmpty || !financeObjects.isEmpty {
+            if !clientObjects.isEmpty || !employeeObjects.isEmpty || !serviceTypeObjects.isEmpty || !taskObjects.isEmpty || !financeObjects.isEmpty {
                 self.clients = clientObjects.compactMap(Self.clientFromManagedObject)
+                self.employees = employeeObjects.compactMap(Self.employeeFromManagedObject)
+                self.serviceTypes = serviceTypeObjects.compactMap(Self.serviceTypeFromManagedObject)
                 self.tasks = taskObjects.compactMap(Self.taskFromManagedObject)
                 self.finance = financeObjects.compactMap(Self.financeFromManagedObject)
                 return
@@ -242,8 +296,26 @@ final class OfflineStore: ObservableObject {
 
     private func seedDemoDataIfNeeded() {
         guard clients.isEmpty, employees.isEmpty else { return }
-        let employee = Employee(id: UUID(), name: "Ana Souza", role: "Supervisora", team: "Equipe A")
+        let employee = Employee(
+            id: UUID(),
+            name: "Ana Souza",
+            role: "Supervisor",
+            team: "Team A",
+            hourlyRate: 25,
+            currency: .eur,
+            extraEarningsDescription: nil
+        )
         employees = [employee]
+        saveEmployeeToCoreData(employee)
+        let serviceType = ServiceType(
+            name: "Post-event cleaning",
+            description: "Standard post-event cleaning service",
+            basePrice: 150,
+            currency: .eur
+        )
+        serviceTypes = [serviceType]
+        saveServiceTypeToCoreData(serviceType)
+        saveEmployeeToCoreData(employee)
         let client = Client(
             id: UUID(),
             name: "Carla Lima",
@@ -253,7 +325,7 @@ final class OfflineStore: ObservableObject {
             phone: "+55 11 99999-1000",
             email: "carla@example.com",
             accessNotes: "Avisar portaria e solicitar vaga de visitante",
-            preferredSchedule: "Seg–Sex 8h-12h"
+            preferredSchedule: "Mon–Fri 8am–12pm"
         )
         clients = [client]
         let start = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date())
@@ -267,7 +339,8 @@ final class OfflineStore: ObservableObject {
             assignedEmployee: employee,
             clientName: client.name,
             address: client.address,
-            notes: "Levar materiais de piso vinílico"
+            notes: "Levar materiais de piso vinílico",
+            serviceTypeId: serviceType.id
         )
         tasks = [task]
         let entry = FinanceEntry(
@@ -293,7 +366,7 @@ final class OfflineStore: ObservableObject {
         }
     }
 
-    private func saveClientToCoreData(_ client: Client) {
+private func saveClientToCoreData(_ client: Client) {
         let request = NSFetchRequest<NSManagedObject>(entityName: "ClientEntity")
         request.predicate = NSPredicate(format: "id == %@", client.id as CVarArg)
         let object: NSManagedObject
@@ -336,6 +409,9 @@ final class OfflineStore: ObservableObject {
         object.setValue(task.status.rawValue, forKey: "status")
         object.setValue(task.notes, forKey: "notes")
         object.setValue(task.address, forKey: "address")
+        object.setValue(task.serviceTypeId, forKey: "serviceTypeId")
+        object.setValue(task.checkInTime, forKey: "checkInTime")
+        object.setValue(task.checkOutTime, forKey: "checkOutTime")
 
         saveContext()
     }
@@ -354,11 +430,54 @@ final class OfflineStore: ObservableObject {
         object.setValue(entry.id, forKey: "id")
         object.setValue(entry.title, forKey: "title")
         object.setValue(entry.amount, forKey: "amount")
-        object.setValue("USD", forKey: "currency") // placeholder até multi-moeda completo
+        object.setValue(entry.currency.rawValue, forKey: "currency")
         object.setValue(entry.type.rawValue, forKey: "type")
         object.setValue(entry.dueDate, forKey: "dueDate")
         object.setValue(entry.status.rawValue, forKey: "status")
         object.setValue(entry.method?.rawValue, forKey: "method")
+
+        saveContext()
+    }
+
+    private func saveServiceTypeToCoreData(_ serviceType: ServiceType) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "ServiceTypeEntity")
+        request.predicate = NSPredicate(format: "id == %@", serviceType.id as CVarArg)
+        let object: NSManagedObject
+        if let existing = try? context.fetch(request).first {
+            object = existing
+        } else {
+            guard let entity = NSEntityDescription.entity(forEntityName: "ServiceTypeEntity", in: context) else { return }
+            object = NSManagedObject(entity: entity, insertInto: context)
+        }
+
+        object.setValue(serviceType.id, forKey: "id")
+        object.setValue(serviceType.name, forKey: "name")
+        object.setValue(serviceType.description, forKey: "serviceDescription")
+        object.setValue(serviceType.basePrice, forKey: "basePrice")
+        object.setValue(serviceType.currency.rawValue, forKey: "currency")
+
+        saveContext()
+    }
+
+    private func saveEmployeeToCoreData(_ employee: Employee) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "EmployeeEntity")
+        request.predicate = NSPredicate(format: "id == %@", employee.id as CVarArg)
+        let object: NSManagedObject
+        if let existing = try? context.fetch(request).first {
+            object = existing
+        } else {
+            guard let entity = NSEntityDescription.entity(forEntityName: "EmployeeEntity", in: context) else { return }
+            object = NSManagedObject(entity: entity, insertInto: context)
+        }
+
+        object.setValue(employee.id, forKey: "id")
+        object.setValue(employee.name, forKey: "name")
+        object.setValue(employee.role, forKey: "roleTitle")
+        object.setValue(employee.team, forKey: "team")
+        object.setValue(employee.hourlyRate, forKey: "hourlyRate")
+        object.setValue(employee.currency?.rawValue, forKey: "currency")
+        object.setValue(employee.extraEarningsDescription, forKey: "extraEarningsDescription")
+        object.setValue(employee.documentsDescription, forKey: "documentsDescription")
 
         saveContext()
     }
@@ -403,6 +522,9 @@ final class OfflineStore: ObservableObject {
         let endTime = object.value(forKey: "endTime") as? Date
         let notes = object.value(forKey: "notes") as? String ?? ""
         let address = object.value(forKey: "address") as? String ?? ""
+        let serviceTypeId = object.value(forKey: "serviceTypeId") as? UUID
+        let checkIn = object.value(forKey: "checkInTime") as? Date
+        let checkOut = object.value(forKey: "checkOutTime") as? Date
 
         let dummyEmployee = Employee(id: UUID(), name: "Unassigned", role: "", team: "")
 
@@ -416,7 +538,56 @@ final class OfflineStore: ObservableObject {
             assignedEmployee: dummyEmployee,
             clientName: "",
             address: address,
-            notes: notes
+            notes: notes,
+            serviceTypeId: serviceTypeId,
+            checkInTime: checkIn,
+            checkOutTime: checkOut
+        )
+    }
+
+    private static func employeeFromManagedObject(_ object: NSManagedObject) -> Employee? {
+        guard
+            let id = object.value(forKey: "id") as? UUID,
+            let name = object.value(forKey: "name") as? String
+        else { return nil }
+
+        let roleTitle = object.value(forKey: "roleTitle") as? String ?? ""
+        let team = object.value(forKey: "team") as? String ?? ""
+        let hourlyRate = object.value(forKey: "hourlyRate") as? Double
+        let currencyRaw = object.value(forKey: "currency") as? String
+        let currency = currencyRaw.flatMap { Employee.Currency(rawValue: $0) }
+        let extra = object.value(forKey: "extraEarningsDescription") as? String
+        let documents = object.value(forKey: "documentsDescription") as? String
+
+        return Employee(
+            id: id,
+            name: name,
+            role: roleTitle,
+            team: team,
+            hourlyRate: hourlyRate,
+            currency: currency,
+            extraEarningsDescription: extra,
+            documentsDescription: documents
+        )
+    }
+
+    private static func serviceTypeFromManagedObject(_ object: NSManagedObject) -> ServiceType? {
+        guard
+            let id = object.value(forKey: "id") as? UUID,
+            let name = object.value(forKey: "name") as? String,
+            let basePrice = object.value(forKey: "basePrice") as? Double,
+            let currencyRaw = object.value(forKey: "currency") as? String,
+            let currency = FinanceEntry.Currency(rawValue: currencyRaw)
+        else { return nil }
+
+        let description = object.value(forKey: "serviceDescription") as? String ?? ""
+
+        return ServiceType(
+            id: id,
+            name: name,
+            description: description,
+            basePrice: basePrice,
+            currency: currency
         )
     }
 
@@ -436,7 +607,19 @@ final class OfflineStore: ObservableObject {
         let methodRaw = object.value(forKey: "method") as? String
         let method = methodRaw.flatMap { FinanceEntry.PaymentMethod(rawValue: $0) }
 
-        return FinanceEntry(id: id, title: title, amount: amount, type: type, dueDate: dueDate, status: status, method: method)
+        let currencyRaw = object.value(forKey: "currency") as? String
+        let currency = currencyRaw.flatMap { FinanceEntry.Currency(rawValue: $0) } ?? .usd
+
+        return FinanceEntry(
+            id: id,
+            title: title,
+            amount: amount,
+            type: type,
+            dueDate: dueDate,
+            status: status,
+            method: method,
+            currency: currency
+        )
     }
 }
 

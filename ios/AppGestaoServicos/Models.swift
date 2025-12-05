@@ -64,6 +64,46 @@ struct Employee: Identifiable, Codable, Hashable {
     var name: String
     var role: String
     var team: String
+    var hourlyRate: Double?
+    var currency: Currency?
+    var extraEarningsDescription: String?
+    var documentsDescription: String?
+
+    enum Currency: String, Codable, CaseIterable, Identifiable {
+        case usd
+        case eur
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .usd: return "USD"
+            case .eur: return "EUR"
+            }
+        }
+    }
+}
+
+struct ServiceType: Identifiable, Codable, Hashable {
+    let id: UUID
+    var name: String
+    var description: String
+    var basePrice: Double
+    var currency: FinanceEntry.Currency
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        description: String = "",
+        basePrice: Double,
+        currency: FinanceEntry.Currency
+    ) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.basePrice = basePrice
+        self.currency = currency
+    }
 }
 
 struct ServiceTask: Identifiable, Codable, Hashable {
@@ -77,6 +117,9 @@ struct ServiceTask: Identifiable, Codable, Hashable {
     var clientName: String
     var address: String
     var notes: String
+    var serviceTypeId: UUID?
+    var checkInTime: Date?
+    var checkOutTime: Date?
 
     init(
         id: UUID = UUID(),
@@ -88,7 +131,10 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         assignedEmployee: Employee,
         clientName: String,
         address: String,
-        notes: String
+        notes: String,
+        serviceTypeId: UUID? = nil,
+        checkInTime: Date? = nil,
+        checkOutTime: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -100,6 +146,9 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.clientName = clientName
         self.address = address
         self.notes = notes
+        self.serviceTypeId = serviceTypeId
+        self.checkInTime = checkInTime
+        self.checkOutTime = checkOutTime
     }
 
     enum Status: String, Codable, CaseIterable, Identifiable {
@@ -130,6 +179,9 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         case clientName
         case address
         case notes
+        case serviceTypeId
+        case checkInTime
+        case checkOutTime
     }
 
     init(from decoder: Decoder) throws {
@@ -144,6 +196,9 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.clientName = try container.decodeIfPresent(String.self, forKey: .clientName) ?? ""
         self.address = try container.decodeIfPresent(String.self, forKey: .address) ?? ""
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        self.serviceTypeId = try container.decodeIfPresent(UUID.self, forKey: .serviceTypeId)
+        self.checkInTime = try container.decodeIfPresent(Date.self, forKey: .checkInTime)
+        self.checkOutTime = try container.decodeIfPresent(Date.self, forKey: .checkOutTime)
     }
 }
 
@@ -155,6 +210,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var dueDate: Date
     var status: Status
     var method: PaymentMethod?
+    var currency: Currency
 
     init(
         id: UUID = UUID(),
@@ -163,7 +219,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         type: EntryType,
         dueDate: Date,
         status: Status = .pending,
-        method: PaymentMethod? = nil
+        method: PaymentMethod? = nil,
+        currency: Currency = .usd
     ) {
         self.id = id
         self.title = title
@@ -172,6 +229,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.dueDate = dueDate
         self.status = status
         self.method = method
+        self.currency = currency
     }
 
     enum EntryType: String, Codable {
@@ -206,6 +264,20 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         }
     }
 
+    enum Currency: String, Codable, CaseIterable, Identifiable {
+        case usd
+        case eur
+
+        var id: String { rawValue }
+
+        var code: String {
+            switch self {
+            case .usd: return "USD"
+            case .eur: return "EUR"
+            }
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case id
         case title
@@ -214,6 +286,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case dueDate
         case status
         case method
+        case currency
     }
 
     init(from decoder: Decoder) throws {
@@ -225,6 +298,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.dueDate = try container.decode(Date.self, forKey: .dueDate)
         self.status = try container.decodeIfPresent(Status.self, forKey: .status) ?? .pending
         self.method = try container.decodeIfPresent(PaymentMethod.self, forKey: .method)
+        self.currency = try container.decodeIfPresent(Currency.self, forKey: .currency) ?? .usd
     }
 }
 

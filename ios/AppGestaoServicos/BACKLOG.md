@@ -11,11 +11,14 @@
 - ✅ Fila de sincronização offline/online com resolução de conflitos
 - ✅ Integração de notificações locais/push e preferências de notificação
 - ✅ Revisão de textos/labels para remover dependências de PT-BR e preparar tradução futura opcional para Português do Brasil
-- ⬜ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
-- ⬜ Suporte a múltiplas moedas (USD e EUR) no módulo financeiro, sem exibição em BRL
 - ✅ Dashboard inicial após login, diferenciado por perfil (Employee/Manager), com resumo de agenda e indicadores principais
-- ⬜ Cadastro de funcionários com foto, documentos e informações de remuneração
 - ✅ Migração do armazenamento local (JSON) para Core Data ou SQLite com suporte offline robusto
+- ✅ Modelagem de remuneração por funcionário (valor/hora em USD/EUR e outros recebíveis)
+- ✅ Cadastro de funcionários com foto, documentos e informações de remuneração
+- ✅ Modelagem de tipos de serviço com preço em USD/EUR e vínculo automático a lançamentos financeiros por cliente/funcionário
+- ✅ Check-in/Check-out em tarefas para calcular horas trabalhadas e ganhos do funcionário
+- ✅ Suporte a múltiplas moedas (USD e EUR) no módulo financeiro, sem exibição em BRL
+- ✅ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
 - ⬜ Armazenamento seguro de credenciais no Keychain e comunicação criptografada
 - ⬜ Ajustes de acessibilidade (Dynamic Type, VoiceOver e contraste) nas principais telas
 - ⬜ Integração com Siri para criação de serviços por comando de voz

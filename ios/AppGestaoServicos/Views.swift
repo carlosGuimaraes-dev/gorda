@@ -157,6 +157,23 @@ private struct EmployeeDashboardView: View {
         tasksForEmployeeAndScope.filter { $0.status == .scheduled }.count
     }
 
+    private var totalWorkedHours: Double {
+        tasksForEmployeeAndScope.compactMap { task in
+            guard let checkIn = task.checkInTime, let checkOut = task.checkOutTime else { return nil }
+            let interval = checkOut.timeIntervalSince(checkIn)
+            return interval > 0 ? interval / 3600.0 : nil
+        }.reduce(0, +)
+    }
+
+    private var estimatedEarnings: Double {
+        guard
+            let name = employeeName,
+            let employee = store.employees.first(where: { $0.name == name }),
+            let rate = employee.hourlyRate
+        else { return 0 }
+        return totalWorkedHours * rate
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             if let name = employeeName {
@@ -194,6 +211,32 @@ private struct EmployeeDashboardView: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+            }
+            .padding(.horizontal)
+
+            GroupBox("Today") {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("Worked hours")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.1f h", totalWorkedHours))
+                            .font(.title3.bold())
+                    }
+                    Spacer()
+                    if let name = employeeName,
+                       let employee = store.employees.first(where: { $0.name == name }),
+                       let currency = employee.currency {
+                        VStack(alignment: .trailing) {
+                            Text("Estimated earnings")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(currency.label) \(estimatedEarnings, specifier: "%.2f")")
+                                .font(.title3.bold())
+                        }
+                    }
+                }
+                .padding()
             }
             .padding(.horizontal)
 
@@ -497,7 +540,7 @@ struct AgendaView: View {
             }
             .font(.footnote)
             .foregroundColor(.secondary)
-            Text("Cliente: \(task.clientName)")
+            Text("Client: \(task.clientName)")
                 .font(.subheadline)
             Text(task.address)
                 .font(.footnote)
@@ -616,6 +659,7 @@ struct ServiceFormView: View {
     @State private var status: ServiceTask.Status = .scheduled
     @State private var selectedEmployeeID: UUID?
     @State private var selectedClientID: UUID?
+    @State private var selectedServiceTypeID: UUID?
     @State private var notifyClient = true
     @State private var notifyTeam = true
     init(initialDate: Date) {
@@ -640,8 +684,8 @@ struct ServiceFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Serviço") {
-                    TextField("Título", text: $title)
+                Section("Service") {
+                    TextField("Title", text: $title)
                     Picker("Status", selection: $status) {
                         ForEach(ServiceTask.Status.allCases) { value in
                             Text(value.label).tag(value)
@@ -649,10 +693,10 @@ struct ServiceFormView: View {
                     }
                 }
 
-                Section("Data e horários") {
-                    DatePicker("Data", selection: $selectedDate, displayedComponents: .date)
-                    DatePicker("Início", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
-                    DatePicker("Fim", selection: $endTime, displayedComponents: [.date, .hourAndMinute])
+                Section("Date & time") {
+                    DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                    DatePicker("Start", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("End", selection: $endTime, displayedComponents: [.date, .hourAndMinute])
                 }
 
                 Section("Assignments") {
@@ -680,6 +724,19 @@ struct ServiceFormView: View {
                         )) {
                             ForEach(store.clients, id: \.id) { client in
                                 Text(client.name).tag(client.id as UUID?)
+                            }
+                        }
+                    }
+                }
+
+                if !store.serviceTypes.isEmpty {
+                    Section("Service type") {
+                        Picker("Type", selection: Binding(
+                            get: { selectedServiceTypeID ?? store.serviceTypes.first?.id },
+                            set: { selectedServiceTypeID = $0 }
+                        )) {
+                            ForEach(store.serviceTypes, id: \.id) { type in
+                                Text(type.name).tag(type.id as UUID?)
                             }
                         }
                     }
@@ -731,6 +788,8 @@ struct ServiceFormView: View {
         if notifyClient { finalNotes.append(contentsOf: finalNotes.isEmpty ? "Notify client." : "\nNotify client.") }
         if notifyTeam { finalNotes.append(contentsOf: finalNotes.isEmpty ? "Notify team." : "\nNotify team.") }
 
+        let serviceTypeIdToUse = selectedServiceTypeID ?? store.serviceTypes.first?.id
+
         store.addTask(
             title: title,
             date: selectedDate,
@@ -740,7 +799,8 @@ struct ServiceFormView: View {
             clientName: client.name,
             address: client.address,
             notes: finalNotes,
-            status: status
+            status: status,
+            serviceTypeId: serviceTypeIdToUse
         )
         dismiss()
     }
@@ -766,6 +826,7 @@ struct FinanceFormView: View {
     @State private var type: FinanceEntry.EntryType = .receivable
     @State private var dueDate: Date = Date()
     @State private var method: FinanceEntry.PaymentMethod? = nil
+    @State private var currency: FinanceEntry.Currency = .usd
 
     var body: some View {
         NavigationStack {
@@ -774,6 +835,11 @@ struct FinanceFormView: View {
                     TextField("Title", text: $title)
                     TextField("Amount", text: $amount)
                         .keyboardType(.decimalPad)
+                    Picker("Currency", selection: $currency) {
+                        ForEach(FinanceEntry.Currency.allCases) { curr in
+                            Text(curr.code).tag(curr)
+                        }
+                    }
                     DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                 }
 
@@ -819,7 +885,7 @@ struct FinanceFormView: View {
 
     private func save() {
         guard let value = parsedAmount else { return }
-        store.addFinanceEntry(title: title, amount: value, type: type, dueDate: dueDate, method: method)
+        store.addFinanceEntry(title: title, amount: value, type: type, dueDate: dueDate, method: method, currency: currency)
         dismiss()
     }
 }
@@ -847,6 +913,14 @@ struct SettingsView: View {
                         Text("\(store.pendingChanges.count) pending changes in the queue")
                             .font(.footnote)
                             .foregroundColor(.secondary)
+                    }
+                }
+
+                if store.session?.role == .manager {
+                    Section("Team") {
+                        NavigationLink("Employees") {
+                            EmployeesView()
+                        }
                     }
                 }
 
@@ -1026,7 +1100,7 @@ struct FinanceRow: View {
     private var currencyFormatter: NumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.locale = Locale(identifier: "en_US")
+        formatter.currencyCode = entry.currency.code
         return formatter
     }
 }
@@ -1040,6 +1114,8 @@ struct ServiceDetailView: View {
     @State private var notes: String
     @State private var showClientAlert = false
     @State private var showTeamAlert = false
+    @State private var checkInTime: Date?
+    @State private var checkOutTime: Date?
     let task: ServiceTask
 
     init(task: ServiceTask) {
@@ -1048,6 +1124,8 @@ struct ServiceDetailView: View {
         _startTime = State(initialValue: task.startTime ?? task.date)
         _endTime = State(initialValue: task.endTime ?? task.date.addingTimeInterval(60 * 60))
         _notes = State(initialValue: task.notes)
+        _checkInTime = State(initialValue: task.checkInTime)
+        _checkOutTime = State(initialValue: task.checkOutTime)
     }
 
     var body: some View {
@@ -1079,6 +1157,27 @@ struct ServiceDetailView: View {
                     .frame(minHeight: 120)
             }
 
+            Section("Check-in / Check-out") {
+                if let checkInTime {
+                    Text("Checked in: \(checkInTime.formatted(date: .omitted, time: .shortened))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                if let checkOutTime {
+                    Text("Checked out: \(checkOutTime.formatted(date: .omitted, time: .shortened))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                HStack {
+                    Button("Check-in now") {
+                        checkInTime = Date()
+                    }
+                    Button("Check-out now") {
+                        checkOutTime = Date()
+                    }
+                }
+            }
+
             Section("Quick actions") {
                 Button("Mark as completed") { status = .completed }
                 Button("Cancel service", role: .destructive) { status = .canceled }
@@ -1108,7 +1207,15 @@ struct ServiceDetailView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    store.updateTask(task, status: status, startTime: startTime, endTime: endTime, notes: notes)
+                    store.updateTask(
+                        task,
+                        status: status,
+                        startTime: startTime,
+                        endTime: endTime,
+                        notes: notes,
+                        checkInTime: checkInTime,
+                        checkOutTime: checkOutTime
+                    )
                     dismiss()
                 }
             }
