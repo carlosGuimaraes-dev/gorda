@@ -45,6 +45,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `email: String`
   - `accessNotes: String`
   - `preferredSchedule: String`
+  - `preferredDeliveryChannels: [String]` (`"email"`, `"whatsapp"`, `"imessage"`)
   - Relacionamentos:
     - `properties: [Property]`
     - `serviceTasks: [ServiceTask]`
@@ -100,6 +101,10 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `dueDate: Date`
   - `status: String` (`"pending"` ou `"paid"`)
   - `method: String?` (`"pix"`, `"card"`, `"cash"` — ou equivalente internacional)
+  - `kind: String` (`"general"`, `"invoiceClient"`, `"payrollEmployee"`, `"expenseOutOfPocket"`)
+  - `isDisputed: Bool`
+  - `disputeReason: String?`
+  - `receiptData: Data?` (imagem de comprovante para despesas)
   - `notes: String?`
   - Relacionamentos:
     - `client: Client?`
@@ -123,4 +128,3 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `enableSiri: Bool`
 
 > Implementação Core Data: cada entidade acima pode virar uma `NSEntityDescription` em um modelo programático ou em um `.xcdatamodeld`. O app atual continuará usando o `OfflineStore` como fachada, mas por baixo os dados passam a ser persistidos em Core Data/SQLite ao invés de um JSON único.
-

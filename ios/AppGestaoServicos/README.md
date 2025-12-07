@@ -10,6 +10,8 @@ Small SwiftUI prototype covering login, role-based dashboard (Employee/Manager),
 - Schedule (Agenda) per employee with daily/monthly view, status, time slots and inline editing.
 - Client management with contact info, property details, access notes and preferred schedules.
 - Finance view listing receivables and payables with status (pending/paid), method (Pix, card, cash) and creation of new entries.
+- Dedicated Invoices and Payroll screens (CRUD), including invoice disputes with reason, adjustment cutoff (D-1), and reissue/send using the client’s preferred channel (email/WhatsApp/iMessage).
+- Expenses with receipt preview/resend and out-of-pocket flag for managers.
 - Offline support: local persistence via Core Data/SQLite plus a simple sync queue with “last write wins” conflict policy.
 - Notifications: basic local/push notification preferences, and quick actions on service detail to notify client/team.
 

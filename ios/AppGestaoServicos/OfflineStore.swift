@@ -82,7 +82,8 @@ final class OfflineStore: ObservableObject {
                 method: nil,
                 currency: serviceType.currency,
                 clientName: clientName,
-                employeeName: employee.name
+                employeeName: employee.name,
+                kind: .invoiceClient
             )
             finance.append(financeEntry)
             pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: financeEntry.id))
@@ -121,7 +122,8 @@ final class OfflineStore: ObservableObject {
         phone: String,
         email: String,
         accessNotes: String,
-        preferredSchedule: String
+        preferredSchedule: String,
+        preferredDeliveryChannels: [Client.DeliveryChannel]
     ) {
         let client = Client(
             id: UUID(),
@@ -132,7 +134,8 @@ final class OfflineStore: ObservableObject {
             phone: phone,
             email: email,
             accessNotes: accessNotes,
-            preferredSchedule: preferredSchedule
+            preferredSchedule: preferredSchedule,
+            preferredDeliveryChannels: preferredDeliveryChannels
         )
         clients.append(client)
         pendingChanges.append(PendingChange(operation: .addClient, entityId: client.id))
@@ -151,7 +154,8 @@ final class OfflineStore: ObservableObject {
         employeeName: String? = nil,
         kind: FinanceEntry.Kind = .general,
         receiptData: Data? = nil,
-        isDisputed: Bool = false
+        isDisputed: Bool = false,
+        disputeReason: String? = nil
     ) {
         let entry = FinanceEntry(
             title: title,
@@ -165,6 +169,7 @@ final class OfflineStore: ObservableObject {
             employeeName: employeeName,
             kind: kind,
             isDisputed: isDisputed,
+            disputeReason: disputeReason,
             receiptData: receiptData
         )
         finance.append(entry)
@@ -179,6 +184,28 @@ final class OfflineStore: ObservableObject {
         finance[index].method = method
         pendingChanges.append(PendingChange(operation: .markFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
+        persist()
+    }
+
+    func updateFinanceEntry(_ entry: FinanceEntry, mutate: (inout FinanceEntry) -> Void) {
+        guard let index = finance.firstIndex(where: { $0.id == entry.id }) else { return }
+        mutate(&finance[index])
+        pendingChanges.append(PendingChange(operation: .updateFinanceEntry, entityId: entry.id))
+        saveFinanceEntryToCoreData(finance[index])
+        persist()
+    }
+
+    func markInvoiceDisputed(_ entry: FinanceEntry, reason: String?) {
+        updateFinanceEntry(entry) { current in
+            current.isDisputed = true
+            current.disputeReason = reason
+        }
+    }
+
+    func deleteFinanceEntry(_ entry: FinanceEntry) {
+        finance.removeAll { $0.id == entry.id }
+        pendingChanges.append(PendingChange(operation: .deleteFinanceEntry, entityId: entry.id))
+        deleteFinanceEntryFromCoreData(entry.id)
         persist()
     }
 
@@ -571,7 +598,8 @@ final class OfflineStore: ObservableObject {
             phone: "+351 912 000 001",
             email: "carla@example.com",
             accessNotes: "Call front desk on arrival",
-            preferredSchedule: "Weekdays 8am–12pm"
+            preferredSchedule: "Weekdays 8am–12pm",
+            preferredDeliveryChannels: [.email, .whatsapp]
         )
         let clientJames = Client(
             id: UUID(),
@@ -582,7 +610,8 @@ final class OfflineStore: ObservableObject {
             phone: "+1 (415) 555-0100",
             email: "james@example.com",
             accessNotes: "Ring the side doorbell",
-            preferredSchedule: "Mon/Wed/Fri 2pm–6pm"
+            preferredSchedule: "Mon/Wed/Fri 2pm–6pm",
+            preferredDeliveryChannels: [.email]
         )
         let clientLucia = Client(
             id: UUID(),
@@ -593,7 +622,8 @@ final class OfflineStore: ObservableObject {
             phone: "+34 600 123 456",
             email: "lucia@example.com",
             accessNotes: "Entrance B, 4th floor",
-            preferredSchedule: "Tuesday and Thursday mornings"
+            preferredSchedule: "Tuesday and Thursday mornings",
+            preferredDeliveryChannels: [.imessage, .email]
         )
         clients = [clientCarla, clientJames, clientLucia]
         clients.forEach(saveClientToCoreData)
@@ -701,7 +731,8 @@ final class OfflineStore: ObservableObject {
                 method: nil,
                 currency: standardCleaning.currency,
                 clientName: clientCarla.name,
-                employeeName: employeeAna.name
+                employeeName: employeeAna.name,
+                kind: .invoiceClient
             )
         )
 
@@ -715,7 +746,8 @@ final class OfflineStore: ObservableObject {
                 method: nil,
                 currency: groceriesShopping.currency,
                 clientName: clientLucia.name,
-                employeeName: employeeMaria.name
+                employeeName: employeeMaria.name,
+                kind: .invoiceClient
             )
         )
 
@@ -729,7 +761,10 @@ final class OfflineStore: ObservableObject {
                 method: .card,
                 currency: lightbulbReplacement.currency,
                 clientName: clientJames.name,
-                employeeName: employeeJohn.name
+                employeeName: employeeJohn.name,
+                kind: .invoiceClient,
+                isDisputed: true,
+                disputeReason: "Client reported wrong quantity"
             )
         )
 
@@ -743,7 +778,8 @@ final class OfflineStore: ObservableObject {
                 method: .pix,
                 currency: .eur,
                 clientName: nil,
-                employeeName: employeeAna.name
+                employeeName: employeeAna.name,
+                kind: .payrollEmployee
             )
         )
 
@@ -757,7 +793,8 @@ final class OfflineStore: ObservableObject {
                 method: .pix,
                 currency: .usd,
                 clientName: nil,
-                employeeName: employeeJohn.name
+                employeeName: employeeJohn.name,
+                kind: .payrollEmployee
             )
         )
 
@@ -771,7 +808,8 @@ final class OfflineStore: ObservableObject {
                 method: .pix,
                 currency: .eur,
                 clientName: nil,
-                employeeName: employeeMaria.name
+                employeeName: employeeMaria.name,
+                kind: .payrollEmployee
             )
         )
 
@@ -799,7 +837,8 @@ final class OfflineStore: ObservableObject {
                 method: .cash,
                 currency: laundryService.currency,
                 clientName: clientCarla.name,
-                employeeName: employeeMaria.name
+                employeeName: employeeMaria.name,
+                kind: .invoiceClient
             )
         )
 
@@ -871,7 +910,8 @@ final class OfflineStore: ObservableObject {
                 method: nil,
                 currency: extraServiceType.currency,
                 clientName: client.name,
-                employeeName: employee.name
+                employeeName: employee.name,
+                kind: .invoiceClient
             )
         ]
 
@@ -893,7 +933,7 @@ final class OfflineStore: ObservableObject {
         }
     }
 
-private func saveClientToCoreData(_ client: Client) {
+    private func saveClientToCoreData(_ client: Client) {
         let request = NSFetchRequest<NSManagedObject>(entityName: "ClientEntity")
         request.predicate = NSPredicate(format: "id == %@", client.id as CVarArg)
         let object: NSManagedObject
@@ -913,6 +953,8 @@ private func saveClientToCoreData(_ client: Client) {
         object.setValue(client.email, forKey: "email")
         object.setValue(client.accessNotes, forKey: "accessNotes")
         object.setValue(client.preferredSchedule, forKey: "preferredSchedule")
+        let channelsRaw = client.preferredDeliveryChannels.map { $0.rawValue }.joined(separator: ",")
+        object.setValue(channelsRaw, forKey: "preferredChannels")
 
         saveContext()
     }
@@ -966,9 +1008,19 @@ private func saveClientToCoreData(_ client: Client) {
         object.setValue(entry.employeeName, forKey: "employeeName")
         object.setValue(entry.kind.rawValue, forKey: "kind")
         object.setValue(entry.isDisputed, forKey: "isDisputed")
+        object.setValue(entry.disputeReason, forKey: "disputeReason")
         object.setValue(entry.receiptData, forKey: "receiptData")
 
         saveContext()
+    }
+
+    private func deleteFinanceEntryFromCoreData(_ id: UUID) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "FinanceEntryEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        if let object = try? context.fetch(request).first {
+            context.delete(object)
+            saveContext()
+        }
     }
 
     private func saveServiceTypeToCoreData(_ serviceType: ServiceType) {
@@ -1028,6 +1080,15 @@ private func saveClientToCoreData(_ client: Client) {
         let email = object.value(forKey: "email") as? String ?? ""
         let accessNotes = object.value(forKey: "accessNotes") as? String ?? ""
         let preferredSchedule = object.value(forKey: "preferredSchedule") as? String ?? ""
+        let preferredChannelsRaw = object.value(forKey: "preferredChannels") as? String
+        let preferredChannels: [Client.DeliveryChannel]
+        if let preferredChannelsRaw, !preferredChannelsRaw.isEmpty {
+            preferredChannels = preferredChannelsRaw
+                .split(separator: ",")
+                .compactMap { Client.DeliveryChannel(rawValue: String($0)) }
+        } else {
+            preferredChannels = [.email]
+        }
 
         return Client(
             id: id,
@@ -1038,7 +1099,8 @@ private func saveClientToCoreData(_ client: Client) {
             phone: phone,
             email: email,
             accessNotes: accessNotes,
-            preferredSchedule: preferredSchedule
+            preferredSchedule: preferredSchedule,
+            preferredDeliveryChannels: preferredChannels
         )
     }
 
@@ -1149,6 +1211,7 @@ private func saveClientToCoreData(_ client: Client) {
         let kindRaw = object.value(forKey: "kind") as? String
         let kind = kindRaw.flatMap { FinanceEntry.Kind(rawValue: $0) } ?? .general
         let isDisputed = object.value(forKey: "isDisputed") as? Bool ?? false
+        let disputeReason = object.value(forKey: "disputeReason") as? String
         let receiptData = object.value(forKey: "receiptData") as? Data
 
         return FinanceEntry(
@@ -1164,6 +1227,7 @@ private func saveClientToCoreData(_ client: Client) {
             employeeName: employeeName,
             kind: kind,
             isDisputed: isDisputed,
+            disputeReason: disputeReason,
             receiptData: receiptData
         )
     }
@@ -1176,6 +1240,8 @@ struct PendingChange: Codable, Identifiable {
         case updateTask
         case addFinanceEntry
         case markFinanceEntry
+        case updateFinanceEntry
+        case deleteFinanceEntry
     }
 
     var id: UUID

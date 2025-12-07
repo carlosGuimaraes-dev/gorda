@@ -28,6 +28,9 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - **Integração com Contatos do iOS**:
   - Exibir avatar/foto de cliente e funcionário a partir dos Contatos, quando existir correspondência por nome/telefone.
   - Permitir importar dados básicos (nome, telefone) de um contato na criação/edição de funcionário e cliente.
+- **Invoices e Payroll**:
+  - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição até D-1 do vencimento no caso de invoices, marcação de disputa com motivo e reenvio pelo canal preferido do cliente (email/WhatsApp/iMessage).
+  - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
 
 ## Requisitos Não Funcionais
 - Plataforma: iOS (Swift, UIKit/SwiftUI conforme padrão do projeto).

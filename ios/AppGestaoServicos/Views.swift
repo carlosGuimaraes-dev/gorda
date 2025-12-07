@@ -770,18 +770,39 @@ struct FinanceView: View {
                             Label("Generate payroll", systemImage: "person.badge.clock.fill")
                         }
                     }
+
+                    Section("Invoices & Payroll") {
+                        NavigationLink {
+                            InvoicesListView()
+                        } label: {
+                            Label("Invoices", systemImage: "doc.text")
+                        }
+                        NavigationLink {
+                            PayrollListView()
+                        } label: {
+                            Label("Payroll", systemImage: "person.2.badge.clock")
+                        }
+                    }
                 }
                 Section(header: Text("Receivables")) {
                     ForEach(store.finance.filter { $0.type == .receivable }) { entry in
-                        FinanceRow(entry: entry) { status, method in
-                            store.markFinanceEntry(entry, status: status, method: method)
+                        NavigationLink {
+                            FinanceEntryDetailView(entry: entry)
+                        } label: {
+                            FinanceRow(entry: entry) { status, method in
+                                store.markFinanceEntry(entry, status: status, method: method)
+                            }
                         }
                     }
                 }
                 Section(header: Text("Payables")) {
                     ForEach(store.finance.filter { $0.type == .payable }) { entry in
-                        FinanceRow(entry: entry) { status, method in
-                            store.markFinanceEntry(entry, status: status, method: method)
+                        NavigationLink {
+                            FinanceEntryDetailView(entry: entry)
+                        } label: {
+                            FinanceRow(entry: entry) { status, method in
+                                store.markFinanceEntry(entry, status: status, method: method)
+                            }
                         }
                     }
                 }
@@ -808,6 +829,842 @@ struct FinanceView: View {
                 PayrollGeneratorView()
             }
         }
+    }
+}
+
+struct FinanceEntryDetailView: View {
+    let entry: FinanceEntry
+
+    var body: some View {
+        switch entry.kind {
+        case .invoiceClient:
+            InvoiceDetailView(entry: entry)
+        case .payrollEmployee:
+            PayrollDetailView(entry: entry)
+        case .expenseOutOfPocket:
+            ExpenseDetailView(entry: entry)
+        default:
+            GenericFinanceDetailView(entry: entry)
+        }
+    }
+}
+
+struct InvoicesListView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var showingForm = false
+
+    private var invoices: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .invoiceClient }
+            .sorted { $0.dueDate < $1.dueDate }
+    }
+
+    var body: some View {
+        List {
+            if invoices.isEmpty {
+                Text("No invoices yet.")
+                    .foregroundColor(.secondary)
+            }
+            ForEach(invoices) { entry in
+                NavigationLink {
+                    InvoiceDetailView(entry: entry)
+                } label: {
+                    InvoiceRow(entry: entry)
+                }
+            }
+            .onDelete { indexSet in
+                let items = indexSet.map { invoices[$0] }
+                items.forEach { store.deleteFinanceEntry($0) }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Invoices")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showingForm = true
+                } label: {
+                    Label("New", systemImage: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingForm) {
+            InvoiceFormView()
+        }
+    }
+}
+
+private struct InvoiceRow: View {
+    let entry: FinanceEntry
+
+    private var currencyFormatter: NumberFormatter {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = entry.currency.code
+        return formatter
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.title).bold()
+                HStack(spacing: 6) {
+                    if let client = entry.clientName {
+                        Text(client)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    Text(entry.dueDate, style: .date)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                HStack(spacing: 6) {
+                    StatusPill(label: entry.status.label, color: entry.status == .paid ? .green : .orange)
+                    if entry.isDisputed {
+                        StatusPill(label: "Disputed", color: .red)
+                    }
+                }
+            }
+            Spacer()
+            Text(currencyFormatter.string(from: NSNumber(value: entry.amount)) ?? "-")
+                .bold()
+                .foregroundColor(.primary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct InvoiceFormView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String = ""
+    @State private var selectedClientName: String = ""
+    @State private var amountText: String = ""
+    @State private var currency: FinanceEntry.Currency = .usd
+    @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+    @State private var method: FinanceEntry.PaymentMethod? = nil
+
+    private var clientNames: [String] {
+        Array(Set(store.clients.map { $0.name })).sorted()
+    }
+
+    private var parsedAmount: Double? {
+        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var canSave: Bool {
+        parsedAmount != nil && !title.isEmpty && !selectedClientName.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Form {
+                    Section("Invoice") {
+                        TextField("Title", text: $title)
+                        Picker("Client", selection: $selectedClientName) {
+                            Text("Select client").tag("")
+                            ForEach(clientNames, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                        TextField("Amount", text: $amountText)
+                            .keyboardType(.decimalPad)
+                        Picker("Currency", selection: $currency) {
+                            ForEach(FinanceEntry.Currency.allCases) { value in
+                                Text(value.code).tag(value)
+                            }
+                        }
+                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                        Picker("Method", selection: $method) {
+                            Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                            ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                                Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                            }
+                        }
+                    }
+                }
+                PrimaryButton(title: "Save") {
+                    save()
+                }
+                .padding()
+                .disabled(!canSave)
+            }
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("New Invoice")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .onAppear {
+                if selectedClientName.isEmpty {
+                    selectedClientName = clientNames.first ?? ""
+                }
+                if title.isEmpty, let firstClient = clientNames.first {
+                    title = "Invoice - \(firstClient)"
+                }
+            }
+        }
+    }
+
+    private func save() {
+        guard let amount = parsedAmount else { return }
+        store.addFinanceEntry(
+            title: title,
+            amount: amount,
+            type: .receivable,
+            dueDate: dueDate,
+            method: method,
+            currency: currency,
+            clientName: selectedClientName,
+            employeeName: nil,
+            kind: .invoiceClient
+        )
+        dismiss()
+    }
+}
+
+struct InvoiceDetailView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+
+    let entry: FinanceEntry
+
+    @State private var title: String
+    @State private var amountText: String
+    @State private var dueDate: Date
+    @State private var currency: FinanceEntry.Currency
+    @State private var method: FinanceEntry.PaymentMethod?
+    @State private var status: FinanceEntry.Status
+    @State private var isDisputed: Bool
+    @State private var disputeReason: String
+    @State private var selectedChannel: Client.DeliveryChannel = .email
+    @State private var showingShareSheet = false
+    @State private var shareItems: [Any] = []
+
+    init(entry: FinanceEntry) {
+        self.entry = entry
+        _title = State(initialValue: entry.title)
+        _amountText = State(initialValue: String(format: "%.2f", entry.amount))
+        _dueDate = State(initialValue: entry.dueDate)
+        _currency = State(initialValue: entry.currency)
+        _method = State(initialValue: entry.method)
+        _status = State(initialValue: entry.status)
+        _isDisputed = State(initialValue: entry.isDisputed)
+        _disputeReason = State(initialValue: entry.disputeReason ?? "")
+    }
+
+    private var parsedAmount: Double? {
+        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var client: Client? {
+        guard let name = entry.clientName else { return nil }
+        return store.clients.first { $0.name == name }
+    }
+
+    private var canAdjustInvoice: Bool {
+        let calendar = Calendar.current
+        let limit = calendar.date(byAdding: .day, value: -1, to: dueDate) ?? dueDate
+        return Date() <= limit
+    }
+
+    private var canSave: Bool {
+        guard let amount = parsedAmount else { return false }
+        if isDisputed && disputeReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
+        return amount > 0 && !title.isEmpty
+    }
+
+    var body: some View {
+        Form {
+            Section("Invoice") {
+                TextField("Title", text: $title)
+                    .disabled(!canAdjustInvoice)
+                TextField("Amount", text: $amountText)
+                    .keyboardType(.decimalPad)
+                    .disabled(!canAdjustInvoice)
+                Picker("Currency", selection: $currency) {
+                    ForEach(FinanceEntry.Currency.allCases) { value in
+                        Text(value.code).tag(value)
+                    }
+                }
+                .disabled(!canAdjustInvoice)
+                DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                    .disabled(!canAdjustInvoice)
+                Picker("Method", selection: $method) {
+                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                    ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                        Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                    }
+                }
+                Picker("Status", selection: $status) {
+                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                }
+            }
+
+            Section("Dispute") {
+                Toggle("Mark as disputed", isOn: $isDisputed)
+                TextField("Reason", text: $disputeReason, axis: .vertical)
+                    .lineLimit(2...4)
+                    .disabled(!isDisputed)
+            }
+
+            Section("Send invoice") {
+                if let client {
+                    Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    Picker("Channel", selection: $selectedChannel) {
+                        ForEach(client.preferredDeliveryChannels) { channel in
+                            Text(channel.label).tag(channel)
+                        }
+                    }
+                }
+                Button {
+                    prepareShare()
+                } label: {
+                    Label("Send / Reissue", systemImage: "square.and.arrow.up")
+                }
+                if let url = makeChannelURL() {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Label("Open \(selectedChannel.label)", systemImage: "paperplane.fill")
+                    }
+                }
+                if !canAdjustInvoice {
+                    Text("Adjustments are blocked less than 1 day before due date.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Invoice")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") { save() }
+                    .disabled(!canSave)
+            }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ActivityView(items: shareItems)
+        }
+        .onAppear {
+            if let firstChannel = client?.preferredDeliveryChannels.first {
+                selectedChannel = firstChannel
+            }
+        }
+    }
+
+    private func save() {
+        guard let amount = parsedAmount else { return }
+        let trimmedReason = disputeReason.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        store.updateFinanceEntry(entry) { current in
+            current.title = title
+            current.amount = amount
+            current.dueDate = dueDate
+            current.currency = currency
+            current.method = method
+            current.status = status
+            current.isDisputed = isDisputed
+            current.disputeReason = isDisputed ? trimmedReason : nil
+        }
+        dismiss()
+    }
+
+    private func prepareShare() {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currency.code
+        let amountString = formatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(currency.code) \(parsedAmount ?? entry.amount)"
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        let dueString = dateFormatter.string(from: dueDate)
+
+        var body = "Invoice: \(title)\nAmount: \(amountString)\nDue: \(dueString)"
+        if let clientName = entry.clientName {
+            body.append("\nClient: \(clientName)")
+        }
+        body.append("\nChannel: \(selectedChannel.label)")
+        if isDisputed {
+            let reason = disputeReason.isEmpty ? "Pending reason" : disputeReason
+            body.append("\nStatus: DISPUTED - \(reason)")
+        }
+
+        shareItems = [body]
+        showingShareSheet = true
+    }
+
+    private func makeChannelURL() -> URL? {
+        guard let client else { return nil }
+        switch selectedChannel {
+        case .email:
+            guard !client.email.isEmpty else { return nil }
+            let subject = "Invoice \(title)"
+            let body = "Hello \(client.name), here is your invoice \(title)."
+            let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
+        case .whatsapp:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let text = "Invoice \(title) - due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
+            let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
+        case .imessage:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            return URL(string: "sms:\(digits)")
+        }
+    }
+}
+
+struct PayrollListView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var showingForm = false
+
+    private var payrolls: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .payrollEmployee }
+            .sorted { $0.dueDate < $1.dueDate }
+    }
+
+    var body: some View {
+        List {
+            if payrolls.isEmpty {
+                Text("No payroll entries yet.")
+                    .foregroundColor(.secondary)
+            }
+            ForEach(payrolls) { entry in
+                NavigationLink {
+                    PayrollDetailView(entry: entry)
+                } label: {
+                    PayrollRow(entry: entry)
+                }
+            }
+            .onDelete { indexSet in
+                let items = indexSet.map { payrolls[$0] }
+                items.forEach { store.deleteFinanceEntry($0) }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Payroll")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showingForm = true
+                } label: {
+                    Label("New", systemImage: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingForm) {
+            PayrollFormView()
+        }
+    }
+}
+
+private struct PayrollRow: View {
+    let entry: FinanceEntry
+
+    private var currencyFormatter: NumberFormatter {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = entry.currency.code
+        return formatter
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry.title).bold()
+                if let employee = entry.employeeName {
+                    Text(employee)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                Text(entry.dueDate, style: .date)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(currencyFormatter.string(from: NSNumber(value: entry.amount)) ?? "-")
+                    .bold()
+                StatusPill(label: entry.status.label, color: entry.status == .paid ? .green : .orange)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct PayrollFormView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String = ""
+    @State private var selectedEmployeeName: String = ""
+    @State private var amountText: String = ""
+    @State private var currency: FinanceEntry.Currency = .usd
+    @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+    @State private var method: FinanceEntry.PaymentMethod? = nil
+
+    private var employeeNames: [String] {
+        Array(Set(store.employees.map { $0.name })).sorted()
+    }
+
+    private var parsedAmount: Double? {
+        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var canSave: Bool {
+        parsedAmount != nil && !selectedEmployeeName.isEmpty && !title.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Form {
+                    Section("Payroll") {
+                        TextField("Title", text: $title)
+                        Picker("Employee", selection: $selectedEmployeeName) {
+                            Text("Select employee").tag("")
+                            ForEach(employeeNames, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                        TextField("Amount", text: $amountText)
+                            .keyboardType(.decimalPad)
+                        Picker("Currency", selection: $currency) {
+                            ForEach(FinanceEntry.Currency.allCases) { value in
+                                Text(value.code).tag(value)
+                            }
+                        }
+                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                        Picker("Method", selection: $method) {
+                            Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                            ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                                Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                            }
+                        }
+                    }
+                }
+                PrimaryButton(title: "Save") {
+                    save()
+                }
+                .padding()
+                .disabled(!canSave)
+            }
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("New Payroll")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .onAppear {
+                if selectedEmployeeName.isEmpty {
+                    selectedEmployeeName = employeeNames.first ?? ""
+                }
+                if title.isEmpty, let employee = employeeNames.first {
+                    title = "Payroll - \(employee)"
+                }
+            }
+        }
+    }
+
+    private func save() {
+        guard let amount = parsedAmount else { return }
+        store.addFinanceEntry(
+            title: title,
+            amount: amount,
+            type: .payable,
+            dueDate: dueDate,
+            method: method,
+            currency: currency,
+            clientName: nil,
+            employeeName: selectedEmployeeName,
+            kind: .payrollEmployee
+        )
+        dismiss()
+    }
+}
+
+struct PayrollDetailView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    let entry: FinanceEntry
+
+    @State private var title: String
+    @State private var amountText: String
+    @State private var dueDate: Date
+    @State private var currency: FinanceEntry.Currency
+    @State private var method: FinanceEntry.PaymentMethod?
+    @State private var status: FinanceEntry.Status
+
+    init(entry: FinanceEntry) {
+        self.entry = entry
+        _title = State(initialValue: entry.title)
+        _amountText = State(initialValue: String(format: "%.2f", entry.amount))
+        _dueDate = State(initialValue: entry.dueDate)
+        _currency = State(initialValue: entry.currency)
+        _method = State(initialValue: entry.method)
+        _status = State(initialValue: entry.status)
+    }
+
+    private var parsedAmount: Double? {
+        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var canEditFields: Bool {
+        status == .pending
+    }
+
+    private var canSave: Bool {
+        parsedAmount != nil && !title.isEmpty
+    }
+
+    var body: some View {
+        Form {
+            Section("Payroll") {
+                if let employee = entry.employeeName {
+                    Text("Employee: \(employee)")
+                        .font(.subheadline)
+                }
+                TextField("Title", text: $title)
+                    .disabled(!canEditFields)
+                TextField("Amount", text: $amountText)
+                    .keyboardType(.decimalPad)
+                    .disabled(!canEditFields)
+                Picker("Currency", selection: $currency) {
+                    ForEach(FinanceEntry.Currency.allCases) { value in
+                        Text(value.code).tag(value)
+                    }
+                }
+                .disabled(!canEditFields)
+                DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                    .disabled(!canEditFields)
+                Picker("Method", selection: $method) {
+                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                    ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                        Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                    }
+                }
+                Picker("Status", selection: $status) {
+                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                }
+            }
+            if !canEditFields {
+                Text("Editing is locked after payment confirmation.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Payroll")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") { save() }
+                    .disabled(!canSave)
+            }
+        }
+    }
+
+    private func save() {
+        guard let amount = parsedAmount else { return }
+        store.updateFinanceEntry(entry) { current in
+            current.title = title
+            current.amount = amount
+            current.dueDate = dueDate
+            current.currency = currency
+            current.method = method
+            current.status = status
+        }
+        dismiss()
+    }
+}
+
+struct GenericFinanceDetailView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    let entry: FinanceEntry
+    @State private var status: FinanceEntry.Status
+    @State private var method: FinanceEntry.PaymentMethod?
+
+    init(entry: FinanceEntry) {
+        self.entry = entry
+        _status = State(initialValue: entry.status)
+        _method = State(initialValue: entry.method)
+    }
+
+    var body: some View {
+        Form {
+            Section("Entry") {
+                Text(entry.title).bold()
+                Text(entry.dueDate, style: .date)
+                    .foregroundColor(.secondary)
+                if let client = entry.clientName {
+                    Text("Client: \(client)")
+                        .font(.footnote)
+                }
+                if let employee = entry.employeeName {
+                    Text("Employee: \(employee)")
+                        .font(.footnote)
+                }
+            }
+
+            Section("Status") {
+                Picker("Status", selection: $status) {
+                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                }
+                Picker("Method", selection: $method) {
+                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                    ForEach(FinanceEntry.PaymentMethod.allCases) { value in
+                        Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                    }
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Finance entry")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    store.updateFinanceEntry(entry) { current in
+                        current.status = status
+                        current.method = method
+                    }
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+struct ExpenseDetailView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    let entry: FinanceEntry
+    @State private var status: FinanceEntry.Status
+    @State private var method: FinanceEntry.PaymentMethod?
+    @State private var showingShareSheet = false
+    @State private var shareItems: [Any] = []
+
+    init(entry: FinanceEntry) {
+        self.entry = entry
+        _status = State(initialValue: entry.status)
+        _method = State(initialValue: entry.method)
+    }
+
+    private var receiptImage: UIImage? {
+        guard let data = entry.receiptData else { return nil }
+        return UIImage(data: data)
+    }
+
+    var body: some View {
+        Form {
+            Section("Expense") {
+                Text(entry.title).bold()
+                Text(entry.dueDate, style: .date)
+                    .foregroundColor(.secondary)
+                if let client = entry.clientName, !client.isEmpty {
+                    Text("Client: \(client)")
+                        .font(.footnote)
+                }
+                Text("Amount: \(entry.currency.code) \(entry.amount, specifier: \"%.2f\")")
+                    .font(.subheadline)
+            }
+
+            Section("Status") {
+                Picker("Status", selection: $status) {
+                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                }
+                Picker("Method", selection: $method) {
+                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                    ForEach(FinanceEntry.PaymentMethod.allCases) { value in
+                        Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                    }
+                }
+            }
+
+            if let receiptImage {
+                Section("Receipt") {
+                    Image(uiImage: receiptImage)
+                        .resizable()
+                        .scaledToFit()
+                        .cornerRadius(AppTheme.cornerRadius)
+                    Button {
+                        shareReceipt()
+                    } label: {
+                        Label("Share receipt", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Expense")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    store.updateFinanceEntry(entry) { current in
+                        current.status = status
+                        current.method = method
+                    }
+                    dismiss()
+                }
+            }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ActivityView(items: shareItems)
+        }
+    }
+
+    private func shareReceipt() {
+        var items: [Any] = []
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        let text = "Expense receipt for \(entry.title)\nAmount: \(entry.currency.code) \(entry.amount)\nDue: \(formatter.string(from: entry.dueDate))"
+        items.append(text)
+        if let image = receiptImage {
+            items.append(image)
+        }
+        shareItems = items
+        showingShareSheet = true
     }
 }
 
@@ -1333,6 +2190,11 @@ struct ClientDetailView: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
+                if !client.preferredDeliveryChannels.isEmpty {
+                Text("Invoice delivery: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
                 if !client.accessNotes.isEmpty {
                     Text("Access notes: \(client.accessNotes)")
                         .font(.footnote)
@@ -1439,6 +2301,12 @@ struct FinanceRow: View {
                     StatusPill(label: entry.status.label, color: entry.status == .paid ? .green : .orange)
                     if let method = entry.method {
                         StatusPill(label: method.label, color: .blue.opacity(0.8))
+                    }
+                    if entry.kind == .invoiceClient && entry.isDisputed {
+                        StatusPill(label: "Disputed", color: .red)
+                    }
+                    if entry.kind == .expenseOutOfPocket, entry.receiptData != nil {
+                        StatusPill(label: "Receipt", color: .blue.opacity(0.7))
                     }
                 }
             }
@@ -1655,6 +2523,17 @@ struct ClientForm: View {
     @State private var email = ""
     @State private var preferredSchedule = ""
     @State private var accessNotes = ""
+    @State private var prefersEmail = true
+    @State private var prefersWhatsApp = false
+    @State private var prefersIMessage = false
+
+    private var selectedChannels: [Client.DeliveryChannel] {
+        var result: [Client.DeliveryChannel] = []
+        if prefersEmail { result.append(.email) }
+        if prefersWhatsApp { result.append(.whatsapp) }
+        if prefersIMessage { result.append(.imessage) }
+        return result.isEmpty ? [.email] : result
+    }
 
     var body: some View {
         NavigationStack {
@@ -1681,6 +2560,14 @@ struct ClientForm: View {
                     Section("Access") {
                         TextField("Access instructions / front desk", text: $accessNotes)
                     }
+                    Section("Delivery channels for invoices") {
+                        Toggle("Email", isOn: $prefersEmail)
+                        Toggle("WhatsApp", isOn: $prefersWhatsApp)
+                        Toggle("iMessage", isOn: $prefersIMessage)
+                        Text("Used when sending invoices or receipts.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .scrollContentBackground(.hidden)
 
@@ -1694,7 +2581,8 @@ struct ClientForm: View {
                         phone: fullPhone,
                         email: email,
                         accessNotes: accessNotes,
-                        preferredSchedule: preferredSchedule
+                        preferredSchedule: preferredSchedule,
+                        preferredDeliveryChannels: selectedChannels
                     )
                     dismiss()
                 }

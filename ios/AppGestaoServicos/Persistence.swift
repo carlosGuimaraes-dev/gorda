@@ -14,6 +14,11 @@ final class PersistenceController {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
 
+        container.persistentStoreDescriptions.forEach { description in
+            description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
+            description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+        }
+
         container.loadPersistentStores { _, error in
             if let error = error {
                 fatalError("Unresolved Core Data error: \(error)")
@@ -139,6 +144,11 @@ final class PersistenceController {
         clientPreferredSchedule.attributeType = .stringAttributeType
         clientPreferredSchedule.isOptional = true
 
+        let clientPreferredChannels = NSAttributeDescription()
+        clientPreferredChannels.name = "preferredChannels"
+        clientPreferredChannels.attributeType = .stringAttributeType
+        clientPreferredChannels.isOptional = true
+
         client.properties = [
             clientId,
             clientName,
@@ -148,7 +158,8 @@ final class PersistenceController {
             clientPhone,
             clientEmail,
             clientAccessNotes,
-            clientPreferredSchedule
+            clientPreferredSchedule,
+            clientPreferredChannels
         ]
 
         // ServiceType
@@ -328,6 +339,11 @@ final class PersistenceController {
         financeIsDisputed.attributeType = .booleanAttributeType
         financeIsDisputed.isOptional = true
 
+        let financeDisputeReason = NSAttributeDescription()
+        financeDisputeReason.name = "disputeReason"
+        financeDisputeReason.attributeType = .stringAttributeType
+        financeDisputeReason.isOptional = true
+
         let financeReceiptData = NSAttributeDescription()
         financeReceiptData.name = "receiptData"
         financeReceiptData.attributeType = .binaryDataAttributeType
@@ -346,6 +362,7 @@ final class PersistenceController {
             financeEmployeeName,
             financeKind,
             financeIsDisputed,
+            financeDisputeReason,
             financeReceiptData
         ]
 

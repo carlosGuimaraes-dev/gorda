@@ -10,6 +10,23 @@ struct Client: Identifiable, Codable, Hashable {
     var email: String
     var accessNotes: String
     var preferredSchedule: String
+    var preferredDeliveryChannels: [DeliveryChannel]
+
+    enum DeliveryChannel: String, Codable, CaseIterable, Identifiable {
+        case email
+        case whatsapp
+        case imessage
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .email: return "Email"
+            case .whatsapp: return "WhatsApp"
+            case .imessage: return "iMessage"
+            }
+        }
+    }
 
     init(
         id: UUID = UUID(),
@@ -20,7 +37,8 @@ struct Client: Identifiable, Codable, Hashable {
         phone: String = "",
         email: String = "",
         accessNotes: String = "",
-        preferredSchedule: String = ""
+        preferredSchedule: String = "",
+        preferredDeliveryChannels: [DeliveryChannel] = [.email]
     ) {
         self.id = id
         self.name = name
@@ -31,6 +49,7 @@ struct Client: Identifiable, Codable, Hashable {
         self.email = email
         self.accessNotes = accessNotes
         self.preferredSchedule = preferredSchedule
+        self.preferredDeliveryChannels = preferredDeliveryChannels
     }
 
     enum CodingKeys: String, CodingKey {
@@ -43,6 +62,7 @@ struct Client: Identifiable, Codable, Hashable {
         case email
         case accessNotes
         case preferredSchedule
+        case preferredDeliveryChannels
     }
 
     init(from decoder: Decoder) throws {
@@ -56,6 +76,7 @@ struct Client: Identifiable, Codable, Hashable {
         self.email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
         self.accessNotes = try container.decodeIfPresent(String.self, forKey: .accessNotes) ?? ""
         self.preferredSchedule = try container.decodeIfPresent(String.self, forKey: .preferredSchedule) ?? ""
+        self.preferredDeliveryChannels = try container.decodeIfPresent([DeliveryChannel].self, forKey: .preferredDeliveryChannels) ?? [.email]
     }
 }
 
@@ -216,6 +237,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var employeeName: String?
     var kind: Kind
     var isDisputed: Bool
+    var disputeReason: String?
     var receiptData: Data?
 
     init(
@@ -231,6 +253,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         employeeName: String? = nil,
         kind: Kind = .general,
         isDisputed: Bool = false,
+        disputeReason: String? = nil,
         receiptData: Data? = nil
     ) {
         self.id = id
@@ -245,6 +268,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.employeeName = employeeName
         self.kind = kind
         self.isDisputed = isDisputed
+        self.disputeReason = disputeReason
         self.receiptData = receiptData
     }
 
@@ -314,6 +338,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case employeeName
         case kind
         case isDisputed
+        case disputeReason
         case receiptData
     }
 
@@ -331,6 +356,7 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.employeeName = try container.decodeIfPresent(String.self, forKey: .employeeName)
         self.kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .general
         self.isDisputed = try container.decodeIfPresent(Bool.self, forKey: .isDisputed) ?? false
+        self.disputeReason = try container.decodeIfPresent(String.self, forKey: .disputeReason)
         self.receiptData = try container.decodeIfPresent(Data.self, forKey: .receiptData)
     }
 }
