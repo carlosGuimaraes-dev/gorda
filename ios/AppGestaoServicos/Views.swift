@@ -1310,85 +1310,87 @@ struct InvoiceDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Invoice") {
-                TextField("Title", text: $title)
-                    .disabled(!canAdjustInvoice)
-                TextField("Amount", text: $amountText)
-                    .keyboardType(.decimalPad)
-                    .disabled(!canAdjustInvoice)
-                Picker("Currency", selection: $currency) {
-                    ForEach(FinanceEntry.Currency.allCases) { value in
-                        Text(value.code).tag(value)
-                    }
-                }
-                .disabled(!canAdjustInvoice)
-                DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
-                    .disabled(!canAdjustInvoice)
-                Picker("Method", selection: $method) {
-                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
-                    ForEach(FinanceEntry.PaymentMethod.allCases) { method in
-                        Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
-                    }
-                }
-                Picker("Status", selection: $status) {
-                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
-                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
-                }
-            }
-
-            Section("Dispute") {
-                Toggle("Mark as disputed", isOn: $isDisputed)
-                TextField("Reason", text: $disputeReason, axis: .vertical)
-                    .lineLimit(2...4)
-                    .disabled(!isDisputed)
-            }
-
-            Section("Send invoice") {
-                if let client {
-                    Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    Picker("Channel", selection: $selectedChannel) {
-                        ForEach(client.preferredDeliveryChannels) { channel in
-                            Text(channel.label).tag(channel)
+        VStack(spacing: 0) {
+            Form {
+                Section("Invoice") {
+                    TextField("Title", text: $title)
+                        .disabled(!canAdjustInvoice)
+                    TextField("Amount", text: $amountText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canAdjustInvoice)
+                    Picker("Currency", selection: $currency) {
+                        ForEach(FinanceEntry.Currency.allCases) { value in
+                            Text(value.code).tag(value)
                         }
                     }
-                }
-                Button {
-                    prepareShare()
-                } label: {
-                    Label("Send / Reissue", systemImage: "square.and.arrow.up")
-                }
-                Button {
-                    preparePDFShare()
-                } label: {
-                    Label("Generate PDF", systemImage: "doc.richtext")
-                }
-                if let url = makeChannelURL() {
-                    Button {
-                        openURL(url)
-                    } label: {
-                        Label("Open \(selectedChannel.label)", systemImage: "paperplane.fill")
+                    .disabled(!canAdjustInvoice)
+                    DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                        .disabled(!canAdjustInvoice)
+                    Picker("Method", selection: $method) {
+                        Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                        ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                            Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                        }
+                    }
+                    Picker("Status", selection: $status) {
+                        Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                        Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
                     }
                 }
-                if !canAdjustInvoice {
-                    Text("Adjustments are blocked less than 1 day before due date.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+
+                Section("Dispute") {
+                    Toggle("Mark as disputed", isOn: $isDisputed)
+                    TextField("Reason", text: $disputeReason, axis: .vertical)
+                        .lineLimit(2...4)
+                        .disabled(!isDisputed)
+                }
+
+                Section("Send invoice") {
+                    if let client {
+                        Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Picker("Channel", selection: $selectedChannel) {
+                            ForEach(client.preferredDeliveryChannels) { channel in
+                                Text(channel.label).tag(channel)
+                            }
+                        }
+                    }
+                    Button {
+                        prepareShare()
+                    } label: {
+                        Label("Send / Reissue", systemImage: "square.and.arrow.up")
+                    }
+                    Button {
+                        preparePDFShare()
+                    } label: {
+                        Label("Generate PDF", systemImage: "doc.richtext")
+                    }
+                    if let url = makeChannelURL() {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Label("Open \(selectedChannel.label)", systemImage: "paperplane.fill")
+                        }
+                    }
+                    if !canAdjustInvoice {
+                        Text("Adjustments are blocked less than 1 day before due date.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
+            .scrollContentBackground(.hidden)
+
+            PrimaryButton(title: "Save") { save() }
+                .padding()
+                .disabled(!canSave)
         }
-        .scrollContentBackground(.hidden)
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Invoice")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }
-                    .disabled(!canSave)
             }
         }
         .sheet(isPresented: $showingShareSheet) {
@@ -1794,52 +1796,54 @@ struct PayrollDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Payroll") {
-                if let employee = entry.employeeName {
-                    Text("Employee: \(employee)")
-                        .font(.subheadline)
-                }
-                TextField("Title", text: $title)
+        VStack(spacing: 0) {
+            Form {
+                Section("Payroll") {
+                    if let employee = entry.employeeName {
+                        Text("Employee: \(employee)")
+                            .font(.subheadline)
+                    }
+                    TextField("Title", text: $title)
+                        .disabled(!canEditFields)
+                    TextField("Amount", text: $amountText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    Picker("Currency", selection: $currency) {
+                        ForEach(FinanceEntry.Currency.allCases) { value in
+                            Text(value.code).tag(value)
+                        }
+                    }
                     .disabled(!canEditFields)
-                TextField("Amount", text: $amountText)
-                    .keyboardType(.decimalPad)
-                    .disabled(!canEditFields)
-                Picker("Currency", selection: $currency) {
-                    ForEach(FinanceEntry.Currency.allCases) { value in
-                        Text(value.code).tag(value)
+                    DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                        .disabled(!canEditFields)
+                    Picker("Method", selection: $method) {
+                        Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                        ForEach(FinanceEntry.PaymentMethod.allCases) { method in
+                            Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
+                        }
+                    }
+                    Picker("Status", selection: $status) {
+                        Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                        Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
                     }
                 }
-                .disabled(!canEditFields)
-                DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
-                    .disabled(!canEditFields)
-                Picker("Method", selection: $method) {
-                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
-                    ForEach(FinanceEntry.PaymentMethod.allCases) { method in
-                        Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
-                    }
-                }
-                Picker("Status", selection: $status) {
-                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
-                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                if !canEditFields {
+                    Text("Editing is locked after payment confirmation.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
-            if !canEditFields {
-                Text("Editing is locked after payment confirmation.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            .scrollContentBackground(.hidden)
+
+            PrimaryButton(title: "Save") { save() }
+                .padding()
+                .disabled(!canSave)
         }
-        .scrollContentBackground(.hidden)
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Payroll")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }
-                    .disabled(!canSave)
             }
         }
     }
@@ -1873,49 +1877,51 @@ struct GenericFinanceDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Entry") {
-                Text(entry.title).bold()
-                Text(entry.dueDate, style: .date)
-                    .foregroundColor(.secondary)
-                if let client = entry.clientName {
-                    Text("Client: \(client)")
-                        .font(.footnote)
+        VStack(spacing: 0) {
+            Form {
+                Section("Entry") {
+                    Text(entry.title).bold()
+                    Text(entry.dueDate, style: .date)
+                        .foregroundColor(.secondary)
+                    if let client = entry.clientName {
+                        Text("Client: \(client)")
+                            .font(.footnote)
+                    }
+                    if let employee = entry.employeeName {
+                        Text("Employee: \(employee)")
+                            .font(.footnote)
+                    }
                 }
-                if let employee = entry.employeeName {
-                    Text("Employee: \(employee)")
-                        .font(.footnote)
-                }
-            }
 
-            Section("Status") {
-                Picker("Status", selection: $status) {
-                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
-                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
-                }
-                Picker("Method", selection: $method) {
-                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
-                    ForEach(FinanceEntry.PaymentMethod.allCases) { value in
-                        Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                Section("Status") {
+                    Picker("Status", selection: $status) {
+                        Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                        Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                    }
+                    Picker("Method", selection: $method) {
+                        Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                        ForEach(FinanceEntry.PaymentMethod.allCases) { value in
+                            Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                        }
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+
+            PrimaryButton(title: "Save") {
+                store.updateFinanceEntry(entry) { current in
+                    current.status = status
+                    current.method = method
+                }
+                dismiss()
+            }
+            .padding()
         }
-        .scrollContentBackground(.hidden)
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Finance entry")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    store.updateFinanceEntry(entry) { current in
-                        current.status = status
-                        current.method = method
-                    }
-                    dismiss()
-                }
             }
         }
     }
@@ -1943,61 +1949,63 @@ struct ExpenseDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section("Expense") {
-                Text(entry.title).bold()
-                Text(entry.dueDate, style: .date)
-                    .foregroundColor(.secondary)
-                if let client = entry.clientName, !client.isEmpty {
-                    Text("Client: \(client)")
-                        .font(.footnote)
+        VStack(spacing: 0) {
+            Form {
+                Section("Expense") {
+                    Text(entry.title).bold()
+                    Text(entry.dueDate, style: .date)
+                        .foregroundColor(.secondary)
+                    if let client = entry.clientName, !client.isEmpty {
+                        Text("Client: \(client)")
+                            .font(.footnote)
+                    }
+                    Text("Amount: \(entry.currency.code) \(entry.amount, specifier: "%.2f")")
+                        .font(.subheadline)
                 }
-                Text("Amount: \(entry.currency.code) \(entry.amount, specifier: "%.2f")")
-                    .font(.subheadline)
-            }
 
-            Section("Status") {
-                Picker("Status", selection: $status) {
-                    Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
-                    Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                Section("Status") {
+                    Picker("Status", selection: $status) {
+                        Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
+                        Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                    }
+                    Picker("Method", selection: $method) {
+                        Text("None").tag(nil as FinanceEntry.PaymentMethod?)
+                        ForEach(FinanceEntry.PaymentMethod.allCases) { value in
+                            Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                        }
+                    }
                 }
-                Picker("Method", selection: $method) {
-                    Text("None").tag(nil as FinanceEntry.PaymentMethod?)
-                    ForEach(FinanceEntry.PaymentMethod.allCases) { value in
-                        Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+
+                if let receiptImage {
+                    Section("Receipt") {
+                        Image(uiImage: receiptImage)
+                            .resizable()
+                            .scaledToFit()
+                            .cornerRadius(AppTheme.cornerRadius)
+                        Button {
+                            shareReceipt()
+                        } label: {
+                            Label("Share receipt", systemImage: "square.and.arrow.up")
+                        }
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
 
-            if let receiptImage {
-                Section("Receipt") {
-                    Image(uiImage: receiptImage)
-                        .resizable()
-                        .scaledToFit()
-                        .cornerRadius(AppTheme.cornerRadius)
-                    Button {
-                        shareReceipt()
-                    } label: {
-                        Label("Share receipt", systemImage: "square.and.arrow.up")
-                    }
+            PrimaryButton(title: "Save") {
+                store.updateFinanceEntry(entry) { current in
+                    current.status = status
+                    current.method = method
                 }
+                dismiss()
             }
+            .padding()
         }
-        .scrollContentBackground(.hidden)
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Expense")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    store.updateFinanceEntry(entry) { current in
-                        current.status = status
-                        current.method = method
-                    }
-                    dismiss()
-                }
             }
         }
         .sheet(isPresented: $showingShareSheet) {
@@ -2122,27 +2130,27 @@ struct ServiceFormView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("New Service")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(!canSave)
-                }
+
+            PrimaryButton(title: "Save") { save() }
+                .padding()
+                .disabled(!canSave)
+        }
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("New Service")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
             }
-            .onAppear {
-                if selectedEmployeeID == nil { selectedEmployeeID = store.employees.first?.id }
-                if selectedClientID == nil { selectedClientID = store.clients.first?.id }
-                notifyClient = store.notificationPreferences.enableClientNotifications
-                notifyTeam = store.notificationPreferences.enableTeamNotifications
-            }
-            .onChange(of: selectedDate) { newValue in
-                startTime = combine(date: newValue, time: startTime)
-                endTime = combine(date: newValue, time: endTime)
-            }
+        }
+        .onAppear {
+            if selectedEmployeeID == nil { selectedEmployeeID = store.employees.first?.id }
+            if selectedClientID == nil { selectedClientID = store.clients.first?.id }
+            notifyClient = store.notificationPreferences.enableClientNotifications
+            notifyTeam = store.notificationPreferences.enableTeamNotifications
+        }
+        .onChange(of: selectedDate) { newValue in
+            startTime = combine(date: newValue, time: startTime)
+            endTime = combine(date: newValue, time: endTime)
         }
     }
 
