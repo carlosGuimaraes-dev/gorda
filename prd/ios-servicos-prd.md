@@ -16,6 +16,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 ## Funcionalidades
 - **Cadastro de Clientes e Imóveis**: dados pessoais, telefone (com DDI), e-mail, endereços e detalhes do imóvel administrado.
 - **Cadastro de Funcionários**: perfil com foto (a partir dos Contatos do iOS quando disponível), documentos, telefone (com DDI) e informações de remuneração.
+- **Gestão de Equipes e Catálogos**: menu lateral em sheet (hambúrguer) com atalhos para Dashboard/Agenda/Clients/Finance/Settings e catálogos de Services/Employees/Teams; criação de times, movimentação de funcionários entre times e gerenciamento de tipos de serviço (CRUD).
 - **Perfis de Usuário (Employee/Manager)**: o usuário escolhe seu perfil no primeiro acesso; toda a experiência (dashboard, agenda, financeiro) é filtrada de acordo com o papel.
 - **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe.
 - **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos prioritária para dados mais recentes do servidor quando houver conflito não resolvido localmente.
@@ -30,6 +31,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Permitir importar dados básicos (nome, telefone) de um contato na criação/edição de funcionário e cliente.
 - **Invoices e Payroll**:
   - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição até D-1 do vencimento no caso de invoices, marcação de disputa com motivo e reenvio pelo canal preferido do cliente (email/WhatsApp/iMessage).
+  - Geração de invoices agregados por cliente dentro de um período (um invoice por cliente), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento.
   - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
 
 ## Requisitos Não Funcionais

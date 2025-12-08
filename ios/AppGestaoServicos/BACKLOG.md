@@ -16,6 +16,11 @@
 - ✅ Modelagem de remuneração por funcionário (valor/hora em USD/EUR e outros recebíveis)
 - ✅ Cadastro de funcionários com foto, documentos e informações de remuneração
 - ✅ Modelagem de tipos de serviço com preço em USD/EUR e vínculo automático a lançamentos financeiros por cliente/funcionário
+- ✅ Menu hamburger com atalhos para Dashboard, Schedule, Clients, Services, Employees, Finance e Settings
+- ✅ Catálogo de serviços com lista/detalhe e CRUD básico (criar, editar, apagar quando não está em uso)
+- ✅ Diretório de funcionários com detalhe e edição dedicada (fora do fluxo de Finance)
+- ✅ Gestão de equipes (visualizar times, atribuir/remover funcionários, criação de novos times)
+- ✅ Menu em sheet (Quick Actions) acionado pelo botão hambúrguer em todas as telas principais para evitar sobreposições
 - ✅ Check-in/Check-out em tarefas para calcular horas trabalhadas e ganhos do funcionário
 - ✅ Suporte a múltiplas moedas (USD e EUR) no módulo financeiro, sem exibição em BRL
 - ✅ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
@@ -31,6 +36,7 @@
 - ✅ Dashboard de manager com gráficos (Charts) para tarefas por status e visão comparativa de Recebíveis x Pagáveis
 - ✅ Catálogo de tipos de serviço padrão (limpeza, groceries, troca de lâmpada, compra de tapete, lavanderia) com preços base em ServiceType
 - ✅ Geração de invoices e folha de pagamento a partir das tasks (end of month) com criação automática de contas a receber/pagar
+- ✅ Geração de invoices agregados por cliente no período selecionado (1 invoice por cliente), com PDF (QuickLook + share) contendo line items das tasks do período e instruções de pagamento
 - ✅ Cadastro de despesas extras com opção de despesa "out-of-pocket" para o manager, incluindo captura de foto do recibo e envio imediato via share sheet
 - ✅ Agenda com calendário destacando dias que possuem serviços agendados
 

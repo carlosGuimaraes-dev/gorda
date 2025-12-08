@@ -71,24 +71,6 @@ final class OfflineStore: ObservableObject {
         tasks.append(task)
         pendingChanges.append(PendingChange(operation: .addTask, entityId: task.id))
         saveTaskToCoreData(task)
-
-        if let typeId = serviceTypeId, let serviceType = serviceTypes.first(where: { $0.id == typeId }) {
-            let financeEntry = FinanceEntry(
-                title: serviceType.name,
-                amount: serviceType.basePrice,
-                type: .receivable,
-                dueDate: date,
-                status: .pending,
-                method: nil,
-                currency: serviceType.currency,
-                clientName: clientName,
-                employeeName: employee.name,
-                kind: .invoiceClient
-            )
-            finance.append(financeEntry)
-            pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: financeEntry.id))
-            saveFinanceEntryToCoreData(financeEntry)
-        }
         donateServiceCreationShortcut(for: task)
         persist()
     }
@@ -178,6 +160,51 @@ final class OfflineStore: ObservableObject {
         persist()
     }
 
+    func addServiceType(
+        name: String,
+        description: String,
+        basePrice: Double,
+        currency: FinanceEntry.Currency
+    ) {
+        let serviceType = ServiceType(
+            name: name,
+            description: description,
+            basePrice: basePrice,
+            currency: currency
+        )
+        serviceTypes.append(serviceType)
+        pendingChanges.append(PendingChange(operation: .addServiceType, entityId: serviceType.id))
+        saveServiceTypeToCoreData(serviceType)
+        persist()
+    }
+
+    func updateServiceType(
+        _ serviceType: ServiceType,
+        name: String,
+        description: String,
+        basePrice: Double,
+        currency: FinanceEntry.Currency
+    ) {
+        guard let index = serviceTypes.firstIndex(where: { $0.id == serviceType.id }) else { return }
+        serviceTypes[index].name = name
+        serviceTypes[index].description = description
+        serviceTypes[index].basePrice = basePrice
+        serviceTypes[index].currency = currency
+        pendingChanges.append(PendingChange(operation: .updateServiceType, entityId: serviceType.id))
+        saveServiceTypeToCoreData(serviceTypes[index])
+        persist()
+    }
+
+    func deleteServiceType(_ serviceType: ServiceType) -> Bool {
+        let isLinked = tasks.contains { $0.serviceTypeId == serviceType.id }
+        guard !isLinked else { return false }
+        serviceTypes.removeAll { $0.id == serviceType.id }
+        pendingChanges.append(PendingChange(operation: .deleteServiceType, entityId: serviceType.id))
+        deleteServiceTypeFromCoreData(serviceType.id)
+        persist()
+        return true
+    }
+
     func markFinanceEntry(_ entry: FinanceEntry, status: FinanceEntry.Status, method: FinanceEntry.PaymentMethod?) {
         guard let index = finance.firstIndex(where: { $0.id == entry.id }) else { return }
         finance[index].status = status
@@ -210,15 +237,14 @@ final class OfflineStore: ObservableObject {
     }
 
     func generateInvoices(from startDate: Date, to endDate: Date, dueDate: Date, clientName: String? = nil) {
-        let calendar = Calendar.current
-
         let relevantTasks = tasks.filter { task in
             guard task.status != .canceled else { return false }
-            guard calendar.isDate(task.date, inSameDayAs: task.date) else { return false }
-            return (task.date >= startDate && task.date <= endDate)
+            return task.date >= startDate && task.date <= endDate
         }
 
-        let groupedByClient = Dictionary(grouping: relevantTasks) { $0.clientName }
+        let groupedByClient: [String: [ServiceTask]] = Dictionary(grouping: relevantTasks) { task in
+            task.clientName
+        }
         let targetClientNames: [String]
         if let specific = clientName {
             targetClientNames = [specific]
@@ -242,10 +268,10 @@ final class OfflineStore: ObservableObject {
             guard total > 0 else { continue }
 
             let formatter = DateFormatter()
-            formatter.dateFormat = "MMM yyyy"
-            let periodLabel = formatter.string(from: startDate)
+            formatter.dateFormat = "MMM d"
+            let periodLabel = "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
 
-            let title = "Invoice \(name) \(periodLabel)"
+            let title = "Invoice \(name) (\(periodLabel))"
 
             let entry = FinanceEntry(
                 title: title,
@@ -268,8 +294,6 @@ final class OfflineStore: ObservableObject {
     }
 
     func generatePayrolls(from startDate: Date, to endDate: Date, dueDate: Date, employeeName: String? = nil) {
-        let calendar = Calendar.current
-
         let targetEmployees: [Employee]
         if let specific = employeeName {
             targetEmployees = employees.filter { $0.name == specific }
@@ -279,6 +303,7 @@ final class OfflineStore: ObservableObject {
 
         for employee in targetEmployees {
             guard let rate = employee.hourlyRate, let currency = employee.currency else { continue }
+            let payrollCurrency = FinanceEntry.Currency(rawValue: currency.rawValue) ?? .usd
 
             let employeeTasks = tasks.filter { task in
                 task.assignedEmployee.name == employee.name &&
@@ -309,7 +334,7 @@ final class OfflineStore: ObservableObject {
                 dueDate: dueDate,
                 status: .pending,
                 method: nil,
-                currency: currency,
+                currency: payrollCurrency,
                 clientName: nil,
                 employeeName: employee.name,
                 kind: .payrollEmployee
@@ -344,9 +369,44 @@ final class OfflineStore: ObservableObject {
             documentsDescription: documentsDescription
         )
         employees.append(employee)
-        pendingChanges.append(PendingChange(operation: .addClient, entityId: employee.id))
+        pendingChanges.append(PendingChange(operation: .addEmployee, entityId: employee.id))
         saveEmployeeToCoreData(employee)
         persist()
+    }
+
+    func updateEmployee(
+        _ employee: Employee,
+        name: String,
+        roleTitle: String,
+        team: String,
+        phone: String?,
+        hourlyRate: Double?,
+        currency: Employee.Currency?,
+        extraEarningsDescription: String?,
+        documentsDescription: String?
+    ) {
+        guard let index = employees.firstIndex(where: { $0.id == employee.id }) else { return }
+        employees[index].name = name
+        employees[index].role = roleTitle
+        employees[index].team = team
+        employees[index].phone = phone
+        employees[index].hourlyRate = hourlyRate
+        employees[index].currency = currency
+        employees[index].extraEarningsDescription = extraEarningsDescription
+        employees[index].documentsDescription = documentsDescription
+        pendingChanges.append(PendingChange(operation: .updateEmployee, entityId: employee.id))
+        saveEmployeeToCoreData(employees[index])
+        persist()
+    }
+
+    func deleteEmployee(_ employee: Employee) -> Bool {
+        let isAssigned = tasks.contains { $0.assignedEmployee.id == employee.id }
+        guard !isAssigned else { return false }
+        employees.removeAll { $0.id == employee.id }
+        pendingChanges.append(PendingChange(operation: .deleteEmployee, entityId: employee.id))
+        deleteEmployeeFromCoreData(employee.id)
+        persist()
+        return true
     }
 
     func syncPendingChanges() {
@@ -712,6 +772,82 @@ final class OfflineStore: ObservableObject {
                 serviceTypeId: laundryService.id,
                 checkInTime: makeDate(dayOffset: -5, hour: 13, minute: 10),
                 checkOutTime: makeDate(dayOffset: -5, hour: 16, minute: 45)
+            ),
+            ServiceTask(
+                title: "Laundry pickup - Carla",
+                date: makeDate(dayOffset: 0, hour: 12, minute: 30),
+                startTime: makeDate(dayOffset: 0, hour: 12, minute: 30),
+                endTime: makeDate(dayOffset: 0, hour: 13, minute: 30),
+                status: .scheduled,
+                assignedEmployee: employeeMaria,
+                clientName: clientCarla.name,
+                address: clientCarla.address,
+                notes: "Pickup linens and drop off at cleaner.",
+                serviceTypeId: laundryService.id
+            ),
+            ServiceTask(
+                title: "Touch-up cleaning - James",
+                date: makeDate(dayOffset: 0, hour: 15, minute: 0),
+                startTime: makeDate(dayOffset: 0, hour: 15, minute: 0),
+                endTime: makeDate(dayOffset: 0, hour: 17, minute: 0),
+                status: .canceled,
+                assignedEmployee: employeeJohn,
+                clientName: clientJames.name,
+                address: clientJames.address,
+                notes: "Canceled by client (family visit postponed).",
+                serviceTypeId: standardCleaning.id
+            ),
+            ServiceTask(
+                title: "Standard cleaning - Lucía",
+                date: makeDate(dayOffset: -1, hour: 10, minute: 0),
+                startTime: makeDate(dayOffset: -1, hour: 10, minute: 0),
+                endTime: makeDate(dayOffset: -1, hour: 13, minute: 0),
+                status: .completed,
+                assignedEmployee: employeeAna,
+                clientName: clientLucia.name,
+                address: clientLucia.address,
+                notes: "Pre-event cleaning before guests arrive.",
+                serviceTypeId: standardCleaning.id,
+                checkInTime: makeDate(dayOffset: -1, hour: 10, minute: 5),
+                checkOutTime: makeDate(dayOffset: -1, hour: 12, minute: 50)
+            ),
+            ServiceTask(
+                title: "Rug follow-up - Carla",
+                date: makeDate(dayOffset: 3, hour: 11, minute: 0),
+                startTime: makeDate(dayOffset: 3, hour: 11, minute: 0),
+                endTime: makeDate(dayOffset: 3, hour: 12, minute: 30),
+                status: .scheduled,
+                assignedEmployee: employeeAna,
+                clientName: clientCarla.name,
+                address: clientCarla.address,
+                notes: "Deliver selected rugs and place in living room.",
+                serviceTypeId: rugPurchase.id
+            ),
+            ServiceTask(
+                title: "Groceries restock - James",
+                date: makeDate(dayOffset: 2, hour: 16, minute: 0),
+                startTime: makeDate(dayOffset: 2, hour: 16, minute: 0),
+                endTime: makeDate(dayOffset: 2, hour: 18, minute: 0),
+                status: .scheduled,
+                assignedEmployee: employeeMaria,
+                clientName: clientJames.name,
+                address: clientJames.address,
+                notes: "Restock pantry and beverages.",
+                serviceTypeId: groceriesShopping.id
+            ),
+            ServiceTask(
+                title: "Laundry - Lucía",
+                date: makeDate(dayOffset: -4, hour: 8, minute: 0),
+                startTime: makeDate(dayOffset: -4, hour: 8, minute: 0),
+                endTime: makeDate(dayOffset: -4, hour: 11, minute: 0),
+                status: .completed,
+                assignedEmployee: employeeJohn,
+                clientName: clientLucia.name,
+                address: clientLucia.address,
+                notes: "Seasonal linens and curtains.",
+                serviceTypeId: laundryService.id,
+                checkInTime: makeDate(dayOffset: -4, hour: 8, minute: 10),
+                checkOutTime: makeDate(dayOffset: -4, hour: 10, minute: 45)
             )
         ]
 
@@ -1043,6 +1179,15 @@ final class OfflineStore: ObservableObject {
         saveContext()
     }
 
+    private func deleteServiceTypeFromCoreData(_ id: UUID) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "ServiceTypeEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        if let object = try? context.fetch(request).first {
+            context.delete(object)
+            saveContext()
+        }
+    }
+
     private func saveEmployeeToCoreData(_ employee: Employee) {
         let request = NSFetchRequest<NSManagedObject>(entityName: "EmployeeEntity")
         request.predicate = NSPredicate(format: "id == %@", employee.id as CVarArg)
@@ -1065,6 +1210,15 @@ final class OfflineStore: ObservableObject {
         object.setValue(employee.documentsDescription, forKey: "documentsDescription")
 
         saveContext()
+    }
+
+    private func deleteEmployeeFromCoreData(_ id: UUID) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "EmployeeEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        if let object = try? context.fetch(request).first {
+            context.delete(object)
+            saveContext()
+        }
     }
 
     private static func clientFromManagedObject(_ object: NSManagedObject) -> Client? {
@@ -1236,12 +1390,18 @@ final class OfflineStore: ObservableObject {
 struct PendingChange: Codable, Identifiable {
     enum Operation: String, Codable {
         case addClient
+        case addEmployee
+        case updateEmployee
+        case deleteEmployee
         case addTask
         case updateTask
         case addFinanceEntry
         case markFinanceEntry
         case updateFinanceEntry
         case deleteFinanceEntry
+        case addServiceType
+        case updateServiceType
+        case deleteServiceType
     }
 
     var id: UUID

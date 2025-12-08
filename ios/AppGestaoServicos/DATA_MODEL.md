@@ -19,9 +19,9 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
 
 ## Employee / Team
 
-- **Team**
-  - `id: UUID`
+- **Team (hoje representado por uma string no Employee)**
   - `name: String`
+  - Observação: a UI agrupa funcionários por `team` (String). Não há entidade Team separada neste momento; o formulário de times apenas atribui/edita esse campo nos funcionários.
 
 - **Employee**
   - `id: UUID`
@@ -30,7 +30,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `hourlyRate: Decimal` (valor da hora)
   - `currency: String` (`"USD"` ou `"EUR"`)
   - `extraEarningsDescription: String?` (outros recebíveis)
-  - `team: Team?`
+  - `team: String` (nome do time; pode ser vazio)
   - Relacionamentos:
     - `user: User?`
     - `tasks: [ServiceTask]`
@@ -110,6 +110,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
     - `client: Client?`
     - `employee: Employee?`
     - `serviceTask: ServiceTask?`
+  - Observação: invoices são gerados agregando tasks por cliente dentro de um período; o PDF exibe line items com `ServiceTask`/`ServiceType` desse intervalo.
 
 ## Offline / Sync / Notifications
 

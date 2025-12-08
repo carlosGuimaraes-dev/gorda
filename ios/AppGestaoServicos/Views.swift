@@ -1,5 +1,7 @@
 import SwiftUI
 import Charts
+import UIKit
+import QuickLook
 
 struct AppCard<Content: View>: View {
     let content: Content
@@ -104,27 +106,175 @@ struct LoginView: View {
 
 struct HomeView: View {
     @EnvironmentObject private var store: OfflineStore
+    @StateObject private var menuController = MenuController()
+    @State private var selectedTab: HomeTab = .dashboard
+    @State private var menuDestination: SideDestination?
 
     var body: some View {
-        TabView {
-            DashboardView()
+        TabView(selection: $selectedTab) {
+            DashboardView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Dashboard", systemImage: "gauge") }
-            AgendaView()
+                .tag(HomeTab.dashboard)
+            AgendaView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Schedule", systemImage: "calendar") }
-            ClientsView()
+                .tag(HomeTab.schedule)
+            ClientsView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Clients", systemImage: "person.2") }
-            FinanceView()
+                .tag(HomeTab.clients)
+            FinanceView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Finance", systemImage: "creditcard") }
-            SettingsView()
+                .tag(HomeTab.finance)
+            SettingsView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Settings", systemImage: "gear") }
+                .tag(HomeTab.settings)
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .environmentObject(menuController)
+        .sheet(isPresented: $menuController.isPresented) {
+            SideMenuSheet(
+                onSelectDashboard: {
+                    selectedTab = .dashboard
+                    menuController.isPresented = false
+                },
+                onSelectSchedule: {
+                    selectedTab = .schedule
+                    menuController.isPresented = false
+                },
+                onSelectClients: {
+                    selectedTab = .clients
+                    menuController.isPresented = false
+                },
+                onSelectServices: {
+                    menuDestination = .services
+                    menuController.isPresented = false
+                },
+                onSelectEmployees: {
+                    menuDestination = .employees
+                    menuController.isPresented = false
+                },
+                onSelectTeams: {
+                    menuDestination = .teams
+                    menuController.isPresented = false
+                },
+                onSelectFinance: {
+                    selectedTab = .finance
+                    menuController.isPresented = false
+                },
+                onSelectSettings: {
+                    selectedTab = .settings
+                    menuController.isPresented = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .sheet(item: $menuDestination) { destination in
+            switch destination {
+            case .services:
+                ServicesView()
+                    .environmentObject(store)
+            case .employees:
+                NavigationStack {
+                    EmployeesView()
+                }
+                .environmentObject(store)
+            case .teams:
+                NavigationStack {
+                    TeamsView()
+                }
+                .environmentObject(store)
+            }
+        }
+    }
+}
+
+enum HomeTab: Hashable {
+    case dashboard
+    case schedule
+    case clients
+    case finance
+    case settings
+}
+
+enum SideDestination: Identifiable {
+    case services
+    case employees
+    case teams
+
+    var id: Self { self }
+}
+
+final class MenuController: ObservableObject {
+    @Published var isPresented: Bool = false
+}
+
+private struct MenuButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "line.horizontal.3")
+                .font(.title2)
+                .foregroundColor(AppTheme.primary)
+        }
+    }
+}
+
+private struct SideMenuSheet: View {
+    let onSelectDashboard: () -> Void
+    let onSelectSchedule: () -> Void
+    let onSelectClients: () -> Void
+    let onSelectServices: () -> Void
+    let onSelectEmployees: () -> Void
+    let onSelectTeams: () -> Void
+    let onSelectFinance: () -> Void
+    let onSelectSettings: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Navigation") {
+                    menuRow(title: "Dashboard", systemImage: "gauge", action: onSelectDashboard)
+                    menuRow(title: "Schedule", systemImage: "calendar", action: onSelectSchedule)
+                    menuRow(title: "Clients", systemImage: "person.2", action: onSelectClients)
+                    menuRow(title: "Finance", systemImage: "creditcard", action: onSelectFinance)
+                    menuRow(title: "Settings", systemImage: "gearshape", action: onSelectSettings)
+                }
+                Section("Catalogs") {
+                    menuRow(title: "Services", systemImage: "wrench.and.screwdriver", action: onSelectServices)
+                    menuRow(title: "Employees", systemImage: "person.3", action: onSelectEmployees)
+                    menuRow(title: "Teams", systemImage: "flag.2.crossed", action: onSelectTeams)
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Menu")
+        }
+    }
+
+    private func menuRow(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: systemImage)
+                    .foregroundColor(AppTheme.primary)
+                Text(title)
+                    .foregroundColor(AppTheme.primaryText)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 }
 
 struct DashboardView: View {
     @EnvironmentObject private var store: OfflineStore
+    @EnvironmentObject private var menuController: MenuController
     @State private var scope: TimeScope = .day
+    let onMenu: (() -> Void)?
+
+    init(onMenu: (() -> Void)? = nil) {
+        self.onMenu = onMenu
+    }
 
     enum TimeScope: String, CaseIterable, Identifiable {
         case day
@@ -172,6 +322,11 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("Dashboard")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
+                }
+            }
         }
     }
 }
@@ -520,10 +675,16 @@ private struct ManagerDashboardView: View {
 
 struct AgendaView: View {
     @EnvironmentObject private var store: OfflineStore
+    @EnvironmentObject private var menuController: MenuController
     @State private var selectedDate = Date()
     @State private var showingForm = false
     @State private var scope: Scope = .day
     @State private var selectedTeam: String? = nil
+    let onMenu: (() -> Void)?
+
+    init(onMenu: (() -> Void)? = nil) {
+        self.onMenu = onMenu
+    }
 
     private enum Scope: String, CaseIterable, Identifiable {
         case day
@@ -634,6 +795,9 @@ struct AgendaView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Schedule")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingForm = true }) {
                         Label("New service", systemImage: "plus")
@@ -685,7 +849,13 @@ struct AgendaView: View {
 
 struct ClientsView: View {
     @EnvironmentObject private var store: OfflineStore
+    @EnvironmentObject private var menuController: MenuController
     @State private var showingForm = false
+    let onMenu: (() -> Void)?
+
+    init(onMenu: (() -> Void)? = nil) {
+        self.onMenu = onMenu
+    }
 
     var body: some View {
         NavigationStack {
@@ -735,6 +905,9 @@ struct ClientsView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Clients")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { showingForm = true }) {
                         Label("New", systemImage: "plus")
@@ -750,9 +923,15 @@ struct ClientsView: View {
 
 struct FinanceView: View {
     @EnvironmentObject private var store: OfflineStore
+    @EnvironmentObject private var menuController: MenuController
     @State private var showingForm = false
     @State private var showingInvoiceGenerator = false
     @State private var showingPayrollGenerator = false
+    let onMenu: (() -> Void)?
+
+    init(onMenu: (() -> Void)? = nil) {
+        self.onMenu = onMenu
+    }
 
     var body: some View {
         NavigationStack {
@@ -812,6 +991,9 @@ struct FinanceView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Finance")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingForm = true }) {
                         Label("New", systemImage: "plus")
@@ -1047,6 +1229,7 @@ struct InvoiceDetailView: View {
     @State private var selectedChannel: Client.DeliveryChannel = .email
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
+    @State private var pdfPreview: DocumentPreview?
 
     init(entry: FinanceEntry) {
         self.entry = entry
@@ -1067,6 +1250,51 @@ struct InvoiceDetailView: View {
     private var client: Client? {
         guard let name = entry.clientName else { return nil }
         return store.clients.first { $0.name == name }
+    }
+
+    private var parsedPeriodFromTitle: ClosedRange<Date>? {
+        let pattern = #"\(([^)]+)\)"#
+        guard let range = entry.title.range(of: pattern, options: .regularExpression) else { return nil }
+        let content = String(entry.title[range]).trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+        let parts = content.split(separator: "-").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard parts.count == 2 else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMM d"
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: entry.dueDate)
+        guard let startRaw = formatter.date(from: parts[0]),
+              let endRaw = formatter.date(from: parts[1]),
+              let start = calendar.date(bySetting: .year, value: year, of: startRaw),
+              let end = calendar.date(bySetting: .year, value: year, of: endRaw) else { return nil }
+        return start...end
+    }
+
+    private var invoicePeriod: ClosedRange<Date> {
+        if let parsed = parsedPeriodFromTitle { return parsed }
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: entry.dueDate)) ?? entry.dueDate
+        let end = calendar.date(byAdding: .month, value: 1, to: start)
+            .flatMap { calendar.date(byAdding: .day, value: -1, to: $0) } ?? entry.dueDate
+        return start...end
+    }
+
+    private var lineItems: [(title: String, date: Date, amount: Double)] {
+        guard let clientName = entry.clientName else { return [] }
+        let tasksForInvoice = store.tasks.filter { task in
+            task.clientName == clientName && invoicePeriod.contains(task.date)
+        }
+
+        let items: [(title: String, date: Date, amount: Double)] = tasksForInvoice.compactMap { task in
+            guard let typeId = task.serviceTypeId,
+                  let serviceType = store.serviceTypes.first(where: { $0.id == typeId }) else { return nil }
+            return (task.title, task.date, serviceType.basePrice)
+        }
+
+        if items.isEmpty {
+            return [(entry.title, entry.dueDate, entry.amount)]
+        }
+        return items.sorted { $0.date < $1.date }
     }
 
     private var canAdjustInvoice: Bool {
@@ -1132,6 +1360,11 @@ struct InvoiceDetailView: View {
                 } label: {
                     Label("Send / Reissue", systemImage: "square.and.arrow.up")
                 }
+                Button {
+                    preparePDFShare()
+                } label: {
+                    Label("Generate PDF", systemImage: "doc.richtext")
+                }
                 if let url = makeChannelURL() {
                     Button {
                         openURL(url)
@@ -1160,6 +1393,10 @@ struct InvoiceDetailView: View {
         }
         .sheet(isPresented: $showingShareSheet) {
             ActivityView(items: shareItems)
+        }
+        .sheet(item: $pdfPreview) { preview in
+            PDFPreviewController(url: preview.url)
+                .ignoresSafeArea()
         }
         .onAppear {
             if let firstChannel = client?.preferredDeliveryChannels.first {
@@ -1209,6 +1446,85 @@ struct InvoiceDetailView: View {
         showingShareSheet = true
     }
 
+    private func preparePDFShare() {
+        let pdfData = buildInvoicePDF()
+        let fileName = "\(entry.title.replacingOccurrences(of: " ", with: "-")).pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: url)
+        do {
+            try pdfData.write(to: url)
+            shareItems = [url]
+            showingShareSheet = true
+            pdfPreview = DocumentPreview(url: url)
+        } catch {
+            shareItems = [pdfData]
+            showingShareSheet = true
+        }
+    }
+
+    private func buildInvoicePDF() -> Data {
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .currency
+        numberFormatter.currencyCode = currency.code
+
+        let instructions = "Please pay via \(method?.label ?? selectedChannel.label) by \(dateFormatter.string(from: dueDate))."
+        let clientName = entry.clientName ?? "Client"
+
+        return renderer.pdfData { context in
+            context.beginPage()
+            let margin: CGFloat = 24
+            var y: CGFloat = margin
+
+            func draw(_ text: String, font: UIFont, color: UIColor = .black) {
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: color
+                ]
+                let attributed = NSAttributedString(string: text, attributes: attrs)
+                let size = attributed.boundingRect(
+                    with: CGSize(width: pageRect.width - margin * 2, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                ).size
+                attributed.draw(in: CGRect(x: margin, y: y, width: pageRect.width - margin * 2, height: size.height))
+                y += size.height + 8
+            }
+
+            draw("Invoice", font: .boldSystemFont(ofSize: 22))
+            draw("Client: \(clientName)", font: .systemFont(ofSize: 14))
+            if let email = client?.email, !email.isEmpty {
+                draw("Email: \(email)", font: .systemFont(ofSize: 12), color: .darkGray)
+            }
+            if let phone = client?.phone, !phone.isEmpty {
+                draw("Phone: \(phone)", font: .systemFont(ofSize: 12), color: .darkGray)
+            }
+            draw("Due date: \(dateFormatter.string(from: dueDate))", font: .systemFont(ofSize: 14))
+            draw(instructions, font: .systemFont(ofSize: 12))
+
+            y += 8
+            draw("Line items", font: .boldSystemFont(ofSize: 16))
+
+            for item in lineItems {
+                let amount = numberFormatter.string(from: NSNumber(value: item.amount)) ?? "\(currency.code) \(item.amount)"
+                draw("- \(item.title) (\(dateFormatter.string(from: item.date))): \(amount)", font: .systemFont(ofSize: 12))
+            }
+
+            let totalString = numberFormatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(currency.code) \(parsedAmount ?? entry.amount)"
+            y += 8
+            draw("Total: \(totalString)", font: .boldSystemFont(ofSize: 14))
+
+            if isDisputed {
+                let reason = disputeReason.isEmpty ? "Pending reason" : disputeReason
+                draw("Status: DISPUTED - \(reason)", font: .boldSystemFont(ofSize: 12), color: .red)
+            }
+        }
+    }
+
     private func makeChannelURL() -> URL? {
         guard let client else { return nil }
         switch selectedChannel {
@@ -1229,6 +1545,41 @@ struct InvoiceDetailView: View {
             guard !client.phone.isEmpty else { return nil }
             let digits = client.phone.filter { $0.isNumber || $0 == "+" }
             return URL(string: "sms:\(digits)")
+        }
+    }
+}
+
+private struct DocumentPreview: Identifiable {
+    let url: URL
+    var id: URL { url }
+}
+
+private struct PDFPreviewController: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> QLPreviewController {
+        let controller = QLPreviewController()
+        controller.dataSource = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(url: url)
+    }
+
+    final class Coordinator: NSObject, QLPreviewControllerDataSource {
+        private let url: URL
+
+        init(url: URL) {
+            self.url = url
+        }
+
+        func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
+
+        func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+            url as NSURL
         }
     }
 }
@@ -1601,7 +1952,7 @@ struct ExpenseDetailView: View {
                     Text("Client: \(client)")
                         .font(.footnote)
                 }
-                Text("Amount: \(entry.currency.code) \(entry.amount, specifier: \"%.2f\")")
+                Text("Amount: \(entry.currency.code) \(entry.amount, specifier: "%.2f")")
                     .font(.subheadline)
             }
 
@@ -1988,6 +2339,12 @@ struct FinanceFormView: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var store: OfflineStore
+    @EnvironmentObject private var menuController: MenuController
+    let onMenu: (() -> Void)?
+
+    init(onMenu: (() -> Void)? = nil) {
+        self.onMenu = onMenu
+    }
 
     var body: some View {
         NavigationStack {
@@ -2036,6 +2393,11 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
+                }
+            }
         }
     }
 }
@@ -2244,7 +2606,443 @@ struct ClientDetailView: View {
     }
 }
 
-private struct StatusBadge: View {
+// MARK: - Services catalog
+
+struct ServicesView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var showingCreate = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(store.serviceTypes) { service in
+                    NavigationLink(destination: ServiceTypeDetailView(serviceType: service)) {
+                        ServiceRow(serviceType: service)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("Services")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingCreate = true
+                    } label: {
+                        Label("New", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingCreate) {
+                NavigationStack {
+                    ServiceTypeForm()
+                }
+                .environmentObject(store)
+            }
+        }
+    }
+}
+
+private struct ServiceRow: View {
+    let serviceType: ServiceType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(serviceType.name)
+                    .font(.headline)
+                Spacer()
+                Text("\(serviceType.currency.code) \(serviceType.basePrice, specifier: "%.2f")")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppTheme.primary)
+            }
+            if !serviceType.description.isEmpty {
+                Text(serviceType.description)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(10)
+        .background(AppTheme.cardBackground)
+        .cornerRadius(AppTheme.cornerRadius)
+    }
+}
+
+struct ServiceTypeDetailView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    let serviceType: ServiceType
+    @State private var showingEdit = false
+    @State private var showDeleteAlert = false
+    @State private var showDeleteBlocked = false
+
+    private var linkedTasksCount: Int {
+        store.tasks.filter { $0.serviceTypeId == serviceType.id }.count
+    }
+
+    private var canDelete: Bool { linkedTasksCount == 0 }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(serviceType.name)
+                            .font(.title3.bold())
+                        if !serviceType.description.isEmpty {
+                            Text(serviceType.description)
+                                .font(.body)
+                                .foregroundColor(AppTheme.primaryText)
+                        }
+                        Text("Base price: \(serviceType.currency.code) \(serviceType.basePrice, specifier: "%.2f")")
+                            .font(.body)
+                    }
+                }
+                .padding(.horizontal)
+
+                if linkedTasksCount > 0 {
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Usage")
+                                .font(.headline)
+                            Text("Linked to \(linkedTasksCount) services. Reassign before deleting.")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                AppCard {
+                    Button {
+                        showingEdit = true
+                    } label: {
+                        Label("Edit service", systemImage: "pencil")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .padding(.horizontal)
+
+                if canDelete {
+                    AppCard {
+                        Button(role: .destructive) {
+                            showDeleteAlert = true
+                        } label: {
+                            Label("Delete service", systemImage: "trash")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding(.vertical, 12)
+        }
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Service")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+        .sheet(isPresented: $showingEdit) {
+            NavigationStack {
+                ServiceTypeForm(serviceType: serviceType)
+            }
+            .environmentObject(store)
+        }
+        .alert("Delete service?", isPresented: $showDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                if store.deleteServiceType(serviceType) {
+                    dismiss()
+                } else {
+                    showDeleteBlocked = true
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+        .alert("Cannot delete service", isPresented: $showDeleteBlocked) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("This service type is linked to existing tasks. Reassign or remove those tasks before deleting.")
+        }
+    }
+}
+
+struct ServiceTypeForm: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let serviceType: ServiceType?
+
+    @State private var name: String
+    @State private var description: String
+    @State private var basePriceText: String
+    @State private var currency: FinanceEntry.Currency
+
+    private var basePrice: Double? {
+        Double(basePriceText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var isEditing: Bool { serviceType != nil }
+
+    init(serviceType: ServiceType? = nil) {
+        self.serviceType = serviceType
+        _name = State(initialValue: serviceType?.name ?? "")
+        _description = State(initialValue: serviceType?.description ?? "")
+        if let price = serviceType?.basePrice {
+            _basePriceText = State(initialValue: String(format: "%.2f", price))
+        } else {
+            _basePriceText = State(initialValue: "")
+        }
+        _currency = State(initialValue: serviceType?.currency ?? .usd)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section("Service") {
+                    TextField("Name", text: $name)
+                    TextField("Description", text: $description, axis: .vertical)
+                        .lineLimit(2...4)
+                    TextField("Base price", text: $basePriceText)
+                        .keyboardType(.decimalPad)
+                    Picker("Currency", selection: $currency) {
+                        ForEach(FinanceEntry.Currency.allCases) { curr in
+                            Text(curr.code).tag(curr)
+                        }
+                    }
+                }
+            }
+
+            PrimaryButton(title: isEditing ? "Update" : "Save") {
+                guard let price = basePrice, !name.isEmpty else { return }
+                if let serviceType {
+                    store.updateServiceType(
+                        serviceType,
+                        name: name,
+                        description: description,
+                        basePrice: price,
+                        currency: currency
+                    )
+                } else {
+                    store.addServiceType(
+                        name: name,
+                        description: description,
+                        basePrice: price,
+                        currency: currency
+                    )
+                }
+                dismiss()
+            }
+            .padding()
+            .disabled(name.isEmpty || basePrice == nil)
+        }
+        .navigationTitle(isEditing ? "Edit Service" : "New Service")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+    }
+}
+
+// MARK: - Teams
+
+struct TeamsView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var showingForm = false
+    @State private var selectedTeamForRemoval: String?
+
+    private var teams: [(name: String, members: [Employee])] {
+        let grouped = Dictionary(grouping: store.employees.filter { !$0.team.isEmpty }) { $0.team }
+        return grouped.map { ($0.key, $0.value.sorted { $0.name < $1.name }) }
+            .sorted { $0.name < $1.name }
+    }
+
+    private var unassigned: [Employee] {
+        store.employees.filter { $0.team.isEmpty }.sorted { $0.name < $1.name }
+    }
+
+    var body: some View {
+        List {
+            if teams.isEmpty && unassigned.isEmpty {
+                Text("No employees yet.")
+                    .foregroundColor(.secondary)
+            }
+            ForEach(teams, id: \.name) { team in
+                Section(header: Text("\(team.name) (\(team.members.count))")) {
+                    ForEach(team.members) { employee in
+                        teamRow(employee: employee)
+                    }
+                    Button(role: .destructive) {
+                        selectedTeamForRemoval = team.name
+                        removeTeam(team.name)
+                    } label: {
+                        Label("Remove team", systemImage: "trash")
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+
+            if !unassigned.isEmpty {
+                Section(header: Text("Unassigned")) {
+                    ForEach(unassigned) { employee in
+                        teamRow(employee: employee)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Teams")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Close") { dismiss() }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showingForm = true
+                } label: {
+                    Label("New Team", systemImage: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingForm) {
+            NavigationStack {
+                TeamForm()
+            }
+            .environmentObject(store)
+        }
+    }
+
+    private func teamRow(employee: Employee) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(employee.name).bold()
+                if !employee.team.isEmpty {
+                    Text("Team: \(employee.team)")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("Unassigned")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            Menu {
+                Button("Remove from team") {
+                    updateTeam(for: employee, to: "")
+                }
+                ForEach(teams.map { $0.name }, id: \.self) { teamName in
+                    Button("Move to \(teamName)") {
+                        updateTeam(for: employee, to: teamName)
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title3)
+            }
+        }
+    }
+
+    private func updateTeam(for employee: Employee, to team: String) {
+        store.updateEmployee(
+            employee,
+            name: employee.name,
+            roleTitle: employee.role,
+            team: team,
+            phone: employee.phone,
+            hourlyRate: employee.hourlyRate,
+            currency: employee.currency,
+            extraEarningsDescription: employee.extraEarningsDescription,
+            documentsDescription: employee.documentsDescription
+        )
+    }
+
+    private func removeTeam(_ team: String) {
+        let members = store.employees.filter { $0.team == team }
+        members.forEach { member in
+            updateTeam(for: member, to: "")
+        }
+    }
+}
+
+struct TeamForm: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String = ""
+    @State private var selectedEmployeeIDs: Set<UUID> = []
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section("Team") {
+                    TextField("Name", text: $name)
+                }
+                Section("Assign employees") {
+                    ForEach(store.employees) { employee in
+                        HStack {
+                            Text(employee.name)
+                            Spacer()
+                            if selectedEmployeeIDs.contains(employee.id) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(AppTheme.primary)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selectedEmployeeIDs.contains(employee.id) {
+                                selectedEmployeeIDs.remove(employee.id)
+                            } else {
+                                selectedEmployeeIDs.insert(employee.id)
+                            }
+                        }
+                    }
+                }
+            }
+            PrimaryButton(title: "Save") {
+                let employeesToUpdate = store.employees.filter { selectedEmployeeIDs.contains($0.id) }
+                employeesToUpdate.forEach { employee in
+                    store.updateEmployee(
+                        employee,
+                        name: employee.name,
+                        roleTitle: employee.role,
+                        team: name,
+                        phone: employee.phone,
+                        hourlyRate: employee.hourlyRate,
+                        currency: employee.currency,
+                        extraEarningsDescription: employee.extraEarningsDescription,
+                        documentsDescription: employee.documentsDescription
+                    )
+                }
+                dismiss()
+            }
+            .padding()
+            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+        .navigationTitle("New Team")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+    }
+}
+
+struct StatusBadge: View {
     let status: ServiceTask.Status
 
     var body: some View {
