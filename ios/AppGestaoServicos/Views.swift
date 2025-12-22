@@ -1254,6 +1254,13 @@ struct InvoiceDetailView: View {
         return store.clients.first { $0.name == name }
     }
 
+    private var deliveryChannels: [Client.DeliveryChannel] {
+        if let client, !client.preferredDeliveryChannels.isEmpty {
+            return client.preferredDeliveryChannels
+        }
+        return Client.DeliveryChannel.allCases
+    }
+
     private var parsedPeriodFromTitle: ClosedRange<Date>? {
         let pattern = #"\(([^)]+)\)"#
         guard let range = entry.title.range(of: pattern, options: .regularExpression) else { return nil }
@@ -1360,10 +1367,10 @@ struct InvoiceDetailView: View {
                         Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
                             .font(.footnote)
                             .foregroundColor(.secondary)
-                        Picker("Channel", selection: $selectedChannel) {
-                            ForEach(client.preferredDeliveryChannels) { channel in
-                                Text(channel.label).tag(channel)
-                            }
+                    }
+                    Picker("Channel", selection: $selectedChannel) {
+                        ForEach(deliveryChannels) { channel in
+                            Text(channel.label).tag(channel)
                         }
                     }
                     Button {
@@ -1445,7 +1452,7 @@ struct InvoiceDetailView: View {
             }
         }
         .onAppear {
-            if let firstChannel = client?.preferredDeliveryChannels.first {
+            if let firstChannel = deliveryChannels.first {
                 selectedChannel = firstChannel
             }
         }
