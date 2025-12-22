@@ -111,6 +111,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
     - `employee: Employee?`
     - `serviceTask: ServiceTask?`
   - Observação: invoices são gerados agregando tasks por cliente dentro de um período; o PDF exibe line items com `ServiceTask`/`ServiceType` desse intervalo.
+  - Observação extra: contestação de invoice é permitida até D-1 do vencimento (`isDisputed` + `disputeReason`), e reemissões criam novo `FinanceEntry` pendente com `dueDate` atualizado.
 
 ## Offline / Sync / Notifications
 

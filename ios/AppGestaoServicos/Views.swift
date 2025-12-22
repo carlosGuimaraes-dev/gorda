@@ -1230,6 +1230,8 @@ struct InvoiceDetailView: View {
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var pdfPreview: DocumentPreview?
+    @State private var showingReissueSheet = false
+    @State private var reissueDueDate: Date = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
 
     init(entry: FinanceEntry) {
         self.entry = entry
@@ -1302,6 +1304,8 @@ struct InvoiceDetailView: View {
         let limit = calendar.date(byAdding: .day, value: -1, to: dueDate) ?? dueDate
         return Date() <= limit
     }
+    private var canDispute: Bool { canAdjustInvoice }
+    private var canReissue: Bool { true }
 
     private var canSave: Bool {
         guard let amount = parsedAmount else { return false }
@@ -1340,9 +1344,15 @@ struct InvoiceDetailView: View {
 
                 Section("Dispute") {
                     Toggle("Mark as disputed", isOn: $isDisputed)
+                        .disabled(!canDispute)
                     TextField("Reason", text: $disputeReason, axis: .vertical)
                         .lineLimit(2...4)
-                        .disabled(!isDisputed)
+                        .disabled(!isDisputed || !canDispute)
+                    if !canDispute {
+                        Text("Dispute window closes 1 day before due date.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Section("Send invoice") {
@@ -1365,6 +1375,14 @@ struct InvoiceDetailView: View {
                         preparePDFShare()
                     } label: {
                         Label("Generate PDF", systemImage: "doc.richtext")
+                    }
+                    if canReissue {
+                        Button {
+                            reissueDueDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? dueDate
+                            showingReissueSheet = true
+                        } label: {
+                            Label("Reissue invoice", systemImage: "arrow.clockwise.circle")
+                        }
                     }
                     if let url = makeChannelURL() {
                         Button {
@@ -1400,6 +1418,32 @@ struct InvoiceDetailView: View {
             PDFPreviewController(url: preview.url)
                 .ignoresSafeArea()
         }
+        .sheet(isPresented: $showingReissueSheet) {
+            NavigationStack {
+                Form {
+                    Section("Reissue") {
+                        DatePicker("New due date", selection: $reissueDueDate, in: Date()..., displayedComponents: .date)
+                        Text("A new invoice will be created with status Pending and shared below.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .scrollContentBackground(.hidden)
+                .background(AppTheme.background.ignoresSafeArea())
+                .navigationTitle("Reissue invoice")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { showingReissueSheet = false }
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    PrimaryButton(title: "Reissue and send") {
+                        reissue()
+                    }
+                    .padding()
+                }
+            }
+        }
         .onAppear {
             if let firstChannel = client?.preferredDeliveryChannels.first {
                 selectedChannel = firstChannel
@@ -1424,18 +1468,21 @@ struct InvoiceDetailView: View {
         dismiss()
     }
 
-    private func prepareShare() {
+    private func prepareShare(for reissuedEntry: FinanceEntry? = nil, overrideDueDate: Date? = nil, amountOverride: Double? = nil) {
+        let targetEntry = reissuedEntry ?? entry
+        let targetDueDate = overrideDueDate ?? dueDate
+        let targetAmount = amountOverride ?? parsedAmount ?? entry.amount
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = currency.code
-        let amountString = formatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(currency.code) \(parsedAmount ?? entry.amount)"
+        formatter.currencyCode = targetEntry.currency.code
+        let amountString = formatter.string(from: NSNumber(value: targetAmount)) ?? "\(targetEntry.currency.code) \(targetAmount)"
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
-        let dueString = dateFormatter.string(from: dueDate)
+        let dueString = dateFormatter.string(from: targetDueDate)
 
-        var body = "Invoice: \(title)\nAmount: \(amountString)\nDue: \(dueString)"
-        if let clientName = entry.clientName {
+        var body = "Invoice: \(targetEntry.title)\nAmount: \(amountString)\nDue: \(dueString)"
+        if let clientName = targetEntry.clientName {
             body.append("\nClient: \(clientName)")
         }
         body.append("\nChannel: \(selectedChannel.label)")
@@ -1462,6 +1509,12 @@ struct InvoiceDetailView: View {
             shareItems = [pdfData]
             showingShareSheet = true
         }
+    }
+
+    private func reissue() {
+        guard let newEntry = store.reissueInvoice(entry, newDueDate: reissueDueDate) else { return }
+        showingReissueSheet = false
+        prepareShare(for: newEntry, overrideDueDate: reissueDueDate, amountOverride: newEntry.amount)
     }
 
     private func buildInvoicePDF() -> Data {
@@ -1936,6 +1989,7 @@ struct ExpenseDetailView: View {
     @State private var method: FinanceEntry.PaymentMethod?
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
+    @State private var selectedChannel: Client.DeliveryChannel = .email
 
     init(entry: FinanceEntry) {
         self.entry = entry
@@ -1946,6 +2000,18 @@ struct ExpenseDetailView: View {
     private var receiptImage: UIImage? {
         guard let data = entry.receiptData else { return nil }
         return UIImage(data: data)
+    }
+
+    private var client: Client? {
+        guard let name = entry.clientName else { return nil }
+        return store.clients.first { $0.name == name }
+    }
+
+    private var deliveryChannels: [Client.DeliveryChannel] {
+        if let client, !client.preferredDeliveryChannels.isEmpty {
+            return client.preferredDeliveryChannels
+        }
+        return Client.DeliveryChannel.allCases
     }
 
     var body: some View {
@@ -1972,6 +2038,28 @@ struct ExpenseDetailView: View {
                         Text("None").tag(nil as FinanceEntry.PaymentMethod?)
                         ForEach(FinanceEntry.PaymentMethod.allCases) { value in
                             Text(value.label).tag(value as FinanceEntry.PaymentMethod?)
+                        }
+                    }
+                }
+
+                if !deliveryChannels.isEmpty {
+                    Section("Delivery") {
+                        if let client {
+                            Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: \", \"))")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Picker("Channel", selection: $selectedChannel) {
+                            ForEach(deliveryChannels) { channel in
+                                Text(channel.label).tag(channel)
+                            }
+                        }
+                        if let url = makeChannelURL() {
+                            Button {
+                                UIApplication.shared.open(url)
+                            } label: {
+                                Label("Open \(selectedChannel.label)", systemImage: "paperplane")
+                            }
                         }
                     }
                 }
@@ -2011,19 +2099,46 @@ struct ExpenseDetailView: View {
         .sheet(isPresented: $showingShareSheet) {
             ActivityView(items: shareItems)
         }
+        .onAppear {
+            if let first = deliveryChannels.first {
+                selectedChannel = first
+            }
+        }
     }
 
     private func shareReceipt() {
         var items: [Any] = []
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        let text = "Expense receipt for \(entry.title)\nAmount: \(entry.currency.code) \(entry.amount)\nDue: \(formatter.string(from: entry.dueDate))"
+        let text = "Expense receipt for \(entry.title)\nAmount: \(entry.currency.code) \(entry.amount)\nDue: \(formatter.string(from: entry.dueDate))\nChannel: \(selectedChannel.label)"
         items.append(text)
         if let image = receiptImage {
             items.append(image)
         }
         shareItems = items
         showingShareSheet = true
+    }
+
+    private func makeChannelURL() -> URL? {
+        guard let client else { return nil }
+        switch selectedChannel {
+        case .email:
+            guard !client.email.isEmpty else { return nil }
+            let subject = "Receipt \(entry.title)"
+            let body = "Hi \(client.name), here is the receipt for \(entry.title)."
+            let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
+        case .whatsapp:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let encoded = "Receipt \(entry.title)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
+        case .imessage:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            return URL(string: "sms:\(digits)")
+        }
     }
 }
 

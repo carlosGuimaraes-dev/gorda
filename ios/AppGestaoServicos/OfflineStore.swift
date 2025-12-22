@@ -229,6 +229,32 @@ final class OfflineStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func reissueInvoice(_ entry: FinanceEntry, newDueDate: Date) -> FinanceEntry? {
+        guard entry.kind == .invoiceClient else { return nil }
+        let newTitle = "\(entry.title) - Reissue"
+        let copy = FinanceEntry(
+            title: newTitle,
+            amount: entry.amount,
+            type: .receivable,
+            dueDate: newDueDate,
+            status: .pending,
+            method: entry.method,
+            currency: entry.currency,
+            clientName: entry.clientName,
+            employeeName: entry.employeeName,
+            kind: .invoiceClient,
+            isDisputed: false,
+            disputeReason: nil,
+            receiptData: entry.receiptData
+        )
+        finance.append(copy)
+        pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: copy.id))
+        saveFinanceEntryToCoreData(copy)
+        persist()
+        return copy
+    }
+
     func deleteFinanceEntry(_ entry: FinanceEntry) {
         finance.removeAll { $0.id == entry.id }
         pendingChanges.append(PendingChange(operation: .deleteFinanceEntry, entityId: entry.id))
