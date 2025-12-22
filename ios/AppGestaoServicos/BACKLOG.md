@@ -42,8 +42,8 @@
 
 ## Pendentes / Próximas entregas
 
-- ✅ Tela dedicada de "Invoices" (lista de FinanceEntry.kind == invoiceClient) com CRUD completo: editar título/valor/vencimento/método, marcar como contestado e reemitir/enviar novamente
-- ✅ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
-- ✅ Fluxo de contestação de faturas pelo cliente: marcar invoice como `disputed`, registrar motivo e permitir ajustes até 1 dia antes do vencimento
-- ✅ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
-- ✅ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura
+- ⬜ Tela dedicada de "Invoices" (lista de FinanceEntry.kind == invoiceClient) com CRUD completo: editar título/valor/vencimento/método, marcar como contestado e reemitir/enviar novamente
+- ⬜ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
+- ⬜ Fluxo de contestação de faturas pelo cliente: marcar invoice como `disputed`, registrar motivo e permitir ajustes até 1 dia antes do vencimento
+- ⬜ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
+- ⬜ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura

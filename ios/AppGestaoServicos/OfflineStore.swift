@@ -488,6 +488,10 @@ final class OfflineStore: ObservableObject {
             )
             let data = try JSONEncoder().encode(snapshot)
             try data.write(to: persistenceURL, options: .atomic)
+            try FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: persistenceURL.path
+            )
         } catch {
             print("Falha ao persistir: \(error)")
         }

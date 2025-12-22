@@ -14,13 +14,15 @@ enum KeychainHelper {
         ]
 
         let attributes: [String: Any] = [
-            kSecValueData as String: data
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ]
 
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound {
             var addQuery = query
             addQuery[kSecValueData as String] = data
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             SecItemAdd(addQuery as CFDictionary, nil)
         }
     }
@@ -50,4 +52,3 @@ enum KeychainHelper {
         SecItemDelete(query as CFDictionary)
     }
 }
-
