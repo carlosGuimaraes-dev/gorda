@@ -39,9 +39,9 @@ Aplicativo iOS de gestão de serviços residenciais, agenda e finanças, criado 
     - Gráficos com **Charts** mostrando tarefas por status e comparativo Recebíveis x Pagáveis.
 
 - **Financeiro**
-  - Contas a receber / pagar com status (pendente/pago), método (Pix, cartão, dinheiro) e moeda global (USD/EUR).
+  - Contas a receber / pagar com status (pendente/pago), método (Pix, cartão, dinheiro) e moeda (USD/EUR).
   - **End of month**:
-    - Geração de **invoices por cliente** (somando serviços do período) com criação automática de `FinanceEntry` do tipo receivable (re‑geração parcial por período).
+    - Geração de **invoices por cliente** (somando serviços do período) com criação automática de `FinanceEntry` do tipo receivable.
     - Geração de **payroll** por funcionário (horas x valor/hora) com criação automática de `FinanceEntry` do tipo payable.
   - **Despesas extras out-of-pocket**:
     - Lançamento de despesas pagas do próprio bolso pela manager, vinculadas a um cliente.
@@ -50,7 +50,7 @@ Aplicativo iOS de gestão de serviços residenciais, agenda e finanças, criado 
 
 - **Offline & Sincronização**
   - Armazenamento local em **Core Data/SQLite** via `OfflineStore`.
-  - Fila de mudanças pendentes; conflitos serão registrados em log com prioridade local.
+  - Fila de mudanças pendentes com política simples de “última escrita vence”.
   - Preparado para futura integração com backend para sincronização real.
 
 - **Notificações & Siri**
@@ -74,11 +74,9 @@ Aplicativo iOS de gestão de serviços residenciais, agenda e finanças, criado 
   - `ActivityView.swift` – share sheet e image picker para recibos.
 
 - Documentação:
-  - `ios/AppGestaoServicos/BACKLOG.md` – backlog etiquetado (✅ / ⏳) com features concluídas e pendentes.
+  - `ios/AppGestaoServicos/BACKLOG.md` – backlog etiquetado (✅ / ⬜) com features concluídas e pendentes.
   - `ios/AppGestaoServicos/DATA_MODEL.md` – visão do modelo de dados.
   - `prd/ios-servicos-prd.md` – PRD funcional do app iOS.
-  - `docs/architecture-frontend.md` – arquitetura do app iOS.
-  - `docs/architecture-backend.md` – arquitetura do backend (planejada).
   - `AGENTS.md` – instruções para agentes/IA sobre padrões do projeto.
 
 ## Ambiente de desenvolvimento
@@ -102,9 +100,9 @@ Aplicativo iOS de gestão de serviços residenciais, agenda e finanças, criado 
 
 ## Roadmap (resumo)
 
-- Localização en-US/es-ES completa (strings).
-- Log de conflitos no Settings + badge ao abrir.
-- Disputa iniciada pelo cliente (email/texto ou botão no PDF) com janela D+N configurável.
+- Tela dedicada de Invoices e Payroll com CRUD completo e histórico.
+- Fluxo de contestação de faturas pelo cliente antes do vencimento.
+- Configuração de canais preferenciais (e-mail/WhatsApp/iMessage) por cliente.
 - Backend para sincronização real e multi-dispositivo.
 
 ## Licença
