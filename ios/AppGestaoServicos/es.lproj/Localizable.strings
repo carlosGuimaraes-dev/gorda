@@ -328,3 +328,9 @@
 "Finance entry deleted: %@" = "Entrada financiera eliminada: %@";
 "Finance entry marked as %@: %@" = "Entrada financiera marcada como %@: %@";
 "System" = "Sistema";
+"Custom range" = "Rango personalizado";
+"Start date" = "Fecha de inicio";
+"End date" = "Fecha de fin";
+"No data for this period." = "No hay datos para este periodo.";
+"Weekly summary (%@)" = "Resumen semanal (%@)";
+"Report: %@" = "Informe: %@";

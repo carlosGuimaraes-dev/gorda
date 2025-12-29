@@ -1091,33 +1091,81 @@ private struct ReportItem: Identifiable {
 
 struct ReportsView: View {
     @EnvironmentObject private var store: OfflineStore
+    @State private var scope: ReportScope = .month
     @State private var selectedMonth: Date = Date()
+    @State private var selectedWeek: Date = Date()
+    @State private var customStart: Date = Date()
+    @State private var customEnd: Date = Date()
     @State private var shareItems: [Any] = []
     @State private var showingShareSheet = false
 
-    private var monthRange: ClosedRange<Date> {
-        let calendar = Calendar.current
-        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
-        let end = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? selectedMonth
-        return start...end
-    }
+    private enum ReportScope: String, CaseIterable, Identifiable {
+        case month
+        case week
+        case custom
 
-    private var entriesInMonth: [FinanceEntry] {
-        store.finance.filter { entry in
-            monthRange.contains(entry.dueDate)
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .month: return NSLocalizedString("Month", comment: "")
+            case .week: return NSLocalizedString("Week", comment: "")
+            case .custom: return NSLocalizedString("Custom range", comment: "")
+            }
         }
     }
 
-    private var receivablesInMonth: [FinanceEntry] {
-        entriesInMonth.filter { $0.type == .receivable }
+    private var reportRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        switch scope {
+        case .month:
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
+            let nextMonth = calendar.date(byAdding: .month, value: 1, to: start) ?? selectedMonth
+            let end = calendar.date(byAdding: .second, value: -1, to: nextMonth) ?? selectedMonth
+            return inclusiveRange(start: start, end: end)
+        case .week:
+            if let interval = calendar.dateInterval(of: .weekOfYear, for: selectedWeek) {
+                let end = interval.end.addingTimeInterval(-1)
+                return inclusiveRange(start: interval.start, end: end)
+            }
+            return inclusiveRange(start: selectedWeek, end: selectedWeek)
+        case .custom:
+            let start = min(customStart, customEnd)
+            let end = max(customStart, customEnd)
+            return inclusiveRange(start: start, end: end)
+        }
     }
 
-    private var payablesInMonth: [FinanceEntry] {
-        entriesInMonth.filter { $0.type == .payable }
+    private var periodLabel: String {
+        let formatter = DateFormatter()
+        switch scope {
+        case .month:
+            formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
+            return formatter.string(from: selectedMonth)
+        case .week, .custom:
+            formatter.dateStyle = .medium
+            let start = formatter.string(from: reportRange.lowerBound)
+            let end = formatter.string(from: reportRange.upperBound)
+            return "\(start) - \(end)"
+        }
     }
 
-    private var currenciesInMonth: [FinanceEntry.Currency] {
-        let set = Set(entriesInMonth.map(\.currency))
+    private var entriesInRange: [FinanceEntry] {
+        store.finance.filter { entry in
+            reportRange.contains(entry.dueDate)
+        }
+    }
+
+    private var receivablesInRange: [FinanceEntry] {
+        entriesInRange.filter { $0.type == .receivable }
+    }
+
+    private var payablesInRange: [FinanceEntry] {
+        entriesInRange.filter { $0.type == .payable }
+    }
+
+    private var currenciesInRange: [FinanceEntry.Currency] {
+        let set = Set(entriesInRange.map(\.currency))
         return FinanceEntry.Currency.allCases.filter { set.contains($0) }
     }
 
@@ -1126,33 +1174,60 @@ struct ReportsView: View {
             VStack(spacing: 16) {
                 AppCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Month")
+                        Text("Period")
                             .font(.headline)
-                        DatePicker("Month", selection: $selectedMonth, displayedComponents: [.date])
-                            .datePickerStyle(.compact)
+                        Picker("Period", selection: $scope) {
+                            ForEach(ReportScope.allCases) { scope in
+                                Text(scope.label).tag(scope)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        switch scope {
+                        case .month:
+                            DatePicker("Month", selection: $selectedMonth, displayedComponents: [.date])
+                                .datePickerStyle(.compact)
+                        case .week:
+                            DatePicker("Week", selection: $selectedWeek, displayedComponents: [.date])
+                                .datePickerStyle(.compact)
+                        case .custom:
+                            DatePicker("Start date", selection: $customStart, displayedComponents: [.date])
+                                .datePickerStyle(.compact)
+                            DatePicker("End date", selection: $customEnd, displayedComponents: [.date])
+                                .datePickerStyle(.compact)
+                        }
+                        Text(periodLabel)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .padding(.horizontal)
 
-                if entriesInMonth.isEmpty {
+                if entriesInRange.isEmpty {
                     AppCard {
-                        Text("No data for this month.")
+                        Text("No data for this period.")
                             .foregroundColor(.secondary)
                     }
                     .padding(.horizontal)
                 } else {
-                    ForEach(currenciesInMonth, id: \.self) { currency in
-                        let receivables = receivablesInMonth.filter { $0.currency == currency }
-                        let payables = payablesInMonth.filter { $0.currency == currency }
+                    ForEach(currenciesInRange, id: \.self) { currency in
+                        let receivables = receivablesInRange.filter { $0.currency == currency }
+                        let payables = payablesInRange.filter { $0.currency == currency }
                         let clientItems = summaryItems(for: receivables, name: { $0.clientName ?? NSLocalizedString("Unknown", comment: "") })
                         let employeeItems = summaryItems(for: payables, name: { $0.employeeName ?? NSLocalizedString("Unknown", comment: "") })
                         let totalReceivables = receivables.reduce(0) { $0 + $1.amount }
                         let totalPayables = payables.reduce(0) { $0 + $1.amount }
                         let net = totalReceivables - totalPayables
+                        let summaryKey: String = {
+                            switch scope {
+                            case .month: return "Monthly summary (%@)"
+                            case .week: return "Weekly summary (%@)"
+                            case .custom: return "Summary (%@)"
+                            }
+                        }()
 
                         AppCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text(String(format: NSLocalizedString("Monthly summary (%@)", comment: ""), currency.code))
+                                Text(String(format: NSLocalizedString(summaryKey, comment: ""), currency.code))
                                     .font(.headline)
                                 HStack {
                                     VStack(alignment: .leading) {
@@ -1299,15 +1374,15 @@ struct ReportsView: View {
     private func exportCSV() {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        let start = formatter.string(from: monthRange.lowerBound)
-        let end = formatter.string(from: monthRange.upperBound)
+        let start = formatter.string(from: reportRange.lowerBound)
+        let end = formatter.string(from: reportRange.upperBound)
         var lines: [String] = [
             "Period Start,Period End,Currency,Type,Name,Count,Total"
         ]
 
-        for currency in currenciesInMonth {
-            let receivables = receivablesInMonth.filter { $0.currency == currency }
-            let payables = payablesInMonth.filter { $0.currency == currency }
+        for currency in currenciesInRange {
+            let receivables = receivablesInRange.filter { $0.currency == currency }
+            let payables = payablesInRange.filter { $0.currency == currency }
             let clientItems = summaryItems(for: receivables, name: { $0.clientName ?? NSLocalizedString("Unknown", comment: "") })
             let employeeItems = summaryItems(for: payables, name: { $0.employeeName ?? NSLocalizedString("Unknown", comment: "") })
 
@@ -1343,8 +1418,10 @@ struct ReportsView: View {
     private func exportPDF() {
         let pdfData = buildReportPDF()
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM-yyyy"
-        let fileName = "report-\(formatter.string(from: selectedMonth)).pdf"
+        formatter.dateFormat = "yyyy-MM-dd"
+        let start = formatter.string(from: reportRange.lowerBound)
+        let end = formatter.string(from: reportRange.upperBound)
+        let fileName = "report-\(start)-\(end).pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         try? FileManager.default.removeItem(at: url)
         do {
@@ -1359,8 +1436,6 @@ struct ReportsView: View {
     private func buildReportPDF() -> Data {
         let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM yyyy"
 
         return renderer.pdfData { context in
             context.beginPage()
@@ -1382,15 +1457,20 @@ struct ReportsView: View {
                 y += size.height + 8
             }
 
-            draw(String(format: NSLocalizedString("Monthly report: %@", comment: ""), dateFormatter.string(from: selectedMonth)), font: .boldSystemFont(ofSize: 20))
+            let reportTitleKey = scope == .month ? "Monthly report: %@" : "Report: %@"
+            draw(String(format: NSLocalizedString(reportTitleKey, comment: ""), periodLabel), font: .boldSystemFont(ofSize: 20))
 
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
-            draw(String(format: NSLocalizedString("Period: %@ - %@", comment: ""), formatter.string(from: monthRange.lowerBound), formatter.string(from: monthRange.upperBound)), font: .systemFont(ofSize: 12), color: .darkGray)
+            draw(
+                String(format: NSLocalizedString("Period: %@ - %@", comment: ""), formatter.string(from: reportRange.lowerBound), formatter.string(from: reportRange.upperBound)),
+                font: .systemFont(ofSize: 12),
+                color: .darkGray
+            )
 
-            for currency in currenciesInMonth {
-                let receivables = receivablesInMonth.filter { $0.currency == currency }
-                let payables = payablesInMonth.filter { $0.currency == currency }
+            for currency in currenciesInRange {
+                let receivables = receivablesInRange.filter { $0.currency == currency }
+                let payables = payablesInRange.filter { $0.currency == currency }
                 let totalReceivables = receivables.reduce(0) { $0 + $1.amount }
                 let totalPayables = payables.reduce(0) { $0 + $1.amount }
                 let net = totalReceivables - totalPayables
@@ -1424,6 +1504,15 @@ struct ReportsView: View {
             let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
             return "\"\(escaped)\""
         }.joined(separator: ",")
+    }
+
+    private func inclusiveRange(start: Date, end: Date) -> ClosedRange<Date> {
+        let calendar = Calendar.current
+        let startDay = calendar.startOfDay(for: start)
+        let endDay = calendar.startOfDay(for: end)
+        let endExclusive = calendar.date(byAdding: .day, value: 1, to: endDay) ?? endDay
+        let endInclusive = endExclusive.addingTimeInterval(-1)
+        return startDay...endInclusive
     }
 }
 

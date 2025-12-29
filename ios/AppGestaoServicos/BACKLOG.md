@@ -76,7 +76,7 @@
 
 ## Roadmap (Next)
 
-- ✅ Relatórios financeiros: resumo mensal por cliente/funcionário com export simples.
+- ✅ Relatórios financeiros: resumo mensal/semanal e intervalo custom por cliente/funcionário com export simples.
 - Sync real com backend (API) e regras de reconciliação.
 - ✅ Auditoria básica de alterações (quem/quando) para tarefas e finanças.
 

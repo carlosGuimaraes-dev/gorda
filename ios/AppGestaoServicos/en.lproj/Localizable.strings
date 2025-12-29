@@ -328,3 +328,9 @@
 "Finance entry deleted: %@" = "Finance entry deleted: %@";
 "Finance entry marked as %@: %@" = "Finance entry marked as %@: %@";
 "System" = "System";
+"Custom range" = "Custom range";
+"Start date" = "Start date";
+"End date" = "End date";
+"No data for this period." = "No data for this period.";
+"Weekly summary (%@)" = "Weekly summary (%@)";
+"Report: %@" = "Report: %@";
