@@ -50,3 +50,38 @@
 - ✅ Fluxo de contestação de faturas pelo cliente: marcar invoice como `disputed`, registrar motivo e permitir ajustes até 1 dia antes do vencimento
 - ✅ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
 - ✅ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura
+
+## Decision Log (2025-12-29)
+
+- MVP inclui Employees, Service Types e Teams (além de Login/Dashboard/Schedule/Clients/Finance/Settings).
+- Offline local-first com fila local e pontos de extensão para sync futuro.
+- Conflitos de sync: merge com prioridade local + log de conflito.
+- Invoices: geração manual, com re-geração parcial por período.
+- Payroll: permitido manualmente sem check-in/out, com confirmação do Manager.
+- Task cancelada mantém histórico e não entra nos cálculos.
+- Disputa de invoice pode ocorrer a qualquer momento.
+- Notificações: locais + base pronta para push.
+- Segurança: Keychain + criptografia local de dados sensíveis.
+- Localização: en-US e es-ES implementados.
+- Moeda global: Manager define e aplica sem conversão.
+- Dashboard: contagens + cashflow + estimativa de payroll.
+
+## Roadmap (Now)
+
+- Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
+- Segurança local: criptografar campos sensíveis (cliente/funcionário/finanças) com chave no Keychain.
+- Sync stub: adicionar log de conflito local (estrutura + UI simples em Settings).
+- Regras financeiras: permitir disputa de invoice a qualquer momento e payroll manual sem check-in/out (com confirmação do Manager).
+- Revisar cancelamento: garantir exclusão de cálculos e manter histórico.
+
+## Roadmap (Next)
+
+- Relatórios financeiros: resumo mensal por cliente/funcionário com export simples.
+- Sync real com backend (API) e regras de reconciliação.
+- Auditoria básica de alterações (quem/quando) para tarefas e finanças.
+
+## Roadmap (Later)
+
+- PT-BR.
+- Integração com pagamentos/boletos.
+- Modo multi-empresa (multi-tenant) com troca rápida de contexto.

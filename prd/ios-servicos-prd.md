@@ -10,6 +10,20 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Notificar clientes e funcionários sobre eventos relevantes.
 - Integrar controle financeiro básico (contas a pagar/receber).
 
+## Decisões (2025-12-29)
+- MVP inclui Employees, Service Types e Teams.
+- Offline local-first com fila local e pontos de extensão para sync futuro.
+- Conflitos: merge com prioridade local + log de conflito.
+- Invoices: geração manual com re-geração parcial por período.
+- Payroll: permitido manualmente sem check-in/out, com confirmação do Manager.
+- Task cancelada mantém histórico e não entra nos cálculos.
+- Disputa de invoice permitida a qualquer momento.
+- Notificações: locais + base pronta para push.
+- Segurança: Keychain + criptografia local de dados sensíveis.
+- Localização: en-US e es-ES implementados.
+- Moeda global: Manager define e aplica sem conversão.
+- Dashboard: contagens + cashflow + estimativa de payroll.
+
 ## Público-Alvo
 - Administradoras de serviços residenciais e suas equipes operacionais.
 
@@ -19,8 +33,9 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - **Gestão de Equipes e Catálogos**: menu lateral em sheet (hambúrguer) com atalhos para Dashboard/Agenda/Clients/Finance/Settings e catálogos de Services/Employees/Teams; criação de times, movimentação de funcionários entre times e gerenciamento de tipos de serviço (CRUD).
 - **Perfis de Usuário (Employee/Manager)**: o usuário escolhe seu perfil no primeiro acesso; toda a experiência (dashboard, agenda, financeiro) é filtrada de acordo com o papel (Employee vê apenas payroll no Finance).
 - **Preferências do App (Manager)**: idioma (en-US/es-ES) e moeda padrão (USD/EUR) são escolhidos na aba Settings e aplicados aos cadastros.
-- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe.
-- **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos prioritária para dados mais recentes do servidor quando houver conflito não resolvido localmente.
+- **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe. Cancelamentos mantêm histórico e não entram nos cálculos financeiros.
+- **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos priorizando dados locais e registrando conflitos quando houver divergências.
+- **Sync/Conflitos**: local-first com fila local; quando houver backend, aplicar merge com prioridade local e registrar conflitos em log.
 - **Notificações e Siri**: comandos de voz para agendar; push/local notifications para chegadas, cancelamentos e alterações.
 - **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão), com vínculo automático entre serviços, clientes e funcionários quando houver preço base de serviço.
 - **Dashboard** (cards + gráficos):
@@ -32,13 +47,16 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Permitir importar dados básicos (nome, telefone) de um contato na criação/edição de funcionário e cliente.
 - **Invoices e Payroll**:
   - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição até D-1 do vencimento no caso de invoices, marcação de disputa com motivo e reenvio pelo canal preferido do cliente (email/WhatsApp/iMessage).
-  - Geração de invoices agregados por cliente dentro de um período, separados por moeda (um invoice por cliente por moeda), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento.
+  - Geração de invoices agregados por cliente dentro de um período, separados por moeda (um invoice por cliente por moeda), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento; permitir re-geração parcial por período.
+  - Payroll pode ser gerado manualmente sem check-in/out, com confirmação do Manager.
+  - Disputa de invoice permitida a qualquer momento (mantendo histórico).
   - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
 
 ## Requisitos Não Funcionais
 - Plataforma: iOS (Swift, UIKit/SwiftUI conforme padrão do projeto).
 - Armazenamento local: Core Data ou SQLite para suporte offline; filas de sincronização para eventos pendentes.
 - Segurança: armazenamento seguro de credenciais (Keychain) e comunicação criptografada.
+- Segurança local: criptografia de dados sensíveis em repouso (ex.: contatos e documentos).
 - Performance: respostas em menos de 200 ms para navegação principal em dispositivos-alvo recentes.
 - Acessibilidade: suporte a Dynamic Type, VoiceOver e contrastes adequados.
 - Internacionalização: interface e conteúdo em **Inglês Americano (en-US)** e **Espanhol da Espanha (es-ES)**; sem suporte a Português do Brasil na primeira versão (tradução PT-BR avaliada como melhoria futura).
