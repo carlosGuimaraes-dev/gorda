@@ -84,7 +84,7 @@ struct LoginView: View {
                         }
 
                         if let lastSync = store.lastSync {
-                            Text("Last sync: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
+                            Text(String(format: NSLocalizedString("Last sync: %@", comment: ""), lastSync.formatted(date: .abbreviated, time: .shortened)))
                                 .font(.caption)
                                 .foregroundColor(AppTheme.secondaryText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -396,7 +396,7 @@ private struct EmployeeDashboardView: View {
     var body: some View {
         VStack(spacing: 12) {
             if let name = employeeName {
-                Text("Hello, \(name)")
+                Text(String(format: NSLocalizedString("Hello, %@", comment: ""), name))
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
@@ -439,7 +439,7 @@ private struct EmployeeDashboardView: View {
                         Text("Worked hours")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text(String(format: "%.1f h", totalWorkedHours))
+                        Text(String(format: NSLocalizedString("%.1f h", comment: ""), totalWorkedHours))
                             .font(.title3.bold())
                     }
                     Spacer()
@@ -614,7 +614,7 @@ private struct ManagerDashboardView: View {
                                 HStack {
                                     Text(summary.team)
                                     Spacer()
-                                    Text("\(summary.completed)/\(summary.total) completed")
+                                    Text(String(format: NSLocalizedString("%d/%d completed", comment: ""), summary.completed, summary.total))
                                         .font(.footnote)
                                         .foregroundColor(.secondary)
                                 }
@@ -840,7 +840,7 @@ struct AgendaView: View {
             }
             .font(.footnote)
             .foregroundColor(.secondary)
-            Text("Client: \(task.clientName)")
+            Text(String(format: NSLocalizedString("Client: %@", comment: ""), task.clientName))
                 .font(.subheadline)
             Text(task.address)
                 .font(.footnote)
@@ -1239,7 +1239,7 @@ struct InvoiceFormView: View {
                     selectedClientName = clientNames.first ?? ""
                 }
                 if title.isEmpty, let firstClient = clientNames.first {
-                    title = "Invoice - \(firstClient)"
+                    title = String(format: NSLocalizedString("Invoice - %@", comment: ""), firstClient)
                 }
                 currency = store.appPreferences.preferredCurrency
             }
@@ -1437,7 +1437,7 @@ struct InvoiceDetailView: View {
 
                 Section("Send invoice") {
                     if let client {
-                        Text("Preferred channels: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
+                        Text(String(format: NSLocalizedString("Preferred channels: %@", comment: ""), client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", ")))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                         Picker("Channel", selection: $selectedChannel) {
@@ -1460,7 +1460,7 @@ struct InvoiceDetailView: View {
                         Button {
                             openURL(url)
                         } label: {
-                            Label("Open \(selectedChannel.label)", systemImage: "paperplane.fill")
+                            Label(String(format: NSLocalizedString("Open %@", comment: ""), selectedChannel.label), systemImage: "paperplane.fill")
                         }
                     }
                     if !canAdjustInvoice {
@@ -1526,14 +1526,19 @@ struct InvoiceDetailView: View {
         dateFormatter.dateStyle = .medium
         let dueString = dateFormatter.string(from: dueDate)
 
-        var body = "Invoice: \(title)\nAmount: \(amountString)\nDue: \(dueString)"
+        var body = String(
+            format: NSLocalizedString("Invoice: %@\nAmount: %@\nDue: %@", comment: ""),
+            title,
+            amountString,
+            dueString
+        )
         if let clientName = entry.clientName {
-            body.append("\nClient: \(clientName)")
+            body.append(String(format: NSLocalizedString("\nClient: %@", comment: ""), clientName))
         }
-        body.append("\nChannel: \(selectedChannel.label)")
+        body.append(String(format: NSLocalizedString("\nChannel: %@", comment: ""), selectedChannel.label))
         if isDisputed {
-            let reason = disputeReason.isEmpty ? "Pending reason" : disputeReason
-            body.append("\nStatus: DISPUTED - \(reason)")
+            let reason = disputeReason.isEmpty ? NSLocalizedString("Pending reason", comment: "") : disputeReason
+            body.append(String(format: NSLocalizedString("\nStatus: DISPUTED - %@", comment: ""), reason))
         }
 
         shareItems = [body]
@@ -1567,8 +1572,12 @@ struct InvoiceDetailView: View {
         let activeCurrency = store.appPreferences.preferredCurrency
         numberFormatter.currencyCode = activeCurrency.code
 
-        let instructions = "Please pay via \(method?.label ?? selectedChannel.label) by \(dateFormatter.string(from: dueDate))."
-        let clientName = entry.clientName ?? "Client"
+        let instructions = String(
+            format: NSLocalizedString("Please pay via %@ by %@.", comment: ""),
+            method?.label ?? selectedChannel.label,
+            dateFormatter.string(from: dueDate)
+        )
+        let clientName = entry.clientName ?? NSLocalizedString("Client", comment: "")
         let disputeURL = makeDisputeURL()
 
         return renderer.pdfData { context in
@@ -1608,35 +1617,45 @@ struct InvoiceDetailView: View {
                 y += size.height + 8
             }
 
-            draw("Invoice", font: .boldSystemFont(ofSize: 22))
-            draw("Client: \(clientName)", font: .systemFont(ofSize: 14))
+            draw(NSLocalizedString("Invoice", comment: ""), font: .boldSystemFont(ofSize: 22))
+            draw(String(format: NSLocalizedString("Client: %@", comment: ""), clientName), font: .systemFont(ofSize: 14))
             if let email = client?.email, !email.isEmpty {
-                draw("Email: \(email)", font: .systemFont(ofSize: 12), color: .darkGray)
+                draw(String(format: NSLocalizedString("Email: %@", comment: ""), email), font: .systemFont(ofSize: 12), color: .darkGray)
             }
             if let phone = client?.phone, !phone.isEmpty {
-                draw("Phone: \(phone)", font: .systemFont(ofSize: 12), color: .darkGray)
+                draw(String(format: NSLocalizedString("Phone: %@", comment: ""), phone), font: .systemFont(ofSize: 12), color: .darkGray)
             }
-            draw("Due date: \(dateFormatter.string(from: dueDate))", font: .systemFont(ofSize: 14))
+            draw(String(format: NSLocalizedString("Due date: %@", comment: ""), dateFormatter.string(from: dueDate)), font: .systemFont(ofSize: 14))
             draw(instructions, font: .systemFont(ofSize: 12))
             if let disputeURL {
                 drawLink(NSLocalizedString("Dispute this invoice", comment: ""), url: disputeURL, font: .systemFont(ofSize: 12))
             }
 
             y += 8
-            draw("Line items", font: .boldSystemFont(ofSize: 16))
+            draw(NSLocalizedString("Line items", comment: ""), font: .boldSystemFont(ofSize: 16))
 
             for item in lineItems {
-                let amount = numberFormatter.string(from: NSNumber(value: item.amount)) ?? "\(activeCurrency.code) \(item.amount)"
-                draw("- \(item.title) (\(dateFormatter.string(from: item.date))): \(amount)", font: .systemFont(ofSize: 12))
+                let amount = numberFormatter.string(from: NSNumber(value: item.amount))
+                    ?? String(format: "%@ %.2f", activeCurrency.code, item.amount)
+                draw(
+                    String(
+                        format: NSLocalizedString("- %@ (%@): %@", comment: ""),
+                        item.title,
+                        dateFormatter.string(from: item.date),
+                        amount
+                    ),
+                    font: .systemFont(ofSize: 12)
+                )
             }
 
-            let totalString = numberFormatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(activeCurrency.code) \(parsedAmount ?? entry.amount)"
+            let totalString = numberFormatter.string(from: NSNumber(value: parsedAmount ?? entry.amount))
+                ?? String(format: "%@ %.2f", activeCurrency.code, parsedAmount ?? entry.amount)
             y += 8
-            draw("Total: \(totalString)", font: .boldSystemFont(ofSize: 14))
+            draw(String(format: NSLocalizedString("Total: %@", comment: ""), totalString), font: .boldSystemFont(ofSize: 14))
 
             if isDisputed {
-                let reason = disputeReason.isEmpty ? "Pending reason" : disputeReason
-                draw("Status: DISPUTED - \(reason)", font: .boldSystemFont(ofSize: 12), color: .red)
+                let reason = disputeReason.isEmpty ? NSLocalizedString("Pending reason", comment: "") : disputeReason
+                draw(String(format: NSLocalizedString("Status: DISPUTED - %@", comment: ""), reason), font: .boldSystemFont(ofSize: 12), color: .red)
             }
         }
     }
@@ -1646,15 +1665,23 @@ struct InvoiceDetailView: View {
         switch selectedChannel {
         case .email:
             guard !client.email.isEmpty else { return nil }
-            let subject = "Invoice \(title)"
-            let body = "Hello \(client.name), here is your invoice \(title)."
+            let subject = String(format: NSLocalizedString("Invoice %@", comment: ""), title)
+            let body = String(
+                format: NSLocalizedString("Hello %@, here is your invoice %@.", comment: ""),
+                client.name,
+                title
+            )
             let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
         case .whatsapp:
             guard !client.phone.isEmpty else { return nil }
             let digits = client.phone.filter { $0.isNumber || $0 == "+" }
-            let text = "Invoice \(title) - due \(dueDate.formatted(date: .abbreviated, time: .omitted))"
+            let text = String(
+                format: NSLocalizedString("Invoice %@ - due %@", comment: ""),
+                title,
+                dueDate.formatted(date: .abbreviated, time: .omitted)
+            )
             let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
         case .imessage:
@@ -1679,8 +1706,12 @@ struct InvoiceDetailView: View {
     }
 
     private func disputeURL(for channel: Client.DeliveryChannel, client: Client) -> URL? {
-        let subject = "Dispute invoice \(title)"
-        let body = "Hello \(client.name), I would like to dispute invoice \(title)."
+        let subject = String(format: NSLocalizedString("Dispute invoice %@", comment: ""), title)
+        let body = String(
+            format: NSLocalizedString("Hello %@, I would like to dispute invoice %@.", comment: ""),
+            client.name,
+            title
+        )
         switch channel {
         case .email:
             guard !client.email.isEmpty else { return nil }
@@ -1895,7 +1926,7 @@ struct PayrollFormView: View {
                     selectedEmployeeName = employeeNames.first ?? ""
                 }
                 if title.isEmpty, let employee = employeeNames.first {
-                    title = "Payroll - \(employee)"
+                    title = String(format: NSLocalizedString("Payroll - %@", comment: ""), employee)
                 }
                 currency = store.appPreferences.preferredCurrency
             }
@@ -1961,7 +1992,7 @@ struct PayrollDetailView: View {
             Form {
                 Section("Payroll") {
                     if let employee = entry.employeeName {
-                        Text("Employee: \(employee)")
+                        Text(String(format: NSLocalizedString("Employee: %@", comment: ""), employee))
                             .font(.subheadline)
                     }
                     TextField("Title", text: $title)
@@ -2048,11 +2079,11 @@ struct GenericFinanceDetailView: View {
                     Text(entry.dueDate, style: .date)
                         .foregroundColor(.secondary)
                     if let client = entry.clientName {
-                        Text("Client: \(client)")
+                        Text(String(format: NSLocalizedString("Client: %@", comment: ""), client))
                             .font(.footnote)
                     }
                     if let employee = entry.employeeName {
-                        Text("Employee: \(employee)")
+                        Text(String(format: NSLocalizedString("Employee: %@", comment: ""), employee))
                             .font(.footnote)
                     }
                 }
@@ -2120,10 +2151,10 @@ struct ExpenseDetailView: View {
                     Text(entry.dueDate, style: .date)
                         .foregroundColor(.secondary)
                     if let client = entry.clientName, !client.isEmpty {
-                        Text("Client: \(client)")
+                        Text(String(format: NSLocalizedString("Client: %@", comment: ""), client))
                             .font(.footnote)
                     }
-                    Text("Amount: \(entry.currency.code) \(entry.amount, specifier: "%.2f")")
+                    Text(String(format: NSLocalizedString("Amount: %@ %.2f", comment: ""), entry.currency.code, entry.amount))
                         .font(.subheadline)
                 }
 
@@ -2181,7 +2212,13 @@ struct ExpenseDetailView: View {
         var items: [Any] = []
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        let text = "Expense receipt for \(entry.title)\nAmount: \(entry.currency.code) \(entry.amount)\nDue: \(formatter.string(from: entry.dueDate))"
+        let text = String(
+            format: NSLocalizedString("Expense receipt for %@\nAmount: %@ %.2f\nDue: %@", comment: ""),
+            entry.title,
+            entry.currency.code,
+            entry.amount,
+            formatter.string(from: entry.dueDate)
+        )
         items.append(text)
         if let image = receiptImage {
             items.append(image)
@@ -2331,8 +2368,10 @@ struct ServiceFormView: View {
         else { return }
 
         var finalNotes = notes
-        if notifyClient { finalNotes.append(contentsOf: finalNotes.isEmpty ? "Notify client." : "\nNotify client.") }
-        if notifyTeam { finalNotes.append(contentsOf: finalNotes.isEmpty ? "Notify team." : "\nNotify team.") }
+        let clientNote = NSLocalizedString("Notify client.", comment: "")
+        let teamNote = NSLocalizedString("Notify team.", comment: "")
+        if notifyClient { finalNotes.append(contentsOf: finalNotes.isEmpty ? clientNote : "\n\(clientNote)") }
+        if notifyTeam { finalNotes.append(contentsOf: finalNotes.isEmpty ? teamNote : "\n\(teamNote)") }
 
         let serviceTypeIdToUse = selectedServiceTypeID ?? store.serviceTypes.first?.id
 
@@ -2508,7 +2547,14 @@ struct FinanceFormView: View {
             formatter.dateStyle = .medium
             let dateString = formatter.string(from: dueDate)
             let activeCurrency = store.appPreferences.preferredCurrency
-            let text = "Expense receipt for \(clientName)\n\n\(title)\nAmount: \(activeCurrency.code) \(value)\nDue date: \(dateString)"
+            let text = String(
+                format: NSLocalizedString("Expense receipt for %@\n\n%@\nAmount: %@ %.2f\nDue date: %@", comment: ""),
+                clientName,
+                title,
+                activeCurrency.code,
+                value,
+                dateString
+            )
             items.append(text)
             items.append(image)
             shareItems = items
@@ -2533,19 +2579,19 @@ struct SettingsView: View {
             List {
                 if let session = store.session {
                     Section("Session") {
-                        Text("User: \(session.name)")
+                        Text(String(format: NSLocalizedString("User: %@", comment: ""), session.name))
                         Button("Sign out", role: .destructive) { store.logout() }
                     }
                 }
                 Section("Sync") {
                     Button("Force sync") { store.syncPendingChanges() }
                     if let lastSync = store.lastSync {
-                        Text("Last: \(lastSync.formatted(date: .abbreviated, time: .shortened))")
+                        Text(String(format: NSLocalizedString("Last: %@", comment: ""), lastSync.formatted(date: .abbreviated, time: .shortened)))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
                     if !store.pendingChanges.isEmpty {
-                        Text("\(store.pendingChanges.count) pending changes in the queue")
+                        Text(String(format: NSLocalizedString("%d pending changes in the queue", comment: ""), store.pendingChanges.count))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
@@ -2560,7 +2606,7 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(entry.summary)
                                     .font(.subheadline)
-                                Text("\(entry.entity) · \(entry.field)")
+                                Text(String(format: NSLocalizedString("%@ · %@", comment: ""), entry.entity, entry.field))
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                                 Text(entry.timestamp, style: .date)
@@ -2757,12 +2803,12 @@ struct ClientDetailView: View {
             Section("Client") {
                 Text(client.name).bold()
                 if !client.phone.isEmpty {
-                    Text("Phone: \(client.phone)")
+                    Text(String(format: NSLocalizedString("Phone: %@", comment: ""), client.phone))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 if !client.email.isEmpty {
-                    Text("Email: \(client.email)")
+                    Text(String(format: NSLocalizedString("Email: %@", comment: ""), client.email))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -2770,22 +2816,22 @@ struct ClientDetailView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
                 if !client.propertyDetails.isEmpty {
-                    Text("Property: \(client.propertyDetails)")
+                    Text(String(format: NSLocalizedString("Property: %@", comment: ""), client.propertyDetails))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 if !client.preferredSchedule.isEmpty {
-                    Text("Preferred schedule: \(client.preferredSchedule)")
+                    Text(String(format: NSLocalizedString("Preferred schedule: %@", comment: ""), client.preferredSchedule))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 if !client.preferredDeliveryChannels.isEmpty {
-                Text("Invoice delivery: \(client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", "))")
+                Text(String(format: NSLocalizedString("Invoice delivery: %@", comment: ""), client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", ")))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 if !client.accessNotes.isEmpty {
-                    Text("Access notes: \(client.accessNotes)")
+                    Text(String(format: NSLocalizedString("Access notes: %@", comment: ""), client.accessNotes))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -2924,7 +2970,7 @@ struct ServiceTypeDetailView: View {
                                 .font(.body)
                                 .foregroundColor(AppTheme.primaryText)
                         }
-                        Text("Base price: \(serviceType.currency.code) \(serviceType.basePrice, specifier: "%.2f")")
+                        Text(String(format: NSLocalizedString("Base price: %@ %.2f", comment: ""), serviceType.currency.code, serviceType.basePrice))
                             .font(.body)
                     }
                 }
@@ -2935,7 +2981,7 @@ struct ServiceTypeDetailView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Usage")
                                 .font(.headline)
-                            Text("Linked to \(linkedTasksCount) services. Reassign before deleting.")
+                            Text(String(format: NSLocalizedString("Linked to %d services. Reassign before deleting.", comment: ""), linkedTasksCount))
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                         }
@@ -3111,7 +3157,7 @@ struct TeamsView: View {
                     .foregroundColor(.secondary)
             }
             ForEach(teams, id: \.name) { team in
-                Section(header: Text("\(team.name) (\(team.members.count))")) {
+                Section(header: Text(String(format: NSLocalizedString("%@ (%d)", comment: ""), team.name, team.members.count))) {
                     ForEach(team.members) { employee in
                         teamRow(employee: employee)
                     }
@@ -3162,7 +3208,7 @@ struct TeamsView: View {
             VStack(alignment: .leading) {
                 Text(employee.name).bold()
                 if !employee.team.isEmpty {
-                    Text("Team: \(employee.team)")
+                    Text(String(format: NSLocalizedString("Team: %@", comment: ""), employee.team))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 } else {
@@ -3177,7 +3223,7 @@ struct TeamsView: View {
                     updateTeam(for: employee, to: "")
                 }
                 ForEach(teams.map { $0.name }, id: \.self) { teamName in
-                    Button("Move to \(teamName)") {
+                    Button(String(format: NSLocalizedString("Move to %@", comment: ""), teamName)) {
                         updateTeam(for: employee, to: teamName)
                     }
                 }
@@ -3428,12 +3474,12 @@ struct ServiceDetailView: View {
 
                 Section("Check-in / Check-out") {
                     if let checkInTime {
-                        Text("Checked in: \(checkInTime.formatted(date: .omitted, time: .shortened))")
+                        Text(String(format: NSLocalizedString("Checked in: %@", comment: ""), checkInTime.formatted(date: .omitted, time: .shortened)))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
                     if let checkOutTime {
-                        Text("Checked out: \(checkOutTime.formatted(date: .omitted, time: .shortened))")
+                        Text(String(format: NSLocalizedString("Checked out: %@", comment: ""), checkOutTime.formatted(date: .omitted, time: .shortened)))
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
@@ -3455,8 +3501,12 @@ struct ServiceDetailView: View {
                         showClientAlert = true
                         if store.notificationPreferences.enablePush {
                             store.sendLocalNotification(
-                                title: "Notification to client",
-                                body: "Service \"\(task.title)\" updated for \(task.clientName)."
+                                title: NSLocalizedString("Notification to client", comment: ""),
+                                body: String(
+                                    format: NSLocalizedString("Service \"%@\" updated for %@.", comment: ""),
+                                    task.title,
+                                    task.clientName
+                                )
                             )
                         }
                     }
@@ -3465,8 +3515,12 @@ struct ServiceDetailView: View {
                         showTeamAlert = true
                         if store.notificationPreferences.enablePush {
                             store.sendLocalNotification(
-                                title: "Notification to team",
-                                body: "Service \"\(task.title)\" updated for \(task.assignedEmployee.name)."
+                                title: NSLocalizedString("Notification to team", comment: ""),
+                                body: String(
+                                    format: NSLocalizedString("Service \"%@\" updated for %@.", comment: ""),
+                                    task.title,
+                                    task.assignedEmployee.name
+                                )
                             )
                         }
                     }

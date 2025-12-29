@@ -60,7 +60,7 @@ private struct EmployeeRow: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 if !employee.team.isEmpty {
-                    Text("Team: \(employee.team)")
+                    Text(String(format: NSLocalizedString("Team: %@", comment: ""), employee.team))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -75,7 +75,7 @@ private struct EmployeeRow: View {
                     }
                 }
                 if let rate = employee.hourlyRate, let currency = employee.currency {
-                    Text("Hourly rate: \(currency.label) \(rate, specifier: "%.2f")")
+                    Text(String(format: NSLocalizedString("Hourly rate: %@ %.2f", comment: ""), currency.label, rate))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -295,7 +295,7 @@ struct EmployeeDetailView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             if !employee.team.isEmpty {
-                                Text("Team: \(employee.team)")
+                                Text(String(format: NSLocalizedString("Team: %@", comment: ""), employee.team))
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                             }
@@ -340,7 +340,7 @@ struct EmployeeDetailView: View {
                             labeledRow(title: "Documents", value: docs)
                         }
                         if pendingPayablesCount > 0 {
-                            labeledRow(title: "Pending payables", value: "\(pendingPayablesCount)")
+                            labeledRow(title: "Pending payables", value: String(pendingPayablesCount))
                         }
                     }
                 }
@@ -368,7 +368,7 @@ struct EmployeeDetailView: View {
                                 }
                             }
                             if assignedTasks.count > 6 {
-                                Text("+ \(assignedTasks.count - 6) more")
+                                Text(String(format: NSLocalizedString("+ %d more", comment: ""), assignedTasks.count - 6))
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                             }

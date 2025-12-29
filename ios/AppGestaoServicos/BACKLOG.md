@@ -68,7 +68,7 @@
 
 ## Roadmap (Now)
 
-- ⏳ Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
+- ✅ Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
 - ✅ Segurança local: criptografar campos sensíveis (cliente/funcionário/finanças) com chave no Keychain.
 - ✅ Sync stub: adicionar log de conflito local (estrutura + UI simples em Settings).
 - ✅ Regras financeiras: disputa de invoice a qualquer momento, com janela pós-vencimento configurável (D+N) e payroll manual sem check-in/out (com confirmação do Manager).

@@ -553,14 +553,17 @@ final class OfflineStore: ObservableObject {
         guard notificationPreferences.enableSiri else { return }
 
         let activity = NSUserActivity(activityType: "com.gorda.AppGestaoServicos.createService")
-        activity.title = "Create service"
+        activity.title = NSLocalizedString("Create service", comment: "")
         activity.userInfo = [
             "title": task.title,
             "clientName": task.clientName
         ]
         activity.isEligibleForSearch = true
         activity.isEligibleForPrediction = true
-        activity.suggestedInvocationPhrase = "Create service for \(task.clientName)"
+        activity.suggestedInvocationPhrase = String(
+            format: NSLocalizedString("Create service for %@", comment: ""),
+            task.clientName
+        )
         activity.becomeCurrent()
     }
 
@@ -1764,8 +1767,8 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .enUS: return "English (US)"
-        case .esES: return "Español (ES)"
+        case .enUS: return NSLocalizedString("English (US)", comment: "")
+        case .esES: return NSLocalizedString("Spanish (ES)", comment: "")
         }
     }
 

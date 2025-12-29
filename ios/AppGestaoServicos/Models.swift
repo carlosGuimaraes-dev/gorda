@@ -21,9 +21,9 @@ struct Client: Identifiable, Codable, Hashable {
 
         var label: String {
             switch self {
-            case .email: return "Email"
-            case .whatsapp: return "WhatsApp"
-            case .imessage: return "iMessage"
+            case .email: return NSLocalizedString("Email", comment: "")
+            case .whatsapp: return NSLocalizedString("WhatsApp", comment: "")
+            case .imessage: return NSLocalizedString("iMessage", comment: "")
             }
         }
     }
@@ -185,10 +185,10 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .scheduled: return "Agendado"
-            case .inProgress: return "Em andamento"
-            case .completed: return "Concluído"
-            case .canceled: return "Cancelado"
+            case .scheduled: return NSLocalizedString("Scheduled", comment: "")
+            case .inProgress: return NSLocalizedString("In progress", comment: "")
+            case .completed: return NSLocalizedString("Completed", comment: "")
+            case .canceled: return NSLocalizedString("Canceled", comment: "")
             }
         }
     }
@@ -301,8 +301,8 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
 
         var label: String {
             switch self {
-            case .pending: return "Pendente"
-            case .paid: return "Pago"
+            case .pending: return NSLocalizedString("Pending", comment: "")
+            case .paid: return NSLocalizedString("Paid", comment: "")
             }
         }
     }
@@ -315,9 +315,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .pix: return "Pix"
-            case .card: return "Cartão"
-            case .cash: return "Dinheiro"
+            case .pix: return NSLocalizedString("Pix", comment: "")
+            case .card: return NSLocalizedString("Card", comment: "")
+            case .cash: return NSLocalizedString("Cash", comment: "")
             }
         }
     }

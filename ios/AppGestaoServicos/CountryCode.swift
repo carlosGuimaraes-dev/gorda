@@ -10,13 +10,13 @@ struct CountryCode: Identifiable, Hashable {
 
 extension CountryCode {
     static let all: [CountryCode] = [
-        CountryCode(flag: "🇺🇸", name: "United States", dialCode: "+1"),
-        CountryCode(flag: "🇪🇺", name: "European Union", dialCode: "+32"),
-        CountryCode(flag: "🇵🇹", name: "Portugal", dialCode: "+351"),
-        CountryCode(flag: "🇪🇸", name: "Spain", dialCode: "+34"),
-        CountryCode(flag: "🇬🇧", name: "United Kingdom", dialCode: "+44"),
-        CountryCode(flag: "🇫🇷", name: "France", dialCode: "+33"),
-        CountryCode(flag: "🇩🇪", name: "Germany", dialCode: "+49")
+        CountryCode(flag: "🇺🇸", name: NSLocalizedString("United States", comment: ""), dialCode: "+1"),
+        CountryCode(flag: "🇪🇺", name: NSLocalizedString("European Union", comment: ""), dialCode: "+32"),
+        CountryCode(flag: "🇵🇹", name: NSLocalizedString("Portugal", comment: ""), dialCode: "+351"),
+        CountryCode(flag: "🇪🇸", name: NSLocalizedString("Spain", comment: ""), dialCode: "+34"),
+        CountryCode(flag: "🇬🇧", name: NSLocalizedString("United Kingdom", comment: ""), dialCode: "+44"),
+        CountryCode(flag: "🇫🇷", name: NSLocalizedString("France", comment: ""), dialCode: "+33"),
+        CountryCode(flag: "🇩🇪", name: NSLocalizedString("Germany", comment: ""), dialCode: "+49")
     ]
 
     static let defaultCode: CountryCode = .all[0]
@@ -49,4 +49,3 @@ struct CountryCodePicker: View {
         }
     }
 }
-
