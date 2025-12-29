@@ -106,3 +106,8 @@ Notes:
 
 ## Open Decisions
 - Notification provider selection (WhatsApp via Meta, SMS, Email).
+
+## References
+- `docs/backend-api-contract.md` (payloads + examples)
+- `docs/backend-schema.sql` (Postgres schema + indexes)
+- `docs/backend-sprint-plan.md` (Auth/Sync/R2/Notifications rollout)
