@@ -39,6 +39,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - **Sync/Conflitos**: local-first com fila local; quando houver backend, aplicar merge com prioridade local e registrar conflitos em log.
 - **Notificações e Siri**: comandos de voz para agendar; push/local notifications para chegadas, cancelamentos e alterações.
 - **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão), com vínculo automático entre serviços, clientes e funcionários quando houver preço base de serviço.
+- **Relatórios financeiros**: resumo mensal por cliente e funcionário, com export simples (CSV/PDF) para compartilhamento interno.
 - **Dashboard** (cards + gráficos):
   - Para funcionários (Employee): visão diária/semanal/mensal da agenda, serviços concluídos no período e valor estimado a receber apenas para tasks com check-in/check-out efetivos.
   - Para gestores (Manager): visão por equipe da realização das tarefas (cards por equipe + gráfico de tarefas por status) e cards financeiros com Contas a Pagar/Receber e fluxo de caixa, incluindo gráfico comparando Recebíveis x Pagáveis.
@@ -52,6 +53,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Payroll pode ser gerado manualmente sem check-in/out, com confirmação do Manager.
   - Disputa de invoice iniciada pelo cliente via e-mail/texto ou botao no PDF; permitida a qualquer momento (mantendo historico) e com ajustes permitidos pelo Manager; janela pos-vencimento e configuravel (D+N dias).
   - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
+  - Auditoria básica: log de alterações em tarefas e finanças (quem/quando), visível no Settings.
 
 ## Requisitos Não Funcionais
 - Plataforma: iOS (Swift, UIKit/SwiftUI conforme padrão do projeto).

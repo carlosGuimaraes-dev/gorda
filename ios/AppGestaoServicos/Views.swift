@@ -1002,6 +1002,14 @@ struct FinanceView: View {
                             Label("Payroll", systemImage: "person.2.badge.clock")
                         }
                     }
+
+                    Section("Reports") {
+                        NavigationLink {
+                            ReportsView()
+                        } label: {
+                            Label("Monthly reports", systemImage: "chart.bar.xaxis")
+                        }
+                    }
                 }
                 if isManager {
                     Section(header: Text("Receivables")) {
@@ -1071,6 +1079,351 @@ struct FinanceView: View {
                 PayrollGeneratorView()
             }
         }
+    }
+}
+
+private struct ReportItem: Identifiable {
+    let id = UUID()
+    let name: String
+    let total: Double
+    let count: Int
+}
+
+struct ReportsView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var selectedMonth: Date = Date()
+    @State private var shareItems: [Any] = []
+    @State private var showingShareSheet = false
+
+    private var monthRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
+        let end = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? selectedMonth
+        return start...end
+    }
+
+    private var entriesInMonth: [FinanceEntry] {
+        store.finance.filter { entry in
+            monthRange.contains(entry.dueDate)
+        }
+    }
+
+    private var receivablesInMonth: [FinanceEntry] {
+        entriesInMonth.filter { $0.type == .receivable }
+    }
+
+    private var payablesInMonth: [FinanceEntry] {
+        entriesInMonth.filter { $0.type == .payable }
+    }
+
+    private var currenciesInMonth: [FinanceEntry.Currency] {
+        let set = Set(entriesInMonth.map(\.currency))
+        return FinanceEntry.Currency.allCases.filter { set.contains($0) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Month")
+                            .font(.headline)
+                        DatePicker("Month", selection: $selectedMonth, displayedComponents: [.date])
+                            .datePickerStyle(.compact)
+                    }
+                }
+                .padding(.horizontal)
+
+                if entriesInMonth.isEmpty {
+                    AppCard {
+                        Text("No data for this month.")
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+                } else {
+                    ForEach(currenciesInMonth, id: \.self) { currency in
+                        let receivables = receivablesInMonth.filter { $0.currency == currency }
+                        let payables = payablesInMonth.filter { $0.currency == currency }
+                        let clientItems = summaryItems(for: receivables, name: { $0.clientName ?? NSLocalizedString("Unknown", comment: "") })
+                        let employeeItems = summaryItems(for: payables, name: { $0.employeeName ?? NSLocalizedString("Unknown", comment: "") })
+                        let totalReceivables = receivables.reduce(0) { $0 + $1.amount }
+                        let totalPayables = payables.reduce(0) { $0 + $1.amount }
+                        let net = totalReceivables - totalPayables
+
+                        AppCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(String(format: NSLocalizedString("Monthly summary (%@)", comment: ""), currency.code))
+                                    .font(.headline)
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text("Receivables")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(currencyFormatter(for: currency).string(from: NSNumber(value: totalReceivables)) ?? "-")
+                                            .bold()
+                                            .foregroundColor(.green)
+                                    }
+                                    Spacer()
+                                    VStack(alignment: .trailing) {
+                                        Text("Payables")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(currencyFormatter(for: currency).string(from: NSNumber(value: totalPayables)) ?? "-")
+                                            .bold()
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                                Divider()
+                                HStack {
+                                    Text("Net")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(currencyFormatter(for: currency).string(from: NSNumber(value: net)) ?? "-")
+                                        .bold()
+                                        .foregroundColor(net >= 0 ? .green : .red)
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        if !clientItems.isEmpty {
+                            AppCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Top clients")
+                                        .font(.headline)
+                                    Chart {
+                                        ForEach(clientItems.prefix(6)) { item in
+                                            BarMark(
+                                                x: .value("Client", item.name),
+                                                y: .value("Amount", item.total)
+                                            )
+                                            .foregroundStyle(.green)
+                                        }
+                                    }
+                                    .frame(height: 180)
+
+                                    ForEach(clientItems.prefix(5)) { item in
+                                        HStack {
+                                            Text(item.name)
+                                            Spacer()
+                                            Text(currencyFormatter(for: currency).string(from: NSNumber(value: item.total)) ?? "-")
+                                                .bold()
+                                        }
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+
+                        if !employeeItems.isEmpty {
+                            AppCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Top employees")
+                                        .font(.headline)
+                                    Chart {
+                                        ForEach(employeeItems.prefix(6)) { item in
+                                            BarMark(
+                                                x: .value("Employee", item.name),
+                                                y: .value("Amount", item.total)
+                                            )
+                                            .foregroundStyle(.red)
+                                        }
+                                    }
+                                    .frame(height: 180)
+
+                                    ForEach(employeeItems.prefix(5)) { item in
+                                        HStack {
+                                            Text(item.name)
+                                            Spacer()
+                                            Text(currencyFormatter(for: currency).string(from: NSNumber(value: item.total)) ?? "-")
+                                                .bold()
+                                        }
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Export")
+                                .font(.headline)
+                            Button {
+                                exportCSV()
+                            } label: {
+                                Label("Export CSV", systemImage: "tray.and.arrow.up")
+                            }
+                            Button {
+                                exportPDF()
+                            } label: {
+                                Label("Export PDF", systemImage: "doc.richtext")
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding(.vertical, 12)
+        }
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Reports")
+        .sheet(isPresented: $showingShareSheet) {
+            ActivityView(items: shareItems)
+        }
+    }
+
+    private func summaryItems(for entries: [FinanceEntry], name: (FinanceEntry) -> String) -> [ReportItem] {
+        let grouped = Dictionary(grouping: entries) { entry in
+            let raw = name(entry).trimmingCharacters(in: .whitespacesAndNewlines)
+            return raw.isEmpty ? NSLocalizedString("Unknown", comment: "") : raw
+        }
+        return grouped.map { key, values in
+            ReportItem(name: key, total: values.reduce(0) { $0 + $1.amount }, count: values.count)
+        }
+        .sorted { $0.total > $1.total }
+    }
+
+    private func currencyFormatter(for currency: FinanceEntry.Currency) -> NumberFormatter {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = currency.code
+        return formatter
+    }
+
+    private func exportCSV() {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        let start = formatter.string(from: monthRange.lowerBound)
+        let end = formatter.string(from: monthRange.upperBound)
+        var lines: [String] = [
+            "Period Start,Period End,Currency,Type,Name,Count,Total"
+        ]
+
+        for currency in currenciesInMonth {
+            let receivables = receivablesInMonth.filter { $0.currency == currency }
+            let payables = payablesInMonth.filter { $0.currency == currency }
+            let clientItems = summaryItems(for: receivables, name: { $0.clientName ?? NSLocalizedString("Unknown", comment: "") })
+            let employeeItems = summaryItems(for: payables, name: { $0.employeeName ?? NSLocalizedString("Unknown", comment: "") })
+
+            for item in clientItems {
+                lines.append(csvRow(values: [
+                    start,
+                    end,
+                    currency.code,
+                    NSLocalizedString("Receivable", comment: ""),
+                    item.name,
+                    "\(item.count)",
+                    String(format: "%.2f", item.total)
+                ]))
+            }
+            for item in employeeItems {
+                lines.append(csvRow(values: [
+                    start,
+                    end,
+                    currency.code,
+                    NSLocalizedString("Payable", comment: ""),
+                    item.name,
+                    "\(item.count)",
+                    String(format: "%.2f", item.total)
+                ]))
+            }
+        }
+
+        let csv = lines.joined(separator: "\n")
+        shareItems = [csv]
+        showingShareSheet = true
+    }
+
+    private func exportPDF() {
+        let pdfData = buildReportPDF()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM-yyyy"
+        let fileName = "report-\(formatter.string(from: selectedMonth)).pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: url)
+        do {
+            try pdfData.write(to: url)
+            shareItems = [url]
+        } catch {
+            shareItems = [pdfData]
+        }
+        showingShareSheet = true
+    }
+
+    private func buildReportPDF() -> Data {
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMMM yyyy"
+
+        return renderer.pdfData { context in
+            context.beginPage()
+            let margin: CGFloat = 24
+            var y: CGFloat = margin
+
+            func draw(_ text: String, font: UIFont, color: UIColor = .black) {
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: color
+                ]
+                let attributed = NSAttributedString(string: text, attributes: attrs)
+                let size = attributed.boundingRect(
+                    with: CGSize(width: pageRect.width - margin * 2, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                ).size
+                attributed.draw(in: CGRect(x: margin, y: y, width: pageRect.width - margin * 2, height: size.height))
+                y += size.height + 8
+            }
+
+            draw(String(format: NSLocalizedString("Monthly report: %@", comment: ""), dateFormatter.string(from: selectedMonth)), font: .boldSystemFont(ofSize: 20))
+
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            draw(String(format: NSLocalizedString("Period: %@ - %@", comment: ""), formatter.string(from: monthRange.lowerBound), formatter.string(from: monthRange.upperBound)), font: .systemFont(ofSize: 12), color: .darkGray)
+
+            for currency in currenciesInMonth {
+                let receivables = receivablesInMonth.filter { $0.currency == currency }
+                let payables = payablesInMonth.filter { $0.currency == currency }
+                let totalReceivables = receivables.reduce(0) { $0 + $1.amount }
+                let totalPayables = payables.reduce(0) { $0 + $1.amount }
+                let net = totalReceivables - totalPayables
+
+                draw(String(format: NSLocalizedString("Summary (%@)", comment: ""), currency.code), font: .boldSystemFont(ofSize: 14))
+                draw(String(format: NSLocalizedString("Receivables: %@ %.2f", comment: ""), currency.code, totalReceivables), font: .systemFont(ofSize: 12))
+                draw(String(format: NSLocalizedString("Payables: %@ %.2f", comment: ""), currency.code, totalPayables), font: .systemFont(ofSize: 12))
+                draw(String(format: NSLocalizedString("Net: %@ %.2f", comment: ""), currency.code, net), font: .systemFont(ofSize: 12))
+
+                let clientItems = summaryItems(for: receivables, name: { $0.clientName ?? NSLocalizedString("Unknown", comment: "") })
+                if !clientItems.isEmpty {
+                    draw(NSLocalizedString("Top clients", comment: ""), font: .boldSystemFont(ofSize: 12))
+                    for item in clientItems.prefix(5) {
+                        draw(String(format: "- %@: %@ %.2f", item.name, currency.code, item.total), font: .systemFont(ofSize: 11))
+                    }
+                }
+
+                let employeeItems = summaryItems(for: payables, name: { $0.employeeName ?? NSLocalizedString("Unknown", comment: "") })
+                if !employeeItems.isEmpty {
+                    draw(NSLocalizedString("Top employees", comment: ""), font: .boldSystemFont(ofSize: 12))
+                    for item in employeeItems.prefix(5) {
+                        draw(String(format: "- %@: %@ %.2f", item.name, currency.code, item.total), font: .systemFont(ofSize: 11))
+                    }
+                }
+            }
+        }
+    }
+
+    private func csvRow(values: [String]) -> String {
+        values.map { value in
+            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\""
+        }.joined(separator: ",")
     }
 }
 
@@ -2696,6 +3049,19 @@ struct SettingsView: View {
                 }
 
                 if store.session?.role == .manager {
+                    Section("Audit log") {
+                        NavigationLink("Audit log") {
+                            AuditLogView()
+                        }
+                        if store.auditLog.isEmpty {
+                            Text("No audit entries yet.")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                if store.session?.role == .manager {
                     Section("Team") {
                         NavigationLink("Employees") {
                             EmployeesView()
@@ -2764,6 +3130,59 @@ struct SettingsView: View {
                     MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
                 }
             }
+        }
+    }
+}
+
+struct AuditLogView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var showingClearAlert = false
+
+    private var sortedEntries: [AuditLogEntry] {
+        store.auditLog.sorted { $0.timestamp > $1.timestamp }
+    }
+
+    var body: some View {
+        List {
+            if sortedEntries.isEmpty {
+                Text("No audit entries yet.")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(sortedEntries) { entry in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(entry.summary)
+                            .font(.subheadline)
+                        Text(String(format: NSLocalizedString("Actor: %@", comment: ""), entry.actor))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Text(String(format: NSLocalizedString("Action: %@", comment: ""), entry.action))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Text(entry.timestamp, style: .date)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Audit log")
+        .toolbar {
+            if !store.auditLog.isEmpty {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Clear") {
+                        showingClearAlert = true
+                    }
+                }
+            }
+        }
+        .alert("Clear audit log?", isPresented: $showingClearAlert) {
+            Button("Clear", role: .destructive) { store.clearAuditLog() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone.")
         }
     }
 }

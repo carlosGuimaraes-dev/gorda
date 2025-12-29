@@ -150,4 +150,13 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `timestamp: Date`
   - Observação: log local de conflitos de sync, exibido no Settings.
 
+- **AuditLogEntry**
+  - `id: UUID`
+  - `entity: String`
+  - `action: String`
+  - `summary: String`
+  - `actor: String`
+  - `timestamp: Date`
+  - Observação: log local de alterações (tarefas/finanças), exibido no Settings.
+
 > Implementação Core Data: cada entidade acima pode virar uma `NSEntityDescription` em um modelo programático ou em um `.xcdatamodeld`. O app atual continuará usando o `OfflineStore` como fachada, mas por baixo os dados passam a ser persistidos em Core Data/SQLite ao invés de um JSON único.

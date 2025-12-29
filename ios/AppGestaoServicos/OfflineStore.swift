@@ -12,6 +12,7 @@ final class OfflineStore: ObservableObject {
     @Published private(set) var serviceTypes: [ServiceType] = []
     @Published private(set) var pendingChanges: [PendingChange] = []
     @Published private(set) var conflictLog: [ConflictLogEntry] = []
+    @Published private(set) var auditLog: [AuditLogEntry] = []
     @Published var notificationPreferences = NotificationPreferences() {
         didSet { persist() }
     }
@@ -84,6 +85,11 @@ final class OfflineStore: ObservableObject {
             serviceTypeId: serviceTypeId
         )
         tasks.append(task)
+        recordAudit(
+            entity: "Task",
+            action: NSLocalizedString("Created", comment: ""),
+            summary: String(format: NSLocalizedString("Task created: %@", comment: ""), task.title)
+        )
         pendingChanges.append(PendingChange(operation: .addTask, entityId: task.id))
         saveTaskToCoreData(task)
         donateServiceCreationShortcut(for: task)
@@ -106,6 +112,11 @@ final class OfflineStore: ObservableObject {
         tasks[index].notes = notes ?? tasks[index].notes
         tasks[index].checkInTime = checkInTime ?? tasks[index].checkInTime
         tasks[index].checkOutTime = checkOutTime ?? tasks[index].checkOutTime
+        recordAudit(
+            entity: "Task",
+            action: NSLocalizedString("Updated", comment: ""),
+            summary: String(format: NSLocalizedString("Task updated: %@", comment: ""), tasks[index].title)
+        )
         pendingChanges.append(PendingChange(operation: .updateTask, entityId: task.id))
         saveTaskToCoreData(tasks[index])
         persist()
@@ -188,6 +199,11 @@ final class OfflineStore: ObservableObject {
             receiptData: receiptData
         )
         finance.append(entry)
+        recordAudit(
+            entity: "Finance",
+            action: NSLocalizedString("Created", comment: ""),
+            summary: String(format: NSLocalizedString("Finance entry created: %@", comment: ""), entry.title)
+        )
         pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(entry)
         persist()
@@ -244,6 +260,15 @@ final class OfflineStore: ObservableObject {
         guard let index = finance.firstIndex(where: { $0.id == entry.id }) else { return }
         finance[index].status = status
         finance[index].method = method
+        recordAudit(
+            entity: "Finance",
+            action: NSLocalizedString("Status updated", comment: ""),
+            summary: String(
+                format: NSLocalizedString("Finance entry marked as %@: %@", comment: ""),
+                status.label,
+                finance[index].title
+            )
+        )
         pendingChanges.append(PendingChange(operation: .markFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
         persist()
@@ -253,6 +278,11 @@ final class OfflineStore: ObservableObject {
         guard let index = finance.firstIndex(where: { $0.id == entry.id }) else { return }
         mutate(&finance[index])
         finance[index].currency = appPreferences.preferredCurrency
+        recordAudit(
+            entity: "Finance",
+            action: NSLocalizedString("Updated", comment: ""),
+            summary: String(format: NSLocalizedString("Finance entry updated: %@", comment: ""), finance[index].title)
+        )
         pendingChanges.append(PendingChange(operation: .updateFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
         persist()
@@ -271,6 +301,11 @@ final class OfflineStore: ObservableObject {
 
     func deleteFinanceEntry(_ entry: FinanceEntry) {
         finance.removeAll { $0.id == entry.id }
+        recordAudit(
+            entity: "Finance",
+            action: NSLocalizedString("Deleted", comment: ""),
+            summary: String(format: NSLocalizedString("Finance entry deleted: %@", comment: ""), entry.title)
+        )
         pendingChanges.append(PendingChange(operation: .deleteFinanceEntry, entityId: entry.id))
         deleteFinanceEntryFromCoreData(entry.id)
         persist()
@@ -524,6 +559,28 @@ final class OfflineStore: ObservableObject {
         persist()
     }
 
+    func clearAuditLog() {
+        auditLog.removeAll()
+        persist()
+    }
+
+    private func recordAudit(entity: String, action: String, summary: String) {
+        let actor: String
+        if let session {
+            let roleLabel = session.role == .manager
+                ? NSLocalizedString("Manager", comment: "")
+                : NSLocalizedString("Employee", comment: "")
+            actor = "\(session.name) (\(roleLabel))"
+        } else {
+            actor = NSLocalizedString("System", comment: "")
+        }
+        let entry = AuditLogEntry(entity: entity, action: action, summary: summary, actor: actor)
+        auditLog.append(entry)
+        if auditLog.count > 200 {
+            auditLog = Array(auditLog.suffix(200))
+        }
+    }
+
     func requestPushAuthorizationIfNeeded() {
         guard notificationPreferences.enablePush else { return }
         UNUserNotificationCenter.current().getNotificationSettings { settings in
@@ -571,18 +628,19 @@ final class OfflineStore: ObservableObject {
 
     private func persist() {
         do {
-            let snapshot = Snapshot(
-                clients: clients,
-                employees: employees,
-                tasks: tasks,
-                finance: finance,
-                session: session.map { UserSession(token: "", name: $0.name, role: $0.role) },
-                lastSync: lastSync,
-                pendingChanges: pendingChanges,
-                notificationPreferences: notificationPreferences,
-                appPreferences: appPreferences,
-                conflictLog: conflictLog
-            )
+        let snapshot = Snapshot(
+            clients: clients,
+            employees: employees,
+            tasks: tasks,
+            finance: finance,
+            session: session.map { UserSession(token: "", name: $0.name, role: $0.role) },
+            lastSync: lastSync,
+            pendingChanges: pendingChanges,
+            notificationPreferences: notificationPreferences,
+            appPreferences: appPreferences,
+            conflictLog: conflictLog,
+            auditLog: auditLog
+        )
             let data = try JSONEncoder().encode(snapshot)
             let payload = try encryptSnapshotData(data)
             try payload.write(to: persistenceURL, options: .atomic)
@@ -633,13 +691,33 @@ final class OfflineStore: ObservableObject {
                 self.notificationPreferences = snapshot.notificationPreferences
                 self.appPreferences = snapshot.appPreferences
                 self.conflictLog = snapshot.conflictLog
+                self.auditLog = snapshot.auditLog
             } catch {
                 // Primeiro uso ou dados indisponíveis; segue vazio.
             }
         }
 
+        loadSnapshotMetadata()
+
         if let secureSession = KeychainHelper.loadSession() {
             self.session = secureSession
+        }
+    }
+
+    private func loadSnapshotMetadata() {
+        do {
+            let data = try Data(contentsOf: persistenceURL)
+            let decoded = try decryptSnapshotData(data)
+            let snapshot = try JSONDecoder().decode(Snapshot.self, from: decoded)
+            self.session = snapshot.session
+            self.lastSync = snapshot.lastSync
+            self.pendingChanges = snapshot.pendingChanges
+            self.notificationPreferences = snapshot.notificationPreferences
+            self.appPreferences = snapshot.appPreferences
+            self.conflictLog = snapshot.conflictLog
+            self.auditLog = snapshot.auditLog
+        } catch {
+            // Sem snapshot disponível; ignora.
         }
     }
 
@@ -1781,6 +1859,31 @@ struct ConflictLogEntry: Identifiable, Codable, Hashable {
     }
 }
 
+struct AuditLogEntry: Identifiable, Codable, Hashable {
+    let id: UUID
+    let entity: String
+    let action: String
+    let summary: String
+    let actor: String
+    let timestamp: Date
+
+    init(
+        id: UUID = UUID(),
+        entity: String,
+        action: String,
+        summary: String,
+        actor: String,
+        timestamp: Date = Date()
+    ) {
+        self.id = id
+        self.entity = entity
+        self.action = action
+        self.summary = summary
+        self.actor = actor
+        self.timestamp = timestamp
+    }
+}
+
 enum AppLanguage: String, Codable, CaseIterable, Identifiable {
     case enUS = "en-US"
     case esES = "es-ES"
@@ -1864,6 +1967,7 @@ private struct Snapshot: Codable {
     var notificationPreferences: NotificationPreferences
     var appPreferences: AppPreferences
     var conflictLog: [ConflictLogEntry]
+    var auditLog: [AuditLogEntry]
 
     enum CodingKeys: String, CodingKey {
         case clients
@@ -1876,6 +1980,7 @@ private struct Snapshot: Codable {
         case notificationPreferences
         case appPreferences
         case conflictLog
+        case auditLog
     }
 
     init(
@@ -1888,7 +1993,8 @@ private struct Snapshot: Codable {
         pendingChanges: [PendingChange],
         notificationPreferences: NotificationPreferences,
         appPreferences: AppPreferences,
-        conflictLog: [ConflictLogEntry]
+        conflictLog: [ConflictLogEntry],
+        auditLog: [AuditLogEntry]
     ) {
         self.clients = clients
         self.employees = employees
@@ -1900,6 +2006,7 @@ private struct Snapshot: Codable {
         self.notificationPreferences = notificationPreferences
         self.appPreferences = appPreferences
         self.conflictLog = conflictLog
+        self.auditLog = auditLog
     }
 
     init(from decoder: Decoder) throws {
@@ -1914,5 +2021,6 @@ private struct Snapshot: Codable {
         notificationPreferences = try container.decodeIfPresent(NotificationPreferences.self, forKey: .notificationPreferences) ?? NotificationPreferences()
         appPreferences = try container.decodeIfPresent(AppPreferences.self, forKey: .appPreferences) ?? AppPreferences()
         conflictLog = try container.decodeIfPresent([ConflictLogEntry].self, forKey: .conflictLog) ?? []
+        auditLog = try container.decodeIfPresent([AuditLogEntry].self, forKey: .auditLog) ?? []
     }
 }
