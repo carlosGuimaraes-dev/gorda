@@ -3,6 +3,28 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Enums
+CREATE TYPE role_enum AS ENUM ('manager', 'employee');
+CREATE TYPE membership_status_enum AS ENUM ('active', 'invited', 'disabled');
+CREATE TYPE task_status_enum AS ENUM ('scheduled', 'inProgress', 'completed', 'canceled');
+CREATE TYPE finance_type_enum AS ENUM ('receivable', 'payable');
+CREATE TYPE finance_status_enum AS ENUM ('pending', 'paid');
+CREATE TYPE finance_kind_enum AS ENUM ('general', 'invoiceClient', 'payrollEmployee', 'expenseOutOfPocket');
+CREATE TYPE currency_enum AS ENUM ('usd', 'eur');
+CREATE TYPE payment_method_enum AS ENUM ('pix', 'card', 'cash');
+CREATE TYPE notification_channel_enum AS ENUM ('whatsapp', 'sms', 'email');
+CREATE TYPE notification_status_enum AS ENUM ('queued', 'sent', 'failed', 'delivered');
+CREATE TYPE attachment_owner_enum AS ENUM ('finance_entry', 'task');
+
+-- Timestamp helper
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE tenants (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   name text NOT NULL,
@@ -20,8 +42,8 @@ CREATE TABLE users (
 CREATE TABLE memberships (
   tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('manager','employee')),
-  status text NOT NULL DEFAULT 'active',
+  role role_enum NOT NULL,
+  status membership_status_enum NOT NULL DEFAULT 'active',
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, user_id)
 );
@@ -60,7 +82,7 @@ CREATE TABLE employees (
   team text,
   phone text,
   hourly_rate numeric,
-  currency text,
+  currency currency_enum,
   extra_earnings_description text,
   documents_description text,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -74,7 +96,7 @@ CREATE TABLE service_types (
   name text NOT NULL,
   description text,
   base_price numeric NOT NULL,
-  currency text NOT NULL,
+  currency currency_enum NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
@@ -87,7 +109,7 @@ CREATE TABLE tasks (
   date date NOT NULL,
   start_time timestamptz,
   end_time timestamptz,
-  status text NOT NULL,
+  status task_status_enum NOT NULL,
   assigned_employee_id uuid REFERENCES employees(id),
   client_id uuid REFERENCES clients(id),
   client_name text,
@@ -106,16 +128,16 @@ CREATE TABLE finance_entries (
   tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   title text NOT NULL,
   amount numeric NOT NULL,
-  type text NOT NULL,
+  type finance_type_enum NOT NULL,
   due_date date NOT NULL,
-  status text NOT NULL,
-  method text,
-  currency text NOT NULL,
+  status finance_status_enum NOT NULL,
+  method payment_method_enum,
+  currency currency_enum NOT NULL,
   client_id uuid REFERENCES clients(id),
   client_name text,
   employee_id uuid REFERENCES employees(id),
   employee_name text,
-  kind text NOT NULL,
+  kind finance_kind_enum NOT NULL,
   is_disputed boolean NOT NULL DEFAULT false,
   dispute_reason text,
   receipt_attachment_id uuid,
@@ -130,7 +152,7 @@ CREATE TABLE attachments (
   r2_key text NOT NULL,
   mime_type text NOT NULL,
   size integer NOT NULL,
-  owner_type text NOT NULL,
+  owner_type attachment_owner_enum NOT NULL,
   owner_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
@@ -162,12 +184,37 @@ CREATE TABLE notifications (
   tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   entity text NOT NULL,
   entity_id uuid NOT NULL,
-  channel text NOT NULL,
-  status text NOT NULL,
+  channel notification_channel_enum NOT NULL,
+  status notification_status_enum NOT NULL,
   provider_message_id text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Update triggers
+CREATE TRIGGER trg_clients_updated
+BEFORE UPDATE ON clients
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER trg_employees_updated
+BEFORE UPDATE ON employees
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER trg_service_types_updated
+BEFORE UPDATE ON service_types
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER trg_tasks_updated
+BEFORE UPDATE ON tasks
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER trg_finance_entries_updated
+BEFORE UPDATE ON finance_entries
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER trg_notifications_updated
+BEFORE UPDATE ON notifications
+FOR EACH ROW EXECUTE PROCEDURE set_updated_at();
 
 -- Common indexes
 CREATE INDEX idx_clients_tenant_updated ON clients (tenant_id, updated_at DESC);

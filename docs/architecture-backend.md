@@ -111,3 +111,4 @@ Notes:
 - `docs/backend-api-contract.md` (payloads + examples)
 - `docs/backend-schema.sql` (Postgres schema + indexes)
 - `docs/backend-sprint-plan.md` (Auth/Sync/R2/Notifications rollout)
+- `docs/backend-openapi.yaml` (OpenAPI v1)

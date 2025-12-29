@@ -1,0 +1,482 @@
+openapi: 3.0.3
+info:
+  title: AG Home Organizer Backend API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Since:
+      name: since
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 500
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum: [manager, employee]
+    InviteRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [manager, employee]
+    InviteResponse:
+      type: object
+      properties:
+        inviteId:
+          type: string
+          format: uuid
+        status:
+          type: string
+    SyncPushRequest:
+      type: object
+      required: [deviceId, changes]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        clientTime:
+          type: string
+          format: date-time
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncChange'
+    SyncChange:
+      type: object
+      required: [op, entity, entityId, clientUpdatedAt]
+      properties:
+        op:
+          type: string
+          enum: [upsert, delete]
+        entity:
+          type: string
+          enum: [client, employee, service_type, task, finance_entry]
+        entityId:
+          type: string
+          format: uuid
+        clientUpdatedAt:
+          type: string
+          format: date-time
+        payload:
+          type: object
+    SyncPushResponse:
+      type: object
+      properties:
+        serverTime:
+          type: string
+          format: date-time
+        applied:
+          type: array
+          items:
+            type: string
+            format: uuid
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflict'
+    SyncPullResponse:
+      type: object
+      properties:
+        serverTime:
+          type: string
+          format: date-time
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncPullChange'
+        nextCursor:
+          type: string
+          format: date-time
+    SyncPullChange:
+      type: object
+      required: [op, entity, entityId, updatedAt]
+      properties:
+        op:
+          type: string
+          enum: [upsert, delete]
+        entity:
+          type: string
+          enum: [client, employee, service_type, task, finance_entry]
+        entityId:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time
+        payload:
+          type: object
+    Conflict:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        fields:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    Audit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entity:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        summary:
+          type: string
+        actor:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    PresignUploadRequest:
+      type: object
+      required: [ownerType, ownerId, mimeType, size]
+      properties:
+        ownerType:
+          type: string
+          enum: [finance_entry, task]
+        ownerId:
+          type: string
+          format: uuid
+        mimeType:
+          type: string
+        size:
+          type: integer
+    PresignUploadResponse:
+      type: object
+      properties:
+        attachmentId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+        r2Key:
+          type: string
+    PresignDownloadResponse:
+      type: object
+      properties:
+        downloadUrl:
+          type: string
+    InvoiceSendRequest:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [whatsapp, sms, email]
+        message:
+          type: string
+        includePdf:
+          type: boolean
+
+paths:
+  /tenants:
+    get:
+      summary: List tenants for user
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tenant'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+
+  /tenants/{tenantId}/invite:
+    post:
+      summary: Invite user to tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResponse'
+
+  /tenants/{tenantId}/activate:
+    post:
+      summary: Activate tenant for device
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  /sync/push:
+    post:
+      summary: Push local changes
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPushRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPushResponse'
+
+  /sync/pull:
+    get:
+      summary: Pull server changes
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPullResponse'
+
+  /conflicts:
+    get:
+      summary: List conflicts
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Since'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conflicts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conflict'
+
+  /audit:
+    get:
+      summary: List audit log
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/Since'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audit:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Audit'
+
+  /attachments/presign:
+    post:
+      summary: Presign upload
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignUploadRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignUploadResponse'
+
+  /attachments/{id}/presign:
+    get:
+      summary: Presign download
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignDownloadResponse'
+
+  /invoices/{id}/send:
+    post:
+      summary: Send invoice via channels
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceSendRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  notificationIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid

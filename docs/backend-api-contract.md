@@ -264,3 +264,98 @@ Response:
 - task: title, date, startTime, endTime, status, assignedEmployeeId, clientId, address, notes, serviceTypeId
 - finance_entry: title, amount, type, dueDate, status, method, currency, clientId, employeeId, kind, isDisputed, disputeReason
 
+## Entity Payload Examples
+### client
+```json
+{
+  "id": "uuid",
+  "name": "John Doe",
+  "contact": "John",
+  "phone": "+1 415 555 0100",
+  "whatsappPhone": "+1 415 555 0101",
+  "email": "john@doe.com",
+  "address": "123 Main St",
+  "propertyDetails": "Unit 2B",
+  "accessNotes": "Call front desk",
+  "preferredSchedule": "Morning",
+  "updatedAt": "2025-12-29T10:00:00Z",
+  "deletedAt": null
+}
+```
+
+### employee
+```json
+{
+  "id": "uuid",
+  "name": "Maria Silva",
+  "roleTitle": "Cleaner",
+  "team": "Team A",
+  "phone": "+1 415 555 0200",
+  "hourlyRate": 22.5,
+  "currency": "usd",
+  "updatedAt": "2025-12-29T10:00:00Z",
+  "deletedAt": null
+}
+```
+
+### service_type
+```json
+{
+  "id": "uuid",
+  "name": "Standard Cleaning",
+  "description": "Deep clean for 2 bedrooms",
+  "basePrice": 120.0,
+  "currency": "usd",
+  "updatedAt": "2025-12-29T10:00:00Z",
+  "deletedAt": null
+}
+```
+
+### task
+```json
+{
+  "id": "uuid",
+  "title": "Clean kitchen",
+  "date": "2025-12-29",
+  "startTime": "2025-12-29T09:00:00Z",
+  "endTime": "2025-12-29T10:30:00Z",
+  "status": "scheduled",
+  "assignedEmployeeId": "uuid",
+  "clientId": "uuid",
+  "clientName": "John Doe",
+  "address": "123 Main St",
+  "notes": "Use eco products",
+  "serviceTypeId": "uuid",
+  "checkInTime": null,
+  "checkOutTime": null,
+  "updatedAt": "2025-12-29T10:00:00Z",
+  "deletedAt": null
+}
+```
+
+### finance_entry
+```json
+{
+  "id": "uuid",
+  "title": "Invoice - Dec",
+  "amount": 320.0,
+  "type": "receivable",
+  "dueDate": "2025-12-31",
+  "status": "pending",
+  "method": "cash",
+  "currency": "usd",
+  "clientId": "uuid",
+  "clientName": "John Doe",
+  "employeeId": null,
+  "employeeName": null,
+  "kind": "invoiceClient",
+  "isDisputed": false,
+  "disputeReason": null,
+  "updatedAt": "2025-12-29T10:00:00Z",
+  "deletedAt": null
+}
+```
+
+Notes:
+- `updatedAt` is the server cursor for sync pull.
+- `deletedAt` set indicates soft delete (sync op = delete).
