@@ -67,6 +67,12 @@
 - Dashboard: contagens + cashflow + estimativa de payroll.
 - Backend/Auth: Clerk.
 - Storage de anexos: Cloudflare R2.
+- Backend runtime: Node.js + TypeScript (Vercel).
+- Banco: Postgres.
+- Multi-tenant: habilitado na v1.
+- Sync: last-write-wins com log de conflito.
+- Notificações reais (WhatsApp/SMS/Email) habilitadas na v1.
+- Consistência: eventual.
 
 ## Roadmap (Now)
 
