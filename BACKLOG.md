@@ -46,8 +46,8 @@
 ## Pendentes / Próximas entregas
 
 - ⏳ Tela dedicada de "Invoices" (lista de FinanceEntry.kind == invoiceClient) com CRUD completo: editar título/valor/vencimento/método, marcar como contestado e reemitir/enviar novamente
-- ⏳ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
-- ⏳ Fluxo de contestacao de faturas pelo cliente: iniciar disputa via e-mail/texto ou botao no PDF, registrar motivo e respeitar janela D+N configuravel
+- ✅ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
+- ✅ Fluxo de contestacao de faturas pelo cliente: iniciar disputa via e-mail/texto ou botao no PDF, registrar motivo e respeitar janela D+N configuravel
 - ⏳ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
 - ⏳ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura
 
@@ -68,11 +68,11 @@
 
 ## Roadmap (Now)
 
-- Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
-- Segurança local: criptografar campos sensíveis (cliente/funcionário/finanças) com chave no Keychain.
-- Sync stub: adicionar log de conflito local (estrutura + UI simples em Settings).
-- Regras financeiras: disputa de invoice a qualquer momento, com janela pós-vencimento configurável (D+N) e payroll manual sem check-in/out (com confirmação do Manager).
-- Revisar cancelamento: garantir exclusão de cálculos e manter histórico.
+- ⏳ Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
+- ✅ Segurança local: criptografar campos sensíveis (cliente/funcionário/finanças) com chave no Keychain.
+- ✅ Sync stub: adicionar log de conflito local (estrutura + UI simples em Settings).
+- ✅ Regras financeiras: disputa de invoice a qualquer momento, com janela pós-vencimento configurável (D+N) e payroll manual sem check-in/out (com confirmação do Manager).
+- ✅ Revisar cancelamento: garantir exclusão de cálculos e manter histórico.
 
 ## Roadmap (Next)
 

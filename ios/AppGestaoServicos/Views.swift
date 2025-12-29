@@ -126,6 +126,7 @@ struct HomeView: View {
                 .tag(HomeTab.finance)
             SettingsView(onMenu: { menuController.isPresented = true })
                 .tabItem { Label("Settings", systemImage: "gear") }
+                .badge(store.conflictLog.isEmpty ? nil : store.conflictLog.count)
                 .tag(HomeTab.settings)
         }
         .background(AppTheme.background.ignoresSafeArea())
@@ -183,6 +184,12 @@ struct HomeView: View {
                 }
                 .environmentObject(store)
             }
+        }
+        .onAppear {
+            UIApplication.shared.applicationIconBadgeNumber = store.conflictLog.count
+        }
+        .onChange(of: store.conflictLog.count) { value in
+            UIApplication.shared.applicationIconBadgeNumber = value
         }
     }
 }
@@ -1361,6 +1368,16 @@ struct InvoiceDetailView: View {
         return Date() <= limit
     }
 
+    private var disputeDeadline: Date {
+        let calendar = Calendar.current
+        let base = calendar.startOfDay(for: dueDate)
+        return calendar.date(byAdding: .day, value: store.appPreferences.disputeWindowDays + 1, to: base) ?? dueDate
+    }
+
+    private var disputeWindowOpen: Bool {
+        Date() < disputeDeadline
+    }
+
     private var canSave: Bool {
         guard let amount = parsedAmount else { return false }
         if isDisputed && disputeReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
@@ -1397,10 +1414,25 @@ struct InvoiceDetailView: View {
                 }
 
                 Section("Dispute") {
-                    Toggle("Mark as disputed", isOn: $isDisputed)
-                    TextField("Reason", text: $disputeReason, axis: .vertical)
+                    Toggle("Client disputed", isOn: $isDisputed)
+                        .disabled(!disputeWindowOpen && !isDisputed)
+                    TextField("Client message / reason", text: $disputeReason, axis: .vertical)
                         .lineLimit(2...4)
                         .disabled(!isDisputed)
+                    if disputeWindowOpen {
+                        let deadlineText = disputeDeadline.formatted(date: .abbreviated, time: .omitted)
+                        let windowText = store.appPreferences.disputeWindowDays == 0
+                            ? NSLocalizedString("Disputes are allowed until the due date.", comment: "")
+                            : String(format: NSLocalizedString("Disputes are allowed until %@.", comment: ""), deadlineText)
+                        Text(windowText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        let deadlineText = disputeDeadline.formatted(date: .abbreviated, time: .omitted)
+                        Text(String(format: NSLocalizedString("Dispute window closed on %@.", comment: ""), deadlineText))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Section("Send invoice") {
@@ -1537,6 +1569,7 @@ struct InvoiceDetailView: View {
 
         let instructions = "Please pay via \(method?.label ?? selectedChannel.label) by \(dateFormatter.string(from: dueDate))."
         let clientName = entry.clientName ?? "Client"
+        let disputeURL = makeDisputeURL()
 
         return renderer.pdfData { context in
             context.beginPage()
@@ -1558,6 +1591,23 @@ struct InvoiceDetailView: View {
                 y += size.height + 8
             }
 
+            func drawLink(_ text: String, url: URL, font: UIFont, color: UIColor = .systemBlue) {
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: color
+                ]
+                let attributed = NSAttributedString(string: text, attributes: attrs)
+                let size = attributed.boundingRect(
+                    with: CGSize(width: pageRect.width - margin * 2, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                ).size
+                let rect = CGRect(x: margin, y: y, width: pageRect.width - margin * 2, height: size.height)
+                attributed.draw(in: rect)
+                context.setURL(url, for: rect)
+                y += size.height + 8
+            }
+
             draw("Invoice", font: .boldSystemFont(ofSize: 22))
             draw("Client: \(clientName)", font: .systemFont(ofSize: 14))
             if let email = client?.email, !email.isEmpty {
@@ -1568,6 +1618,9 @@ struct InvoiceDetailView: View {
             }
             draw("Due date: \(dateFormatter.string(from: dueDate))", font: .systemFont(ofSize: 14))
             draw(instructions, font: .systemFont(ofSize: 12))
+            if let disputeURL {
+                drawLink(NSLocalizedString("Dispute this invoice", comment: ""), url: disputeURL, font: .systemFont(ofSize: 12))
+            }
 
             y += 8
             draw("Line items", font: .boldSystemFont(ofSize: 16))
@@ -1608,6 +1661,42 @@ struct InvoiceDetailView: View {
             guard !client.phone.isEmpty else { return nil }
             let digits = client.phone.filter { $0.isNumber || $0 == "+" }
             return URL(string: "sms:\(digits)")
+        }
+    }
+
+    private func makeDisputeURL() -> URL? {
+        guard let client else { return nil }
+
+        let preferredChannels = client.preferredDeliveryChannels
+        for channel in preferredChannels {
+            if let url = disputeURL(for: channel, client: client) {
+                return url
+            }
+        }
+        return disputeURL(for: .email, client: client)
+            ?? disputeURL(for: .imessage, client: client)
+            ?? disputeURL(for: .whatsapp, client: client)
+    }
+
+    private func disputeURL(for channel: Client.DeliveryChannel, client: Client) -> URL? {
+        let subject = "Dispute invoice \(title)"
+        let body = "Hello \(client.name), I would like to dispute invoice \(title)."
+        switch channel {
+        case .email:
+            guard !client.email.isEmpty else { return nil }
+            let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
+        case .whatsapp:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let encoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
+        case .imessage:
+            guard !client.phone.isEmpty else { return nil }
+            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "sms:\(digits)&body=\(encodedBody)")
         }
     }
 }
@@ -1738,6 +1827,7 @@ struct PayrollFormView: View {
     @State private var currency: FinanceEntry.Currency = .usd
     @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
     @State private var method: FinanceEntry.PaymentMethod? = nil
+    @State private var showingConfirmation = false
 
     private var employeeNames: [String] {
         Array(Set(store.employees.map { $0.name })).sorted()
@@ -1781,7 +1871,7 @@ struct PayrollFormView: View {
                     }
                 }
                 PrimaryButton(title: "Save") {
-                    save()
+                    showingConfirmation = true
                 }
                 .padding()
                 .disabled(!canSave)
@@ -1793,6 +1883,12 @@ struct PayrollFormView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
+            }
+            .alert("Confirm payroll", isPresented: $showingConfirmation) {
+                Button("Create") { save() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This payroll entry is manual. Confirm to continue.")
             }
             .onAppear {
                 if selectedEmployeeName.isEmpty {
@@ -2454,6 +2550,26 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                Section("Conflicts") {
+                    if store.conflictLog.isEmpty {
+                        Text("No conflicts recorded.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(store.conflictLog.sorted { $0.timestamp > $1.timestamp }) { entry in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.summary)
+                                    .font(.subheadline)
+                                Text("\(entry.entity) · \(entry.field)")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                Text(entry.timestamp, style: .date)
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
 
                 if store.session?.role == .manager {
                     Section("Team") {
@@ -2475,6 +2591,16 @@ struct SettingsView: View {
                                 Text(currency.code).tag(currency)
                             }
                         }
+                        Stepper(value: $store.appPreferences.disputeWindowDays, in: 0...30) {
+                            let days = store.appPreferences.disputeWindowDays
+                            let labelKey = days == 1
+                                ? "Dispute window: %d day after due date"
+                                : "Dispute window: %d days after due date"
+                            Text(String(format: NSLocalizedString(labelKey, comment: ""), days))
+                        }
+                        Text("0 days means disputes are only allowed until the due date.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                     }
                 }
 

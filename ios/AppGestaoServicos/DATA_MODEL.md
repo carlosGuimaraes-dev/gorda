@@ -123,12 +123,10 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
 - **PendingChange**
   - `id: UUID`
   - `operation: String`
-  - `entityType: String`
   - `entityId: UUID`
   - `timestamp: Date`
 
 - **NotificationPreferences**
-  - `id: UUID`
   - `enableClientNotifications: Bool`
   - `enableTeamNotifications: Bool`
   - `enablePush: Bool`
@@ -137,6 +135,15 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
 - **AppPreferences**
   - `language: String` (`"en-US"` ou `"es-ES"`)
   - `preferredCurrency: String` (`"USD"` ou `"EUR"`)
+  - `disputeWindowDays: Int` (D+N após vencimento; `0` = até vencimento)
   - Observação: `preferredCurrency` é global e bloqueia a moeda usada em cadastros e lançamentos financeiros.
+
+- **ConflictLogEntry**
+  - `id: UUID`
+  - `entity: String`
+  - `field: String`
+  - `summary: String`
+  - `timestamp: Date`
+  - Observação: log local de conflitos de sync, exibido no Settings.
 
 > Implementação Core Data: cada entidade acima pode virar uma `NSEntityDescription` em um modelo programático ou em um `.xcdatamodeld`. O app atual continuará usando o `OfflineStore` como fachada, mas por baixo os dados passam a ser persistidos em Core Data/SQLite ao invés de um JSON único.

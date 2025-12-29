@@ -11,6 +11,7 @@ final class OfflineStore: ObservableObject {
     @Published private(set) var finance: [FinanceEntry] = []
     @Published private(set) var serviceTypes: [ServiceType] = []
     @Published private(set) var pendingChanges: [PendingChange] = []
+    @Published private(set) var conflictLog: [ConflictLogEntry] = []
     @Published var notificationPreferences = NotificationPreferences() {
         didSet { persist() }
     }
@@ -256,6 +257,10 @@ final class OfflineStore: ObservableObject {
     }
 
     func markInvoiceDisputed(_ entry: FinanceEntry, reason: String?) {
+        let calendar = Calendar.current
+        let base = calendar.startOfDay(for: entry.dueDate)
+        let deadline = calendar.date(byAdding: .day, value: appPreferences.disputeWindowDays + 1, to: base) ?? entry.dueDate
+        guard Date() < deadline else { return }
         updateFinanceEntry(entry) { current in
             current.isDisputed = true
             current.disputeReason = reason
@@ -382,7 +387,8 @@ final class OfflineStore: ObservableObject {
             let employeeTasks = tasks.filter { task in
                 (task.assignedEmployee.id == employee.id || task.assignedEmployee.name == employee.name) &&
                 task.date >= startDate && task.date <= endDate &&
-                task.checkInTime != nil && task.checkOutTime != nil
+                task.checkInTime != nil && task.checkOutTime != nil &&
+                task.status != .canceled
             }
 
             let totalHours: Double = employeeTasks.compactMap { task in
@@ -510,6 +516,12 @@ final class OfflineStore: ObservableObject {
         persist()
     }
 
+    func recordConflict(entity: String, field: String, summary: String) {
+        let entry = ConflictLogEntry(entity: entity, field: field, summary: summary)
+        conflictLog.append(entry)
+        persist()
+    }
+
     func requestPushAuthorizationIfNeeded() {
         guard notificationPreferences.enablePush else { return }
         UNUserNotificationCenter.current().getNotificationSettings { settings in
@@ -563,10 +575,12 @@ final class OfflineStore: ObservableObject {
                 lastSync: lastSync,
                 pendingChanges: pendingChanges,
                 notificationPreferences: notificationPreferences,
-                appPreferences: appPreferences
+                appPreferences: appPreferences,
+                conflictLog: conflictLog
             )
             let data = try JSONEncoder().encode(snapshot)
-            try data.write(to: persistenceURL, options: .atomic)
+            let payload = try encryptSnapshotData(data)
+            try payload.write(to: persistenceURL, options: .atomic)
         } catch {
             print("Falha ao persistir: \(error)")
         }
@@ -602,7 +616,8 @@ final class OfflineStore: ObservableObject {
             // Fallback para snapshot antigo, se Core Data estiver vazio.
             do {
                 let data = try Data(contentsOf: persistenceURL)
-                let snapshot = try JSONDecoder().decode(Snapshot.self, from: data)
+                let decoded = try decryptSnapshotData(data)
+                let snapshot = try JSONDecoder().decode(Snapshot.self, from: decoded)
                 self.clients = snapshot.clients
                 self.employees = snapshot.employees
                 self.tasks = snapshot.tasks
@@ -612,6 +627,7 @@ final class OfflineStore: ObservableObject {
                 self.pendingChanges = snapshot.pendingChanges
                 self.notificationPreferences = snapshot.notificationPreferences
                 self.appPreferences = snapshot.appPreferences
+                self.conflictLog = snapshot.conflictLog
             } catch {
                 // Primeiro uso ou dados indisponíveis; segue vazio.
             }
@@ -738,6 +754,37 @@ final class OfflineStore: ObservableObject {
 
     private func employeeCurrency(for currency: FinanceEntry.Currency) -> Employee.Currency {
         Employee.Currency(rawValue: currency.rawValue) ?? .usd
+    }
+
+    private func encryptSnapshotData(_ data: Data) throws -> Data {
+        let header = Data("ENCv1:".utf8)
+        let encrypted = try CryptoHelper.encrypt(data)
+        return header + encrypted
+    }
+
+    private func decryptSnapshotData(_ data: Data) throws -> Data {
+        let header = Data("ENCv1:".utf8)
+        if data.prefix(header.count) == header {
+            let payload = data.dropFirst(header.count)
+            return try CryptoHelper.decrypt(payload)
+        }
+        return data
+    }
+
+    private func encryptString(_ value: String) -> String {
+        CryptoHelper.encryptString(value)
+    }
+
+    private func decryptString(_ value: String) -> String {
+        CryptoHelper.decryptString(value)
+    }
+
+    private func encryptData(_ data: Data?) -> Data? {
+        CryptoHelper.encryptData(data)
+    }
+
+    private func decryptData(_ data: Data?) -> Data? {
+        CryptoHelper.decryptData(data)
     }
 
     private func seedDemoDataIfNeeded() {
@@ -1280,13 +1327,13 @@ final class OfflineStore: ObservableObject {
 
         object.setValue(client.id, forKey: "id")
         object.setValue(client.name, forKey: "name")
-        object.setValue(client.contact, forKey: "contact")
-        object.setValue(client.address, forKey: "address")
-        object.setValue(client.propertyDetails, forKey: "propertyDetails")
-        object.setValue(client.phone, forKey: "phone")
-        object.setValue(client.email, forKey: "email")
-        object.setValue(client.accessNotes, forKey: "accessNotes")
-        object.setValue(client.preferredSchedule, forKey: "preferredSchedule")
+        object.setValue(encryptString(client.contact), forKey: "contact")
+        object.setValue(encryptString(client.address), forKey: "address")
+        object.setValue(encryptString(client.propertyDetails), forKey: "propertyDetails")
+        object.setValue(encryptString(client.phone), forKey: "phone")
+        object.setValue(encryptString(client.email), forKey: "email")
+        object.setValue(encryptString(client.accessNotes), forKey: "accessNotes")
+        object.setValue(encryptString(client.preferredSchedule), forKey: "preferredSchedule")
         let channelsRaw = client.preferredDeliveryChannels.map { $0.rawValue }.joined(separator: ",")
         object.setValue(channelsRaw, forKey: "preferredChannels")
 
@@ -1314,8 +1361,8 @@ final class OfflineStore: ObservableObject {
         object.setValue(task.assignedEmployee.name, forKey: "employeeName")
         object.setValue(task.clientId, forKey: "clientId")
         object.setValue(task.clientName, forKey: "clientName")
-        object.setValue(task.notes, forKey: "notes")
-        object.setValue(task.address, forKey: "address")
+        object.setValue(encryptString(task.notes), forKey: "notes")
+        object.setValue(encryptString(task.address), forKey: "address")
         object.setValue(task.serviceTypeId, forKey: "serviceTypeId")
         object.setValue(task.checkInTime, forKey: "checkInTime")
         object.setValue(task.checkOutTime, forKey: "checkOutTime")
@@ -1348,8 +1395,8 @@ final class OfflineStore: ObservableObject {
         object.setValue(entry.employeeName, forKey: "employeeName")
         object.setValue(entry.kind.rawValue, forKey: "kind")
         object.setValue(entry.isDisputed, forKey: "isDisputed")
-        object.setValue(entry.disputeReason, forKey: "disputeReason")
-        object.setValue(entry.receiptData, forKey: "receiptData")
+        object.setValue(entry.disputeReason.map(encryptString), forKey: "disputeReason")
+        object.setValue(encryptData(entry.receiptData), forKey: "receiptData")
 
         saveContext()
     }
@@ -1408,10 +1455,10 @@ final class OfflineStore: ObservableObject {
         object.setValue(employee.role, forKey: "roleTitle")
         object.setValue(employee.team, forKey: "team")
         object.setValue(employee.hourlyRate, forKey: "hourlyRate")
-        object.setValue(employee.phone, forKey: "phone")
+        object.setValue(employee.phone.map(encryptString), forKey: "phone")
         object.setValue(employee.currency?.rawValue, forKey: "currency")
-        object.setValue(employee.extraEarningsDescription, forKey: "extraEarningsDescription")
-        object.setValue(employee.documentsDescription, forKey: "documentsDescription")
+        object.setValue(employee.extraEarningsDescription.map(encryptString), forKey: "extraEarningsDescription")
+        object.setValue(employee.documentsDescription.map(encryptString), forKey: "documentsDescription")
 
         saveContext()
     }
@@ -1429,15 +1476,18 @@ final class OfflineStore: ObservableObject {
         guard
             let id = object.value(forKey: "id") as? UUID,
             let name = object.value(forKey: "name") as? String,
-            let contact = object.value(forKey: "contact") as? String,
-            let address = object.value(forKey: "address") as? String,
-            let propertyDetails = object.value(forKey: "propertyDetails") as? String
+            let contactRaw = object.value(forKey: "contact") as? String,
+            let addressRaw = object.value(forKey: "address") as? String,
+            let propertyRaw = object.value(forKey: "propertyDetails") as? String
         else { return nil }
 
-        let phone = object.value(forKey: "phone") as? String ?? ""
-        let email = object.value(forKey: "email") as? String ?? ""
-        let accessNotes = object.value(forKey: "accessNotes") as? String ?? ""
-        let preferredSchedule = object.value(forKey: "preferredSchedule") as? String ?? ""
+        let contact = CryptoHelper.decryptString(contactRaw)
+        let address = CryptoHelper.decryptString(addressRaw)
+        let propertyDetails = CryptoHelper.decryptString(propertyRaw)
+        let phone = CryptoHelper.decryptString(object.value(forKey: "phone") as? String ?? "")
+        let email = CryptoHelper.decryptString(object.value(forKey: "email") as? String ?? "")
+        let accessNotes = CryptoHelper.decryptString(object.value(forKey: "accessNotes") as? String ?? "")
+        let preferredSchedule = CryptoHelper.decryptString(object.value(forKey: "preferredSchedule") as? String ?? "")
         let preferredChannelsRaw = object.value(forKey: "preferredChannels") as? String
         let preferredChannels: [Client.DeliveryChannel]
         if let preferredChannelsRaw, !preferredChannelsRaw.isEmpty {
@@ -1473,8 +1523,8 @@ final class OfflineStore: ObservableObject {
 
         let startTime = object.value(forKey: "startTime") as? Date
         let endTime = object.value(forKey: "endTime") as? Date
-        let notes = object.value(forKey: "notes") as? String ?? ""
-        let address = object.value(forKey: "address") as? String ?? ""
+        let notes = decryptString(object.value(forKey: "notes") as? String ?? "")
+        let address = decryptString(object.value(forKey: "address") as? String ?? "")
         let serviceTypeId = object.value(forKey: "serviceTypeId") as? UUID
         let checkIn = object.value(forKey: "checkInTime") as? Date
         let checkOut = object.value(forKey: "checkOutTime") as? Date
@@ -1538,11 +1588,11 @@ final class OfflineStore: ObservableObject {
         let roleTitle = object.value(forKey: "roleTitle") as? String ?? ""
         let team = object.value(forKey: "team") as? String ?? ""
         let hourlyRate = object.value(forKey: "hourlyRate") as? Double
-        let phone = object.value(forKey: "phone") as? String
+        let phone = (object.value(forKey: "phone") as? String).map { CryptoHelper.decryptString($0) }
         let currencyRaw = object.value(forKey: "currency") as? String
         let currency = currencyRaw.flatMap { Employee.Currency(rawValue: $0) }
-        let extra = object.value(forKey: "extraEarningsDescription") as? String
-        let documents = object.value(forKey: "documentsDescription") as? String
+        let extra = (object.value(forKey: "extraEarningsDescription") as? String).map { CryptoHelper.decryptString($0) }
+        let documents = (object.value(forKey: "documentsDescription") as? String).map { CryptoHelper.decryptString($0) }
 
         return Employee(
             id: id,
@@ -1602,8 +1652,8 @@ final class OfflineStore: ObservableObject {
         let kindRaw = object.value(forKey: "kind") as? String
         let kind = kindRaw.flatMap { FinanceEntry.Kind(rawValue: $0) } ?? .general
         let isDisputed = object.value(forKey: "isDisputed") as? Bool ?? false
-        let disputeReason = object.value(forKey: "disputeReason") as? String
-        let receiptData = object.value(forKey: "receiptData") as? Data
+        let disputeReason = (object.value(forKey: "disputeReason") as? String).map { CryptoHelper.decryptString($0) }
+        let receiptData = CryptoHelper.decryptData(object.value(forKey: "receiptData") as? Data)
 
         let resolvedClientName: String? = {
             if let clientName, !clientName.isEmpty { return clientName }
@@ -1690,6 +1740,22 @@ struct NotificationPreferences: Codable {
     }
 }
 
+struct ConflictLogEntry: Identifiable, Codable, Hashable {
+    let id: UUID
+    let entity: String
+    let field: String
+    let summary: String
+    let timestamp: Date
+
+    init(id: UUID = UUID(), entity: String, field: String, summary: String, timestamp: Date = Date()) {
+        self.id = id
+        self.entity = entity
+        self.field = field
+        self.summary = summary
+        self.timestamp = timestamp
+    }
+}
+
 enum AppLanguage: String, Codable, CaseIterable, Identifiable {
     case enUS = "en-US"
     case esES = "es-ES"
@@ -1711,13 +1777,36 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable {
 struct AppPreferences: Codable {
     var language: AppLanguage
     var preferredCurrency: FinanceEntry.Currency
+    var disputeWindowDays: Int
 
     init(
         language: AppLanguage = .enUS,
-        preferredCurrency: FinanceEntry.Currency = .usd
+        preferredCurrency: FinanceEntry.Currency = .usd,
+        disputeWindowDays: Int = 0
     ) {
         self.language = language
         self.preferredCurrency = preferredCurrency
+        self.disputeWindowDays = disputeWindowDays
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case language
+        case preferredCurrency
+        case disputeWindowDays
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .enUS
+        preferredCurrency = try container.decodeIfPresent(FinanceEntry.Currency.self, forKey: .preferredCurrency) ?? .usd
+        disputeWindowDays = try container.decodeIfPresent(Int.self, forKey: .disputeWindowDays) ?? 0
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(language, forKey: .language)
+        try container.encode(preferredCurrency, forKey: .preferredCurrency)
+        try container.encode(disputeWindowDays, forKey: .disputeWindowDays)
     }
 }
 
@@ -1731,6 +1820,7 @@ private struct Snapshot: Codable {
     var pendingChanges: [PendingChange]
     var notificationPreferences: NotificationPreferences
     var appPreferences: AppPreferences
+    var conflictLog: [ConflictLogEntry]
 
     enum CodingKeys: String, CodingKey {
         case clients
@@ -1742,6 +1832,7 @@ private struct Snapshot: Codable {
         case pendingChanges
         case notificationPreferences
         case appPreferences
+        case conflictLog
     }
 
     init(
@@ -1753,7 +1844,8 @@ private struct Snapshot: Codable {
         lastSync: Date?,
         pendingChanges: [PendingChange],
         notificationPreferences: NotificationPreferences,
-        appPreferences: AppPreferences
+        appPreferences: AppPreferences,
+        conflictLog: [ConflictLogEntry]
     ) {
         self.clients = clients
         self.employees = employees
@@ -1764,6 +1856,7 @@ private struct Snapshot: Codable {
         self.pendingChanges = pendingChanges
         self.notificationPreferences = notificationPreferences
         self.appPreferences = appPreferences
+        self.conflictLog = conflictLog
     }
 
     init(from decoder: Decoder) throws {
@@ -1777,5 +1870,6 @@ private struct Snapshot: Codable {
         pendingChanges = try container.decodeIfPresent([PendingChange].self, forKey: .pendingChanges) ?? []
         notificationPreferences = try container.decodeIfPresent(NotificationPreferences.self, forKey: .notificationPreferences) ?? NotificationPreferences()
         appPreferences = try container.decodeIfPresent(AppPreferences.self, forKey: .appPreferences) ?? AppPreferences()
+        conflictLog = try container.decodeIfPresent([ConflictLogEntry].self, forKey: .conflictLog) ?? []
     }
 }
