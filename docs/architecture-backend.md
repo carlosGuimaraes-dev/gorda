@@ -112,3 +112,5 @@ Notes:
 - `docs/backend-schema.sql` (Postgres schema + indexes)
 - `docs/backend-sprint-plan.md` (Auth/Sync/R2/Notifications rollout)
 - `docs/backend-openapi.yaml` (OpenAPI v1)
+- `docs/backend-migrations.sql` (migration script)
+- `docs/backend-micro-backlog.md` (endpoint tasks)
