@@ -59,7 +59,7 @@
 - Invoices: geração manual, com re-geração parcial por período.
 - Payroll: permitido manualmente sem check-in/out, com confirmação do Manager.
 - Task cancelada mantém histórico e não entra nos cálculos.
-- Disputa de invoice pode ocorrer a qualquer momento.
+- Disputa de invoice pode ocorrer a qualquer momento; Manager pode editar após disputa e define janela pós-vencimento (D+N dias).
 - Notificações: locais + base pronta para push.
 - Segurança: Keychain + criptografia local de dados sensíveis.
 - Localização: en-US e es-ES implementados.
@@ -71,7 +71,7 @@
 - Localization en-US/es-ES: substituir textos hardcoded por Localizable.strings.
 - Segurança local: criptografar campos sensíveis (cliente/funcionário/finanças) com chave no Keychain.
 - Sync stub: adicionar log de conflito local (estrutura + UI simples em Settings).
-- Regras financeiras: permitir disputa de invoice a qualquer momento e payroll manual sem check-in/out (com confirmação do Manager).
+- Regras financeiras: disputa de invoice a qualquer momento, com janela pós-vencimento configurável (D+N) e payroll manual sem check-in/out (com confirmação do Manager).
 - Revisar cancelamento: garantir exclusão de cálculos e manter histórico.
 
 ## Roadmap (Next)
@@ -85,3 +85,81 @@
 - PT-BR.
 - Integração com pagamentos/boletos.
 - Modo multi-empresa (multi-tenant) com troca rápida de contexto.
+
+## Backlog Executável (Épicos + Histórias + ACs)
+
+### EPIC 1 — Sessão, Perfis e Settings
+- **Story 1.1**: Como Manager, quero definir idioma (en-US/es-ES) e moeda global para o app.  
+  **AC**: idioma afeta locale do app; moeda é aplicada a novos registros; moeda fica visível no Settings.
+- **Story 1.2**: Como Manager, quero definir janela de disputa pós‑vencimento (D+N dias).  
+  **AC**: campo numérico em Settings; disputas após o vencimento só até D+N; valor 0 significa apenas até o vencimento.
+- **Story 1.3**: Como usuário, quero manter sessão local segura.  
+  **AC**: token/sessão em Keychain; logout limpa sessão.
+
+### EPIC 2 — Offline, Sync e Conflitos
+- **Story 2.1**: Como usuário, quero operar offline e sincronizar depois.  
+  **AC**: fila local registra mudanças; botão “Force sync” mantém comportamento atual.
+- **Story 2.2**: Como Manager, quero ver conflitos em um log simples.  
+  **AC**: log acessível em Settings; badge ao abrir app se houver conflitos; cada item mostra entidade, data e ação.
+
+### EPIC 3 — Segurança Local
+- **Story 3.1**: Como Manager, quero criptografia local de dados sensíveis.  
+  **AC**: criptografar contatos, endereços, notas, documentos/recibos; chave guardada no Keychain.
+
+### EPIC 4 — Clients
+- **Story 4.1**: Como Manager, quero CRUD completo de clientes com telefone e canais preferidos.  
+  **AC**: criar, editar, apagar; validação de campos mínimos.
+- **Story 4.2**: Como Manager, quero importar dados básicos de Contatos.  
+  **AC**: fluxo opcional; não bloqueia cadastro.
+
+### EPIC 5 — Employees & Teams
+- **Story 5.1**: Como Manager, quero CRUD de funcionários com remuneração e documentos.  
+  **AC**: taxa/hora, moeda global aplicada, campos opcionais.
+- **Story 5.2**: Como Manager, quero gerenciar times e mover funcionários.  
+  **AC**: criar times, mover membros, remover time sem apagar funcionários.
+
+### EPIC 6 — Service Types
+- **Story 6.1**: Como Manager, quero CRUD de tipos de serviço com preço base.  
+  **AC**: moeda global aplicada; não permitir excluir se houver tasks vinculadas.
+
+### EPIC 7 — Schedule / Tasks
+- **Story 7.1**: Como Employee, quero ver apenas minhas tasks.  
+  **AC**: filtro por empregado logado; status visíveis.
+- **Story 7.2**: Como Manager, quero criar/editar tasks com cliente e serviço.  
+  **AC**: validação de cliente/funcionário; horário e status persistidos.
+- **Story 7.3**: Como Manager, quero cancelar tasks sem perder histórico.  
+  **AC**: status “canceled”; não entra em cálculos financeiros.
+- **Story 7.4**: Como Employee, quero registrar check‑in/out.  
+  **AC**: check-in/out salvos; usados nos cálculos de payroll automático.
+
+### EPIC 8 — Finance Base
+- **Story 8.1**: Como Manager, quero lançamentos financeiros manuais (payable/receivable).  
+  **AC**: CRUD completo; moeda global aplicada; método opcional.
+- **Story 8.2**: Como Employee, quero ver apenas payroll no Finance.  
+  **AC**: listas ocultam receivables; mostra só payroll do próprio usuário.
+
+### EPIC 9 — Invoices
+- **Story 9.1**: Como Manager, quero gerar invoices por cliente e período.  
+  **AC**: separa por moeda; permite re‑gerar parcial por período.
+- **Story 9.2**: Como Manager, quero editar invoice mesmo após disputa.  
+  **AC**: edição permitida; disputa registrada com motivo.
+- **Story 9.3**: Como Manager, quero disputar invoice após vencimento conforme D+N.  
+  **AC**: disputa permitida até D+N; bloqueio após prazo.
+- **Story 9.4**: Como Manager, quero re‑gerar invoice e marcar anterior como “superseded”.  
+  **AC**: invoice anterior permanece para histórico; nova invoice criada.
+
+### EPIC 10 — Payroll
+- **Story 10.1**: Como Manager, quero gerar payroll automático com check‑in/out.  
+  **AC**: calcula horas e valor; moeda global aplicada.
+- **Story 10.2**: Como Manager, quero registrar payroll manual com horas informadas.  
+  **AC**: confirmação explícita do Manager; mantém histórico.
+
+### EPIC 11 — Dashboard & KPIs
+- **Story 11.1**: Como Manager, quero KPIs de cashflow e payroll estimado.  
+  **AC**: cards com Receivables/Payables/Net; gráfico simples.
+- **Story 11.2**: Como Employee, quero visão de tasks e ganhos estimados.  
+  **AC**: baseado em check‑in/out; somente do usuário logado.
+
+### EPIC 12 — Localização
+- **Story 12.1**: Como Manager, quero app totalmente traduzido em en-US/es-ES.  
+  **AC**: todas telas principais com strings localizadas; fallback para en-US.
