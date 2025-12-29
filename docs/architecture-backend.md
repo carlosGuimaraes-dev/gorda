@@ -116,3 +116,4 @@ Notes:
 - `docs/backend-openapi.yaml` (OpenAPI v1)
 - `docs/backend-migrations.sql` (migration script)
 - `docs/backend-micro-backlog.md` (endpoint tasks)
+- `docs/backend-integration-checklist.md` (provider setup)
