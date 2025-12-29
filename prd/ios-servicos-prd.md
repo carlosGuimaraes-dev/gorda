@@ -17,8 +17,8 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Invoices: geração manual com re-geração parcial por período.
 - Payroll: permitido manualmente sem check-in/out, com confirmação do Manager.
 - Task cancelada mantém histórico e não entra nos cálculos.
-- Disputa de invoice permitida a qualquer momento.
-- Disputa: Manager pode ajustar invoice mesmo após disputa, respeitando janela pós‑vencimento configurável (D+N dias).
+- Disputa de invoice permitida a qualquer momento e iniciada pelo cliente.
+- Disputa: Manager pode ajustar invoice mesmo após disputa, respeitando janela pos-vencimento configuravel (D+N dias).
 - Notificações: locais + base pronta para push.
 - Segurança: Keychain + criptografia local de dados sensíveis.
 - Localização: en-US e es-ES implementados.
@@ -50,7 +50,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição permitida respeitando janela pós‑vencimento configurável (D+N), marcação de disputa com motivo e reenvio pelo canal preferido do cliente (email/WhatsApp/iMessage).
   - Geração de invoices agregados por cliente dentro de um período, separados por moeda (um invoice por cliente por moeda), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento; permitir re-geração parcial por período.
   - Payroll pode ser gerado manualmente sem check-in/out, com confirmação do Manager.
-  - Disputa de invoice permitida a qualquer momento (mantendo histórico) e com ajustes permitidos pelo Manager; janela pós‑vencimento é configurável (D+N dias).
+  - Disputa de invoice iniciada pelo cliente via e-mail/texto ou botao no PDF; permitida a qualquer momento (mantendo historico) e com ajustes permitidos pelo Manager; janela pos-vencimento e configuravel (D+N dias).
   - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
 
 ## Requisitos Não Funcionais
