@@ -7,6 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE role_enum AS ENUM ('manager', 'employee');
 CREATE TYPE membership_status_enum AS ENUM ('active', 'invited', 'disabled');
+CREATE TYPE invite_status_enum AS ENUM ('pending', 'accepted', 'expired');
 CREATE TYPE task_status_enum AS ENUM ('scheduled', 'inProgress', 'completed', 'canceled');
 CREATE TYPE finance_type_enum AS ENUM ('receivable', 'payable');
 CREATE TYPE finance_status_enum AS ENUM ('pending', 'paid');
@@ -46,6 +47,16 @@ CREATE TABLE memberships (
   status membership_status_enum NOT NULL DEFAULT 'active',
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, user_id)
+);
+
+CREATE TABLE invites (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  role role_enum NOT NULL,
+  status invite_status_enum NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
 );
 
 CREATE TABLE devices (
@@ -226,5 +237,6 @@ CREATE INDEX idx_attachments_tenant_owner ON attachments (tenant_id, owner_type,
 CREATE INDEX idx_conflicts_tenant_created ON conflict_logs (tenant_id, created_at DESC);
 CREATE INDEX idx_audit_tenant_created ON audit_logs (tenant_id, created_at DESC);
 CREATE INDEX idx_notifications_tenant_created ON notifications (tenant_id, created_at DESC);
+CREATE INDEX idx_invites_tenant_created ON invites (tenant_id, created_at DESC);
 
 COMMIT;
