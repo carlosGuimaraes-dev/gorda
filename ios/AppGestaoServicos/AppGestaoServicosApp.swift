@@ -26,6 +26,7 @@ struct AppGestaoServicosApp: App {
             }
             .environmentObject(store)
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            .environment(\.locale, store.appPreferences.language.locale)
             .tint(AppTheme.primary)
         }
     }

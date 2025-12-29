@@ -235,6 +235,26 @@ final class PersistenceController {
         serviceTaskStatus.attributeType = .stringAttributeType
         serviceTaskStatus.isOptional = false
 
+        let serviceTaskEmployeeId = NSAttributeDescription()
+        serviceTaskEmployeeId.name = "employeeId"
+        serviceTaskEmployeeId.attributeType = .UUIDAttributeType
+        serviceTaskEmployeeId.isOptional = true
+
+        let serviceTaskEmployeeName = NSAttributeDescription()
+        serviceTaskEmployeeName.name = "employeeName"
+        serviceTaskEmployeeName.attributeType = .stringAttributeType
+        serviceTaskEmployeeName.isOptional = true
+
+        let serviceTaskClientId = NSAttributeDescription()
+        serviceTaskClientId.name = "clientId"
+        serviceTaskClientId.attributeType = .UUIDAttributeType
+        serviceTaskClientId.isOptional = true
+
+        let serviceTaskClientName = NSAttributeDescription()
+        serviceTaskClientName.name = "clientName"
+        serviceTaskClientName.attributeType = .stringAttributeType
+        serviceTaskClientName.isOptional = true
+
         let serviceTaskNotes = NSAttributeDescription()
         serviceTaskNotes.name = "notes"
         serviceTaskNotes.attributeType = .stringAttributeType
@@ -267,6 +287,10 @@ final class PersistenceController {
             serviceTaskStart,
             serviceTaskEnd,
             serviceTaskStatus,
+            serviceTaskEmployeeId,
+            serviceTaskEmployeeName,
+            serviceTaskClientId,
+            serviceTaskClientName,
             serviceTaskNotes,
             serviceTaskAddress,
             serviceTaskServiceTypeId,
@@ -319,10 +343,20 @@ final class PersistenceController {
         financeMethod.attributeType = .stringAttributeType
         financeMethod.isOptional = true
 
+        let financeClientId = NSAttributeDescription()
+        financeClientId.name = "clientId"
+        financeClientId.attributeType = .UUIDAttributeType
+        financeClientId.isOptional = true
+
         let financeClientName = NSAttributeDescription()
         financeClientName.name = "clientName"
         financeClientName.attributeType = .stringAttributeType
         financeClientName.isOptional = true
+
+        let financeEmployeeId = NSAttributeDescription()
+        financeEmployeeId.name = "employeeId"
+        financeEmployeeId.attributeType = .UUIDAttributeType
+        financeEmployeeId.isOptional = true
 
         let financeEmployeeName = NSAttributeDescription()
         financeEmployeeName.name = "employeeName"
@@ -358,7 +392,9 @@ final class PersistenceController {
             financeDueDate,
             financeStatus,
             financeMethod,
+            financeClientId,
             financeClientName,
+            financeEmployeeId,
             financeEmployeeName,
             financeKind,
             financeIsDisputed,

@@ -39,6 +39,9 @@
 - ✅ Geração de invoices agregados por cliente no período selecionado (1 invoice por cliente), com PDF (QuickLook + share) contendo line items das tasks do período e instruções de pagamento
 - ✅ Cadastro de despesas extras com opção de despesa "out-of-pocket" para o manager, incluindo captura de foto do recibo e envio imediato via share sheet
 - ✅ Agenda com calendário destacando dias que possuem serviços agendados
+- ✅ FinanceEntry e ServiceTask persistidos com IDs estáveis de cliente/funcionário + backfill automático
+- ✅ Financeiro com payroll-only para Employee e invoices geradas separadas por moeda
+- ✅ Preferências do app no Settings (manager escolhe idioma e moeda padrão global)
 
 ## Pendentes / Próximas entregas
 

@@ -11,7 +11,17 @@ final class OfflineStore: ObservableObject {
     @Published private(set) var finance: [FinanceEntry] = []
     @Published private(set) var serviceTypes: [ServiceType] = []
     @Published private(set) var pendingChanges: [PendingChange] = []
-    @Published var notificationPreferences = NotificationPreferences()
+    @Published var notificationPreferences = NotificationPreferences() {
+        didSet { persist() }
+    }
+    @Published var appPreferences = AppPreferences() {
+        didSet {
+            if oldValue.preferredCurrency != appPreferences.preferredCurrency {
+                applyPreferredCurrency()
+            }
+            persist()
+        }
+    }
     @Published var session: UserSession?
     @Published var lastSync: Date?
 
@@ -27,6 +37,8 @@ final class OfflineStore: ObservableObject {
         self.context = context
         load()
         seedDemoDataIfNeeded()
+        backfillRelationshipsIfNeeded()
+        applyPreferredCurrency()
     }
 
     func login(user: String, password: String, role: UserSession.Role) {
@@ -50,6 +62,7 @@ final class OfflineStore: ObservableObject {
         startTime: Date? = nil,
         endTime: Date? = nil,
         employee: Employee,
+        clientId: UUID? = nil,
         clientName: String,
         address: String,
         notes: String,
@@ -63,6 +76,7 @@ final class OfflineStore: ObservableObject {
             endTime: endTime,
             status: status,
             assignedEmployee: employee,
+            clientId: clientId,
             clientName: clientName,
             address: address,
             notes: notes,
@@ -132,13 +146,27 @@ final class OfflineStore: ObservableObject {
         dueDate: Date,
         method: FinanceEntry.PaymentMethod? = nil,
         currency: FinanceEntry.Currency = .usd,
+        clientId: UUID? = nil,
         clientName: String? = nil,
+        employeeId: UUID? = nil,
         employeeName: String? = nil,
         kind: FinanceEntry.Kind = .general,
         receiptData: Data? = nil,
         isDisputed: Bool = false,
         disputeReason: String? = nil
     ) {
+        let matchedClient = clientId.flatMap { id in
+            clients.first(where: { $0.id == id })
+        } ?? clientName.flatMap { name in
+            clients.first(where: { $0.name == name })
+        }
+        let matchedEmployee = employeeId.flatMap { id in
+            employees.first(where: { $0.id == id })
+        } ?? employeeName.flatMap { name in
+            employees.first(where: { $0.name == name })
+        }
+
+        let lockedCurrency = appPreferences.preferredCurrency
         let entry = FinanceEntry(
             title: title,
             amount: amount,
@@ -146,9 +174,11 @@ final class OfflineStore: ObservableObject {
             dueDate: dueDate,
             status: .pending,
             method: method,
-            currency: currency,
-            clientName: clientName,
-            employeeName: employeeName,
+            currency: lockedCurrency,
+            clientId: clientId ?? matchedClient?.id,
+            clientName: clientName ?? matchedClient?.name,
+            employeeId: employeeId ?? matchedEmployee?.id,
+            employeeName: employeeName ?? matchedEmployee?.name,
             kind: kind,
             isDisputed: isDisputed,
             disputeReason: disputeReason,
@@ -166,11 +196,12 @@ final class OfflineStore: ObservableObject {
         basePrice: Double,
         currency: FinanceEntry.Currency
     ) {
+        let lockedCurrency = appPreferences.preferredCurrency
         let serviceType = ServiceType(
             name: name,
             description: description,
             basePrice: basePrice,
-            currency: currency
+            currency: lockedCurrency
         )
         serviceTypes.append(serviceType)
         pendingChanges.append(PendingChange(operation: .addServiceType, entityId: serviceType.id))
@@ -186,10 +217,11 @@ final class OfflineStore: ObservableObject {
         currency: FinanceEntry.Currency
     ) {
         guard let index = serviceTypes.firstIndex(where: { $0.id == serviceType.id }) else { return }
+        let lockedCurrency = appPreferences.preferredCurrency
         serviceTypes[index].name = name
         serviceTypes[index].description = description
         serviceTypes[index].basePrice = basePrice
-        serviceTypes[index].currency = currency
+        serviceTypes[index].currency = lockedCurrency
         pendingChanges.append(PendingChange(operation: .updateServiceType, entityId: serviceType.id))
         saveServiceTypeToCoreData(serviceTypes[index])
         persist()
@@ -217,6 +249,7 @@ final class OfflineStore: ObservableObject {
     func updateFinanceEntry(_ entry: FinanceEntry, mutate: (inout FinanceEntry) -> Void) {
         guard let index = finance.firstIndex(where: { $0.id == entry.id }) else { return }
         mutate(&finance[index])
+        finance[index].currency = appPreferences.preferredCurrency
         pendingChanges.append(PendingChange(operation: .updateFinanceEntry, entityId: entry.id))
         saveFinanceEntryToCoreData(finance[index])
         persist()
@@ -243,51 +276,92 @@ final class OfflineStore: ObservableObject {
         }
 
         let groupedByClient: [String: [ServiceTask]] = Dictionary(grouping: relevantTasks) { task in
-            task.clientName
+            if let clientId = task.clientId {
+                return clientId.uuidString
+            }
+            return task.clientName
         }
-        let targetClientNames: [String]
+        let allowedClientIds: Set<UUID>?
+        let allowedClientNames: Set<String>?
         if let specific = clientName {
-            targetClientNames = [specific]
+            let matches = clients.filter { $0.name == specific }
+            allowedClientIds = Set(matches.map { $0.id })
+            allowedClientNames = [specific]
         } else {
-            targetClientNames = Array(groupedByClient.keys)
+            allowedClientIds = nil
+            allowedClientNames = nil
         }
 
-        for name in targetClientNames {
-            guard let clientTasks = groupedByClient[name], !clientTasks.isEmpty else { continue }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        let periodLabel = "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
 
-            var total: Double = 0
-            var currency: FinanceEntry.Currency = .eur
+        for (key, clientTasks) in groupedByClient {
+            guard !clientTasks.isEmpty else { continue }
 
+            if let allowedIds = allowedClientIds, let allowedNames = allowedClientNames {
+                let isAllowed: Bool
+                if let id = UUID(uuidString: key) {
+                    isAllowed = allowedIds.contains(id)
+                } else {
+                    isAllowed = allowedNames.contains(key)
+                }
+                guard isAllowed else { continue }
+            }
+
+            let resolvedClientId: UUID? = {
+                if let id = UUID(uuidString: key) {
+                    return id
+                }
+                if let taskId = clientTasks.first?.clientId {
+                    return taskId
+                }
+                if let name = clientTasks.first?.clientName {
+                    return clients.first(where: { $0.name == name })?.id
+                }
+                return nil
+            }()
+
+            let resolvedClientName: String = {
+                if let resolvedClientId,
+                   let matched = clients.first(where: { $0.id == resolvedClientId }) {
+                    return matched.name
+                }
+                if let name = clientTasks.first?.clientName, !name.isEmpty {
+                    return name
+                }
+                return key
+            }()
+
+            var totalsByCurrency: [FinanceEntry.Currency: Double] = [:]
             for task in clientTasks {
                 guard let typeId = task.serviceTypeId,
                       let serviceType = serviceTypes.first(where: { $0.id == typeId }) else { continue }
-                total += serviceType.basePrice
-                currency = serviceType.currency
+                totalsByCurrency[serviceType.currency, default: 0] += serviceType.basePrice
             }
 
-            guard total > 0 else { continue }
+            for (currency, total) in totalsByCurrency {
+                guard total > 0 else { continue }
+                let title = "Invoice \(resolvedClientName) (\(periodLabel)) \(currency.code)"
 
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            let periodLabel = "\(formatter.string(from: startDate)) - \(formatter.string(from: endDate))"
-
-            let title = "Invoice \(name) (\(periodLabel))"
-
-            let entry = FinanceEntry(
-                title: title,
-                amount: total,
-                type: .receivable,
-                dueDate: dueDate,
-                status: .pending,
-                method: nil,
-                currency: currency,
-                clientName: name,
-                employeeName: nil,
-                kind: .invoiceClient
-            )
-            finance.append(entry)
-            pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
-            saveFinanceEntryToCoreData(entry)
+                let entry = FinanceEntry(
+                    title: title,
+                    amount: total,
+                    type: .receivable,
+                    dueDate: dueDate,
+                    status: .pending,
+                    method: nil,
+                    currency: currency,
+                    clientId: resolvedClientId,
+                    clientName: resolvedClientName,
+                    employeeId: nil,
+                    employeeName: nil,
+                    kind: .invoiceClient
+                )
+                finance.append(entry)
+                pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
+                saveFinanceEntryToCoreData(entry)
+            }
         }
 
         persist()
@@ -302,11 +376,11 @@ final class OfflineStore: ObservableObject {
         }
 
         for employee in targetEmployees {
-            guard let rate = employee.hourlyRate, let currency = employee.currency else { continue }
-            let payrollCurrency = FinanceEntry.Currency(rawValue: currency.rawValue) ?? .usd
+            guard let rate = employee.hourlyRate else { continue }
+            let payrollCurrency = appPreferences.preferredCurrency
 
             let employeeTasks = tasks.filter { task in
-                task.assignedEmployee.name == employee.name &&
+                (task.assignedEmployee.id == employee.id || task.assignedEmployee.name == employee.name) &&
                 task.date >= startDate && task.date <= endDate &&
                 task.checkInTime != nil && task.checkOutTime != nil
             }
@@ -335,7 +409,9 @@ final class OfflineStore: ObservableObject {
                 status: .pending,
                 method: nil,
                 currency: payrollCurrency,
+                clientId: nil,
                 clientName: nil,
+                employeeId: employee.id,
                 employeeName: employee.name,
                 kind: .payrollEmployee
             )
@@ -357,6 +433,7 @@ final class OfflineStore: ObservableObject {
         extraEarningsDescription: String?,
         documentsDescription: String?
     ) {
+        let lockedCurrency = employeeCurrency(for: appPreferences.preferredCurrency)
         let employee = Employee(
             id: UUID(),
             name: name,
@@ -364,7 +441,7 @@ final class OfflineStore: ObservableObject {
             team: team,
             phone: phone,
             hourlyRate: hourlyRate,
-            currency: currency,
+            currency: lockedCurrency,
             extraEarningsDescription: extraEarningsDescription,
             documentsDescription: documentsDescription
         )
@@ -386,12 +463,13 @@ final class OfflineStore: ObservableObject {
         documentsDescription: String?
     ) {
         guard let index = employees.firstIndex(where: { $0.id == employee.id }) else { return }
+        let lockedCurrency = employeeCurrency(for: appPreferences.preferredCurrency)
         employees[index].name = name
         employees[index].role = roleTitle
         employees[index].team = team
         employees[index].phone = phone
         employees[index].hourlyRate = hourlyRate
-        employees[index].currency = currency
+        employees[index].currency = lockedCurrency
         employees[index].extraEarningsDescription = extraEarningsDescription
         employees[index].documentsDescription = documentsDescription
         pendingChanges.append(PendingChange(operation: .updateEmployee, entityId: employee.id))
@@ -484,7 +562,8 @@ final class OfflineStore: ObservableObject {
                 session: session.map { UserSession(token: "", name: $0.name, role: $0.role) },
                 lastSync: lastSync,
                 pendingChanges: pendingChanges,
-                notificationPreferences: notificationPreferences
+                notificationPreferences: notificationPreferences,
+                appPreferences: appPreferences
             )
             let data = try JSONEncoder().encode(snapshot)
             try data.write(to: persistenceURL, options: .atomic)
@@ -512,8 +591,8 @@ final class OfflineStore: ObservableObject {
                 self.clients = clientObjects.compactMap(Self.clientFromManagedObject)
                 self.employees = employeeObjects.compactMap(Self.employeeFromManagedObject)
                 self.serviceTypes = serviceTypeObjects.compactMap(Self.serviceTypeFromManagedObject)
-                self.tasks = taskObjects.compactMap(Self.taskFromManagedObject)
-                self.finance = financeObjects.compactMap(Self.financeFromManagedObject)
+                self.tasks = taskObjects.compactMap { self.taskFromManagedObject($0) }
+                self.finance = financeObjects.compactMap { self.financeFromManagedObject($0) }
             }
         } catch {
             // Se der erro, tenta fallback em JSON.
@@ -532,6 +611,7 @@ final class OfflineStore: ObservableObject {
                 self.lastSync = snapshot.lastSync
                 self.pendingChanges = snapshot.pendingChanges
                 self.notificationPreferences = snapshot.notificationPreferences
+                self.appPreferences = snapshot.appPreferences
             } catch {
                 // Primeiro uso ou dados indisponíveis; segue vazio.
             }
@@ -540,6 +620,124 @@ final class OfflineStore: ObservableObject {
         if let secureSession = KeychainHelper.loadSession() {
             self.session = secureSession
         }
+    }
+
+    private func backfillRelationshipsIfNeeded() {
+        var didUpdate = false
+
+        for index in tasks.indices {
+            var task = tasks[index]
+            var updated = false
+
+            if let clientId = task.clientId,
+               let matchedClient = clients.first(where: { $0.id == clientId }) {
+                if task.clientName != matchedClient.name {
+                    task.clientName = matchedClient.name
+                    updated = true
+                }
+            } else if let matchedClient = clients.first(where: {
+                (!$0.name.isEmpty && $0.name == task.clientName) || (!$0.address.isEmpty && $0.address == task.address)
+            }) {
+                task.clientId = matchedClient.id
+                task.clientName = matchedClient.name
+                updated = true
+            }
+
+            if let matchedEmployee = employees.first(where: { $0.id == task.assignedEmployee.id }) {
+                if task.assignedEmployee.name != matchedEmployee.name {
+                    task.assignedEmployee = matchedEmployee
+                    updated = true
+                }
+            } else if let matchedEmployee = employees.first(where: { $0.name == task.assignedEmployee.name }) {
+                task.assignedEmployee = matchedEmployee
+                updated = true
+            }
+
+            if updated {
+                tasks[index] = task
+                saveTaskToCoreData(task)
+                didUpdate = true
+            }
+        }
+
+        for index in finance.indices {
+            var entry = finance[index]
+            var updated = false
+
+            if let clientId = entry.clientId,
+               let matchedClient = clients.first(where: { $0.id == clientId }) {
+                if entry.clientName != matchedClient.name {
+                    entry.clientName = matchedClient.name
+                    updated = true
+                }
+            } else if let clientName = entry.clientName,
+                      let matchedClient = clients.first(where: { $0.name == clientName }) {
+                entry.clientId = matchedClient.id
+                entry.clientName = matchedClient.name
+                updated = true
+            }
+
+            if let employeeId = entry.employeeId,
+               let matchedEmployee = employees.first(where: { $0.id == employeeId }) {
+                if entry.employeeName != matchedEmployee.name {
+                    entry.employeeName = matchedEmployee.name
+                    updated = true
+                }
+            } else if let employeeName = entry.employeeName,
+                      let matchedEmployee = employees.first(where: { $0.name == employeeName }) {
+                entry.employeeId = matchedEmployee.id
+                entry.employeeName = matchedEmployee.name
+                updated = true
+            }
+
+            if updated {
+                finance[index] = entry
+                saveFinanceEntryToCoreData(entry)
+                didUpdate = true
+            }
+        }
+
+        if didUpdate {
+            persist()
+        }
+    }
+
+    private func applyPreferredCurrency() {
+        let preferred = appPreferences.preferredCurrency
+        let lockedEmployeeCurrency = employeeCurrency(for: preferred)
+        var didUpdate = false
+
+        for index in serviceTypes.indices {
+            if serviceTypes[index].currency != preferred {
+                serviceTypes[index].currency = preferred
+                saveServiceTypeToCoreData(serviceTypes[index])
+                didUpdate = true
+            }
+        }
+
+        for index in employees.indices {
+            if employees[index].currency != lockedEmployeeCurrency {
+                employees[index].currency = lockedEmployeeCurrency
+                saveEmployeeToCoreData(employees[index])
+                didUpdate = true
+            }
+        }
+
+        for index in finance.indices {
+            if finance[index].currency != preferred {
+                finance[index].currency = preferred
+                saveFinanceEntryToCoreData(finance[index])
+                didUpdate = true
+            }
+        }
+
+        if didUpdate {
+            persist()
+        }
+    }
+
+    private func employeeCurrency(for currency: FinanceEntry.Currency) -> Employee.Currency {
+        Employee.Currency(rawValue: currency.rawValue) ?? .usd
     }
 
     private func seedDemoDataIfNeeded() {
@@ -1112,6 +1310,10 @@ final class OfflineStore: ObservableObject {
         object.setValue(task.startTime, forKey: "startTime")
         object.setValue(task.endTime, forKey: "endTime")
         object.setValue(task.status.rawValue, forKey: "status")
+        object.setValue(task.assignedEmployee.id, forKey: "employeeId")
+        object.setValue(task.assignedEmployee.name, forKey: "employeeName")
+        object.setValue(task.clientId, forKey: "clientId")
+        object.setValue(task.clientName, forKey: "clientName")
         object.setValue(task.notes, forKey: "notes")
         object.setValue(task.address, forKey: "address")
         object.setValue(task.serviceTypeId, forKey: "serviceTypeId")
@@ -1140,7 +1342,9 @@ final class OfflineStore: ObservableObject {
         object.setValue(entry.dueDate, forKey: "dueDate")
         object.setValue(entry.status.rawValue, forKey: "status")
         object.setValue(entry.method?.rawValue, forKey: "method")
+        object.setValue(entry.clientId, forKey: "clientId")
         object.setValue(entry.clientName, forKey: "clientName")
+        object.setValue(entry.employeeId, forKey: "employeeId")
         object.setValue(entry.employeeName, forKey: "employeeName")
         object.setValue(entry.kind.rawValue, forKey: "kind")
         object.setValue(entry.isDisputed, forKey: "isDisputed")
@@ -1258,7 +1462,7 @@ final class OfflineStore: ObservableObject {
         )
     }
 
-    private static func taskFromManagedObject(_ object: NSManagedObject) -> ServiceTask? {
+    private func taskFromManagedObject(_ object: NSManagedObject) -> ServiceTask? {
         guard
             let id = object.value(forKey: "id") as? UUID,
             let title = object.value(forKey: "title") as? String,
@@ -1275,7 +1479,37 @@ final class OfflineStore: ObservableObject {
         let checkIn = object.value(forKey: "checkInTime") as? Date
         let checkOut = object.value(forKey: "checkOutTime") as? Date
 
-        let dummyEmployee = Employee(id: UUID(), name: "Unassigned", role: "", team: "", phone: nil, hourlyRate: nil, currency: nil, extraEarningsDescription: nil, documentsDescription: nil)
+        let employeeId = object.value(forKey: "employeeId") as? UUID
+        let employeeName = object.value(forKey: "employeeName") as? String ?? "Unassigned"
+        let clientId = object.value(forKey: "clientId") as? UUID
+        let clientNameStored = object.value(forKey: "clientName") as? String ?? ""
+
+        let resolvedEmployee = employees.first { employee in
+            if let employeeId {
+                return employee.id == employeeId
+            }
+            return employee.name == employeeName
+        } ?? Employee(
+            id: employeeId ?? UUID(),
+            name: employeeName,
+            role: "",
+            team: "",
+            phone: nil,
+            hourlyRate: nil,
+            currency: nil,
+            extraEarningsDescription: nil,
+            documentsDescription: nil
+        )
+
+        let resolvedClient = clients.first { client in
+            if let clientId {
+                return client.id == clientId
+            }
+            if !clientNameStored.isEmpty {
+                return client.name == clientNameStored
+            }
+            return client.address == address
+        }
 
         return ServiceTask(
             id: id,
@@ -1284,8 +1518,9 @@ final class OfflineStore: ObservableObject {
             startTime: startTime,
             endTime: endTime,
             status: status,
-            assignedEmployee: dummyEmployee,
-            clientName: "",
+            assignedEmployee: resolvedEmployee,
+            clientId: resolvedClient?.id ?? clientId,
+            clientName: resolvedClient?.name ?? clientNameStored,
             address: address,
             notes: notes,
             serviceTypeId: serviceTypeId,
@@ -1342,7 +1577,7 @@ final class OfflineStore: ObservableObject {
         )
     }
 
-    private static func financeFromManagedObject(_ object: NSManagedObject) -> FinanceEntry? {
+    private func financeFromManagedObject(_ object: NSManagedObject) -> FinanceEntry? {
         guard
             let id = object.value(forKey: "id") as? UUID,
             let title = object.value(forKey: "title") as? String,
@@ -1360,13 +1595,30 @@ final class OfflineStore: ObservableObject {
 
         let currencyRaw = object.value(forKey: "currency") as? String
         let currency = currencyRaw.flatMap { FinanceEntry.Currency(rawValue: $0) } ?? .usd
+        let clientId = object.value(forKey: "clientId") as? UUID
         let clientName = object.value(forKey: "clientName") as? String
+        let employeeId = object.value(forKey: "employeeId") as? UUID
         let employeeName = object.value(forKey: "employeeName") as? String
         let kindRaw = object.value(forKey: "kind") as? String
         let kind = kindRaw.flatMap { FinanceEntry.Kind(rawValue: $0) } ?? .general
         let isDisputed = object.value(forKey: "isDisputed") as? Bool ?? false
         let disputeReason = object.value(forKey: "disputeReason") as? String
         let receiptData = object.value(forKey: "receiptData") as? Data
+
+        let resolvedClientName: String? = {
+            if let clientName, !clientName.isEmpty { return clientName }
+            if let clientId {
+                return clients.first(where: { $0.id == clientId })?.name
+            }
+            return nil
+        }()
+        let resolvedEmployeeName: String? = {
+            if let employeeName, !employeeName.isEmpty { return employeeName }
+            if let employeeId {
+                return employees.first(where: { $0.id == employeeId })?.name
+            }
+            return nil
+        }()
 
         return FinanceEntry(
             id: id,
@@ -1377,8 +1629,10 @@ final class OfflineStore: ObservableObject {
             status: status,
             method: method,
             currency: currency,
-            clientName: clientName,
-            employeeName: employeeName,
+            clientId: clientId,
+            clientName: resolvedClientName,
+            employeeId: employeeId,
+            employeeName: resolvedEmployeeName,
             kind: kind,
             isDisputed: isDisputed,
             disputeReason: disputeReason,
@@ -1436,6 +1690,37 @@ struct NotificationPreferences: Codable {
     }
 }
 
+enum AppLanguage: String, Codable, CaseIterable, Identifiable {
+    case enUS = "en-US"
+    case esES = "es-ES"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .enUS: return "English (US)"
+        case .esES: return "Español (ES)"
+        }
+    }
+
+    var locale: Locale {
+        Locale(identifier: rawValue)
+    }
+}
+
+struct AppPreferences: Codable {
+    var language: AppLanguage
+    var preferredCurrency: FinanceEntry.Currency
+
+    init(
+        language: AppLanguage = .enUS,
+        preferredCurrency: FinanceEntry.Currency = .usd
+    ) {
+        self.language = language
+        self.preferredCurrency = preferredCurrency
+    }
+}
+
 private struct Snapshot: Codable {
     var clients: [Client]
     var employees: [Employee]
@@ -1445,6 +1730,7 @@ private struct Snapshot: Codable {
     var lastSync: Date?
     var pendingChanges: [PendingChange]
     var notificationPreferences: NotificationPreferences
+    var appPreferences: AppPreferences
 
     enum CodingKeys: String, CodingKey {
         case clients
@@ -1455,6 +1741,7 @@ private struct Snapshot: Codable {
         case lastSync
         case pendingChanges
         case notificationPreferences
+        case appPreferences
     }
 
     init(
@@ -1465,7 +1752,8 @@ private struct Snapshot: Codable {
         session: UserSession?,
         lastSync: Date?,
         pendingChanges: [PendingChange],
-        notificationPreferences: NotificationPreferences
+        notificationPreferences: NotificationPreferences,
+        appPreferences: AppPreferences
     ) {
         self.clients = clients
         self.employees = employees
@@ -1475,6 +1763,7 @@ private struct Snapshot: Codable {
         self.lastSync = lastSync
         self.pendingChanges = pendingChanges
         self.notificationPreferences = notificationPreferences
+        self.appPreferences = appPreferences
     }
 
     init(from decoder: Decoder) throws {
@@ -1487,5 +1776,6 @@ private struct Snapshot: Codable {
         lastSync = try container.decodeIfPresent(Date.self, forKey: .lastSync)
         pendingChanges = try container.decodeIfPresent([PendingChange].self, forKey: .pendingChanges) ?? []
         notificationPreferences = try container.decodeIfPresent(NotificationPreferences.self, forKey: .notificationPreferences) ?? NotificationPreferences()
+        appPreferences = try container.decodeIfPresent(AppPreferences.self, forKey: .appPreferences) ?? AppPreferences()
     }
 }

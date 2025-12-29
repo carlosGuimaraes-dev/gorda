@@ -933,10 +933,33 @@ struct FinanceView: View {
         self.onMenu = onMenu
     }
 
+    private var isManager: Bool {
+        store.session?.role == .manager
+    }
+
+    private var employeePayrollEntries: [FinanceEntry] {
+        guard store.session?.role == .employee else { return [] }
+        let sessionName = store.session?.name
+        let employeeId = sessionName.flatMap { name in
+            store.employees.first(where: { $0.name == name })?.id
+        }
+        return store.finance.filter { entry in
+            guard entry.kind == .payrollEmployee else { return false }
+            if let employeeId, let entryEmployeeId = entry.employeeId {
+                return entryEmployeeId == employeeId
+            }
+            if let sessionName, let entryName = entry.employeeName {
+                return entryName == sessionName
+            }
+            return false
+        }
+        .sorted { $0.dueDate < $1.dueDate }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                if store.session?.role == .manager {
+                if isManager {
                     Section("End of month") {
                         Button {
                             showingInvoiceGenerator = true
@@ -963,24 +986,42 @@ struct FinanceView: View {
                         }
                     }
                 }
-                Section(header: Text("Receivables")) {
-                    ForEach(store.finance.filter { $0.type == .receivable }) { entry in
-                        NavigationLink {
-                            FinanceEntryDetailView(entry: entry)
-                        } label: {
-                            FinanceRow(entry: entry) { status, method in
-                                store.markFinanceEntry(entry, status: status, method: method)
+                if isManager {
+                    Section(header: Text("Receivables")) {
+                        ForEach(store.finance.filter { $0.type == .receivable }) { entry in
+                            NavigationLink {
+                                FinanceEntryDetailView(entry: entry)
+                            } label: {
+                                FinanceRow(entry: entry) { status, method in
+                                    store.markFinanceEntry(entry, status: status, method: method)
+                                }
                             }
                         }
                     }
-                }
-                Section(header: Text("Payables")) {
-                    ForEach(store.finance.filter { $0.type == .payable }) { entry in
-                        NavigationLink {
-                            FinanceEntryDetailView(entry: entry)
-                        } label: {
-                            FinanceRow(entry: entry) { status, method in
-                                store.markFinanceEntry(entry, status: status, method: method)
+                    Section(header: Text("Payables")) {
+                        ForEach(store.finance.filter { $0.type == .payable }) { entry in
+                            NavigationLink {
+                                FinanceEntryDetailView(entry: entry)
+                            } label: {
+                                FinanceRow(entry: entry) { status, method in
+                                    store.markFinanceEntry(entry, status: status, method: method)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Section(header: Text("Payroll")) {
+                        if employeePayrollEntries.isEmpty {
+                            Text("No payroll entries yet.")
+                                .foregroundColor(.secondary)
+                        }
+                        ForEach(employeePayrollEntries) { entry in
+                            NavigationLink {
+                                FinanceEntryDetailView(entry: entry)
+                            } label: {
+                                FinanceRow(entry: entry) { status, method in
+                                    store.markFinanceEntry(entry, status: status, method: method)
+                                }
                             }
                         }
                     }
@@ -994,11 +1035,13 @@ struct FinanceView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingForm = true }) {
-                        Label("New", systemImage: "plus")
+                if isManager {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { showingForm = true }) {
+                            Label("New", systemImage: "plus")
+                        }
+                        .accessibilityIdentifier("new_finance_button")
                     }
-                    .accessibilityIdentifier("new_finance_button")
                 }
             }
             .sheet(isPresented: $showingForm) {
@@ -1155,10 +1198,11 @@ struct InvoiceFormView: View {
                         }
                         TextField("Amount", text: $amountText)
                             .keyboardType(.decimalPad)
-                        Picker("Currency", selection: $currency) {
-                            ForEach(FinanceEntry.Currency.allCases) { value in
-                                Text(value.code).tag(value)
-                            }
+                        HStack {
+                            Text("Currency")
+                            Spacer()
+                            Text(store.appPreferences.preferredCurrency.code)
+                                .foregroundColor(.secondary)
                         }
                         DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                         Picker("Method", selection: $method) {
@@ -1190,19 +1234,22 @@ struct InvoiceFormView: View {
                 if title.isEmpty, let firstClient = clientNames.first {
                     title = "Invoice - \(firstClient)"
                 }
+                currency = store.appPreferences.preferredCurrency
             }
         }
     }
 
     private func save() {
         guard let amount = parsedAmount else { return }
+        let clientId = store.clients.first(where: { $0.name == selectedClientName })?.id
         store.addFinanceEntry(
             title: title,
             amount: amount,
             type: .receivable,
             dueDate: dueDate,
             method: method,
-            currency: currency,
+            currency: store.appPreferences.preferredCurrency,
+            clientId: clientId,
             clientName: selectedClientName,
             employeeName: nil,
             kind: .invoiceClient
@@ -1248,6 +1295,9 @@ struct InvoiceDetailView: View {
     }
 
     private var client: Client? {
+        if let clientId = entry.clientId {
+            return store.clients.first { $0.id == clientId }
+        }
         guard let name = entry.clientName else { return nil }
         return store.clients.first { $0.name == name }
     }
@@ -1280,14 +1330,22 @@ struct InvoiceDetailView: View {
     }
 
     private var lineItems: [(title: String, date: Date, amount: Double)] {
-        guard let clientName = entry.clientName else { return [] }
         let tasksForInvoice = store.tasks.filter { task in
-            task.clientName == clientName && invoicePeriod.contains(task.date)
+            let matchesClient: Bool
+            if let clientId = entry.clientId {
+                matchesClient = task.clientId == clientId
+            } else if let clientName = entry.clientName {
+                matchesClient = task.clientName == clientName
+            } else {
+                matchesClient = false
+            }
+            return matchesClient && invoicePeriod.contains(task.date)
         }
 
         let items: [(title: String, date: Date, amount: Double)] = tasksForInvoice.compactMap { task in
             guard let typeId = task.serviceTypeId,
-                  let serviceType = store.serviceTypes.first(where: { $0.id == typeId }) else { return nil }
+                  let serviceType = store.serviceTypes.first(where: { $0.id == typeId }),
+                  serviceType.currency == entry.currency else { return nil }
             return (task.title, task.date, serviceType.basePrice)
         }
 
@@ -1318,12 +1376,12 @@ struct InvoiceDetailView: View {
                     TextField("Amount", text: $amountText)
                         .keyboardType(.decimalPad)
                         .disabled(!canAdjustInvoice)
-                    Picker("Currency", selection: $currency) {
-                        ForEach(FinanceEntry.Currency.allCases) { value in
-                            Text(value.code).tag(value)
-                        }
+                    HStack {
+                        Text("Currency")
+                        Spacer()
+                        Text(store.appPreferences.preferredCurrency.code)
+                            .foregroundColor(.secondary)
                     }
-                    .disabled(!canAdjustInvoice)
                     DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                         .disabled(!canAdjustInvoice)
                     Picker("Method", selection: $method) {
@@ -1404,6 +1462,7 @@ struct InvoiceDetailView: View {
             if let firstChannel = client?.preferredDeliveryChannels.first {
                 selectedChannel = firstChannel
             }
+            currency = store.appPreferences.preferredCurrency
         }
     }
 
@@ -1415,7 +1474,7 @@ struct InvoiceDetailView: View {
             current.title = title
             current.amount = amount
             current.dueDate = dueDate
-            current.currency = currency
+            current.currency = store.appPreferences.preferredCurrency
             current.method = method
             current.status = status
             current.isDisputed = isDisputed
@@ -1427,8 +1486,9 @@ struct InvoiceDetailView: View {
     private func prepareShare() {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = currency.code
-        let amountString = formatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(currency.code) \(parsedAmount ?? entry.amount)"
+        let activeCurrency = store.appPreferences.preferredCurrency
+        formatter.currencyCode = activeCurrency.code
+        let amountString = formatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(activeCurrency.code) \(parsedAmount ?? entry.amount)"
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
@@ -1472,7 +1532,8 @@ struct InvoiceDetailView: View {
 
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .currency
-        numberFormatter.currencyCode = currency.code
+        let activeCurrency = store.appPreferences.preferredCurrency
+        numberFormatter.currencyCode = activeCurrency.code
 
         let instructions = "Please pay via \(method?.label ?? selectedChannel.label) by \(dateFormatter.string(from: dueDate))."
         let clientName = entry.clientName ?? "Client"
@@ -1512,11 +1573,11 @@ struct InvoiceDetailView: View {
             draw("Line items", font: .boldSystemFont(ofSize: 16))
 
             for item in lineItems {
-                let amount = numberFormatter.string(from: NSNumber(value: item.amount)) ?? "\(currency.code) \(item.amount)"
+                let amount = numberFormatter.string(from: NSNumber(value: item.amount)) ?? "\(activeCurrency.code) \(item.amount)"
                 draw("- \(item.title) (\(dateFormatter.string(from: item.date))): \(amount)", font: .systemFont(ofSize: 12))
             }
 
-            let totalString = numberFormatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(currency.code) \(parsedAmount ?? entry.amount)"
+            let totalString = numberFormatter.string(from: NSNumber(value: parsedAmount ?? entry.amount)) ?? "\(activeCurrency.code) \(parsedAmount ?? entry.amount)"
             y += 8
             draw("Total: \(totalString)", font: .boldSystemFont(ofSize: 14))
 
@@ -1704,10 +1765,11 @@ struct PayrollFormView: View {
                         }
                         TextField("Amount", text: $amountText)
                             .keyboardType(.decimalPad)
-                        Picker("Currency", selection: $currency) {
-                            ForEach(FinanceEntry.Currency.allCases) { value in
-                                Text(value.code).tag(value)
-                            }
+                        HStack {
+                            Text("Currency")
+                            Spacer()
+                            Text(store.appPreferences.preferredCurrency.code)
+                                .foregroundColor(.secondary)
                         }
                         DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                         Picker("Method", selection: $method) {
@@ -1739,20 +1801,23 @@ struct PayrollFormView: View {
                 if title.isEmpty, let employee = employeeNames.first {
                     title = "Payroll - \(employee)"
                 }
+                currency = store.appPreferences.preferredCurrency
             }
         }
     }
 
     private func save() {
         guard let amount = parsedAmount else { return }
+        let employeeId = store.employees.first(where: { $0.name == selectedEmployeeName })?.id
         store.addFinanceEntry(
             title: title,
             amount: amount,
             type: .payable,
             dueDate: dueDate,
             method: method,
-            currency: currency,
+            currency: store.appPreferences.preferredCurrency,
             clientName: nil,
+            employeeId: employeeId,
             employeeName: selectedEmployeeName,
             kind: .payrollEmployee
         )
@@ -1808,12 +1873,12 @@ struct PayrollDetailView: View {
                     TextField("Amount", text: $amountText)
                         .keyboardType(.decimalPad)
                         .disabled(!canEditFields)
-                    Picker("Currency", selection: $currency) {
-                        ForEach(FinanceEntry.Currency.allCases) { value in
-                            Text(value.code).tag(value)
-                        }
+                    HStack {
+                        Text("Currency")
+                        Spacer()
+                        Text(store.appPreferences.preferredCurrency.code)
+                            .foregroundColor(.secondary)
                     }
-                    .disabled(!canEditFields)
                     DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                         .disabled(!canEditFields)
                     Picker("Method", selection: $method) {
@@ -1846,6 +1911,9 @@ struct PayrollDetailView: View {
                 Button("Close") { dismiss() }
             }
         }
+        .onAppear {
+            currency = store.appPreferences.preferredCurrency
+        }
     }
 
     private func save() {
@@ -1854,7 +1922,7 @@ struct PayrollDetailView: View {
             current.title = title
             current.amount = amount
             current.dueDate = dueDate
-            current.currency = currency
+            current.currency = store.appPreferences.preferredCurrency
             current.method = method
             current.status = status
         }
@@ -2178,6 +2246,7 @@ struct ServiceFormView: View {
             startTime: startTime,
             endTime: endTime,
             employee: employee,
+            clientId: client.id,
             clientName: client.name,
             address: client.address,
             notes: finalNotes,
@@ -2229,10 +2298,11 @@ struct FinanceFormView: View {
                         TextField("Title", text: $title)
                         TextField("Amount", text: $amount)
                             .keyboardType(.decimalPad)
-                        Picker("Currency", selection: $currency) {
-                            ForEach(FinanceEntry.Currency.allCases) { curr in
-                                Text(curr.code).tag(curr)
-                            }
+                        HStack {
+                            Text("Currency")
+                            Spacer()
+                            Text(store.appPreferences.preferredCurrency.code)
+                                .foregroundColor(.secondary)
                         }
                         DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                     }
@@ -2297,6 +2367,9 @@ struct FinanceFormView: View {
             .sheet(isPresented: $showingShareSheet) {
                 ActivityView(items: shareItems)
             }
+            .onAppear {
+                currency = store.appPreferences.preferredCurrency
+            }
         }
     }
 
@@ -2313,6 +2386,9 @@ struct FinanceFormView: View {
     private func save() {
         guard let value = parsedAmount else { return }
         let clientName = isOutOfPocket ? (selectedClientName.isEmpty ? nil : selectedClientName) : nil
+        let clientId = clientName.flatMap { name in
+            store.clients.first(where: { $0.name == name })?.id
+        }
         let kind: FinanceEntry.Kind = (type == .payable && isOutOfPocket) ? .expenseOutOfPocket : .general
         let receiptData = receiptImage?.jpegData(compressionQuality: 0.7)
 
@@ -2322,7 +2398,8 @@ struct FinanceFormView: View {
             type: type,
             dueDate: dueDate,
             method: method,
-            currency: currency,
+            currency: store.appPreferences.preferredCurrency,
+            clientId: clientId,
             clientName: clientName,
             employeeName: nil,
             kind: kind,
@@ -2334,7 +2411,8 @@ struct FinanceFormView: View {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             let dateString = formatter.string(from: dueDate)
-            let text = "Expense receipt for \(clientName)\n\n\(title)\nAmount: \(currency.code) \(value)\nDue date: \(dateString)"
+            let activeCurrency = store.appPreferences.preferredCurrency
+            let text = "Expense receipt for \(clientName)\n\n\(title)\nAmount: \(activeCurrency.code) \(value)\nDue date: \(dateString)"
             items.append(text)
             items.append(image)
             shareItems = items
@@ -2381,6 +2459,21 @@ struct SettingsView: View {
                     Section("Team") {
                         NavigationLink("Employees") {
                             EmployeesView()
+                        }
+                    }
+                }
+
+                if store.session?.role == .manager {
+                    Section("App preferences") {
+                        Picker("Language", selection: $store.appPreferences.language) {
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(language.label).tag(language)
+                            }
+                        }
+                        Picker("Currency", selection: $store.appPreferences.preferredCurrency) {
+                            ForEach(FinanceEntry.Currency.allCases) { currency in
+                                Text(currency.code).tag(currency)
+                            }
                         }
                     }
                 }
@@ -2822,10 +2915,11 @@ struct ServiceTypeForm: View {
                         .lineLimit(2...4)
                     TextField("Base price", text: $basePriceText)
                         .keyboardType(.decimalPad)
-                    Picker("Currency", selection: $currency) {
-                        ForEach(FinanceEntry.Currency.allCases) { curr in
-                            Text(curr.code).tag(curr)
-                        }
+                    HStack {
+                        Text("Currency")
+                        Spacer()
+                        Text(store.appPreferences.preferredCurrency.code)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -2838,14 +2932,14 @@ struct ServiceTypeForm: View {
                         name: name,
                         description: description,
                         basePrice: price,
-                        currency: currency
+                        currency: store.appPreferences.preferredCurrency
                     )
                 } else {
                     store.addServiceType(
                         name: name,
                         description: description,
                         basePrice: price,
-                        currency: currency
+                        currency: store.appPreferences.preferredCurrency
                     )
                 }
                 dismiss()
@@ -2858,6 +2952,9 @@ struct ServiceTypeForm: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
             }
+        }
+        .onAppear {
+            currency = store.appPreferences.preferredCurrency
         }
     }
 }

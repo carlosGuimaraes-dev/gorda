@@ -82,6 +82,8 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `notes: String`
   - `checkInTime: Date?`
   - `checkOutTime: Date?`
+  - `clientId: UUID?` (persistido para vínculos offline consistentes)
+  - Observação: na persistência local, tarefas guardam `employeeId`/`clientId` e nomes denormalizados para resiliência offline.
   - Relacionamentos:
     - `employee: Employee`
     - `client: Client`
@@ -101,6 +103,10 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `dueDate: Date`
   - `status: String` (`"pending"` ou `"paid"`)
   - `method: String?` (`"pix"`, `"card"`, `"cash"` — ou equivalente internacional)
+  - `clientId: UUID?`
+  - `clientName: String?`
+  - `employeeId: UUID?`
+  - `employeeName: String?`
   - `kind: String` (`"general"`, `"invoiceClient"`, `"payrollEmployee"`, `"expenseOutOfPocket"`)
   - `isDisputed: Bool`
   - `disputeReason: String?`
@@ -110,7 +116,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
     - `client: Client?`
     - `employee: Employee?`
     - `serviceTask: ServiceTask?`
-  - Observação: invoices são gerados agregando tasks por cliente dentro de um período; o PDF exibe line items com `ServiceTask`/`ServiceType` desse intervalo.
+  - Observação: invoices são gerados agregando tasks por cliente dentro de um período e separados por moeda; o PDF exibe line items com `ServiceTask`/`ServiceType` desse intervalo.
 
 ## Offline / Sync / Notifications
 
@@ -127,5 +133,10 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `enableTeamNotifications: Bool`
   - `enablePush: Bool`
   - `enableSiri: Bool`
+
+- **AppPreferences**
+  - `language: String` (`"en-US"` ou `"es-ES"`)
+  - `preferredCurrency: String` (`"USD"` ou `"EUR"`)
+  - Observação: `preferredCurrency` é global e bloqueia a moeda usada em cadastros e lançamentos financeiros.
 
 > Implementação Core Data: cada entidade acima pode virar uma `NSEntityDescription` em um modelo programático ou em um `.xcdatamodeld`. O app atual continuará usando o `OfflineStore` como fachada, mas por baixo os dados passam a ser persistidos em Core Data/SQLite ao invés de um JSON único.

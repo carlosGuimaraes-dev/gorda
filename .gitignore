@@ -63,3 +63,4 @@ fastlane/test_output
 
 # macOS artifacts
 .DS_Store
+# BMAD (local only)

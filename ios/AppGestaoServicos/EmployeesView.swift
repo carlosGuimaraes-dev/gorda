@@ -155,10 +155,11 @@ struct EmployeeFormView: View {
                 Section("Compensation") {
                     TextField("Hourly rate", text: $hourlyRateText)
                         .keyboardType(.decimalPad)
-                    Picker("Currency", selection: $currency) {
-                        ForEach(Employee.Currency.allCases) { curr in
-                            Text(curr.label).tag(curr)
-                        }
+                    HStack {
+                        Text("Currency")
+                        Spacer()
+                        Text(store.appPreferences.preferredCurrency.code)
+                            .foregroundColor(.secondary)
                     }
                     TextField("Other earnings (description)", text: $extraEarnings)
                 }
@@ -186,7 +187,7 @@ struct EmployeeFormView: View {
                         team: team,
                         phone: fullPhone,
                         hourlyRate: hourlyRate,
-                        currency: currency,
+                        currency: employeeCurrency(),
                         extraEarningsDescription: extraEarnings.isEmpty ? nil : extraEarnings,
                         documentsDescription: documents.isEmpty ? nil : documents
                     )
@@ -197,7 +198,7 @@ struct EmployeeFormView: View {
                         team: team,
                         phone: fullPhone,
                         hourlyRate: hourlyRate,
-                        currency: currency,
+                        currency: employeeCurrency(),
                         extraEarningsDescription: extraEarnings.isEmpty ? nil : extraEarnings,
                         documentsDescription: documents.isEmpty ? nil : documents
                     )
@@ -215,6 +216,9 @@ struct EmployeeFormView: View {
                 Button("Close") { dismiss() }
             }
         }
+        .onAppear {
+            currency = employeeCurrency()
+        }
 #if canImport(ContactsUI) && canImport(UIKit)
         .sheet(isPresented: $showContactPicker) {
             ContactPickerView { contact in
@@ -225,6 +229,10 @@ struct EmployeeFormView: View {
             }
         }
 #endif
+    }
+
+    private func employeeCurrency() -> Employee.Currency {
+        Employee.Currency(rawValue: store.appPreferences.preferredCurrency.rawValue) ?? .usd
     }
 
 #if canImport(Contacts)

@@ -136,6 +136,7 @@ struct ServiceTask: Identifiable, Codable, Hashable {
     var endTime: Date?
     var status: Status
     var assignedEmployee: Employee
+    var clientId: UUID?
     var clientName: String
     var address: String
     var notes: String
@@ -151,6 +152,7 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         endTime: Date? = nil,
         status: Status,
         assignedEmployee: Employee,
+        clientId: UUID? = nil,
         clientName: String,
         address: String,
         notes: String,
@@ -165,6 +167,7 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.endTime = endTime
         self.status = status
         self.assignedEmployee = assignedEmployee
+        self.clientId = clientId
         self.clientName = clientName
         self.address = address
         self.notes = notes
@@ -198,6 +201,7 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         case endTime
         case status
         case assignedEmployee
+        case clientId
         case clientName
         case address
         case notes
@@ -215,6 +219,7 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.endTime = try container.decodeIfPresent(Date.self, forKey: .endTime)
         self.status = try container.decodeIfPresent(Status.self, forKey: .status) ?? .scheduled
         self.assignedEmployee = try container.decode(Employee.self, forKey: .assignedEmployee)
+        self.clientId = try container.decodeIfPresent(UUID.self, forKey: .clientId)
         self.clientName = try container.decodeIfPresent(String.self, forKey: .clientName) ?? ""
         self.address = try container.decodeIfPresent(String.self, forKey: .address) ?? ""
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes) ?? ""
@@ -233,7 +238,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var status: Status
     var method: PaymentMethod?
     var currency: Currency
+    var clientId: UUID?
     var clientName: String?
+    var employeeId: UUID?
     var employeeName: String?
     var kind: Kind
     var isDisputed: Bool
@@ -249,7 +256,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         status: Status = .pending,
         method: PaymentMethod? = nil,
         currency: Currency = .usd,
+        clientId: UUID? = nil,
         clientName: String? = nil,
+        employeeId: UUID? = nil,
         employeeName: String? = nil,
         kind: Kind = .general,
         isDisputed: Bool = false,
@@ -264,7 +273,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.status = status
         self.method = method
         self.currency = currency
+        self.clientId = clientId
         self.clientName = clientName
+        self.employeeId = employeeId
         self.employeeName = employeeName
         self.kind = kind
         self.isDisputed = isDisputed
@@ -334,7 +345,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case status
         case method
         case currency
+        case clientId
         case clientName
+        case employeeId
         case employeeName
         case kind
         case isDisputed
@@ -352,7 +365,9 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.status = try container.decodeIfPresent(Status.self, forKey: .status) ?? .pending
         self.method = try container.decodeIfPresent(PaymentMethod.self, forKey: .method)
         self.currency = try container.decodeIfPresent(Currency.self, forKey: .currency) ?? .usd
+        self.clientId = try container.decodeIfPresent(UUID.self, forKey: .clientId)
         self.clientName = try container.decodeIfPresent(String.self, forKey: .clientName)
+        self.employeeId = try container.decodeIfPresent(UUID.self, forKey: .employeeId)
         self.employeeName = try container.decodeIfPresent(String.self, forKey: .employeeName)
         self.kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .general
         self.isDisputed = try container.decodeIfPresent(Bool.self, forKey: .isDisputed) ?? false
