@@ -1155,7 +1155,7 @@ private struct InvoiceRow: View {
                 HStack(spacing: 6) {
                     StatusPill(label: entry.status.label, color: entry.status == .paid ? .green : .orange)
                     if entry.isDisputed {
-                        StatusPill(label: "Disputed", color: .red)
+                        StatusPill(label: NSLocalizedString("Disputed", comment: ""), color: .red)
                     }
                 }
             }
@@ -2130,6 +2130,7 @@ struct ExpenseDetailView: View {
     @State private var status: FinanceEntry.Status
     @State private var method: FinanceEntry.PaymentMethod?
     @State private var showingShareSheet = false
+    @State private var showingReceiptPreview = false
     @State private var shareItems: [Any] = []
 
     init(entry: FinanceEntry) {
@@ -2173,10 +2174,15 @@ struct ExpenseDetailView: View {
 
                 if let receiptImage {
                     Section("Receipt") {
-                        Image(uiImage: receiptImage)
-                            .resizable()
-                            .scaledToFit()
-                            .cornerRadius(AppTheme.cornerRadius)
+                        Button {
+                            showingReceiptPreview = true
+                        } label: {
+                            Image(uiImage: receiptImage)
+                                .resizable()
+                                .scaledToFit()
+                                .cornerRadius(AppTheme.cornerRadius)
+                        }
+                        .buttonStyle(.plain)
                         Button {
                             shareReceipt()
                         } label: {
@@ -2206,6 +2212,11 @@ struct ExpenseDetailView: View {
         .sheet(isPresented: $showingShareSheet) {
             ActivityView(items: shareItems)
         }
+        .sheet(isPresented: $showingReceiptPreview) {
+            if let receiptImage {
+                ReceiptPreviewView(image: receiptImage)
+            }
+        }
     }
 
     private func shareReceipt() {
@@ -2225,6 +2236,30 @@ struct ExpenseDetailView: View {
         }
         shareItems = items
         showingShareSheet = true
+    }
+}
+
+private struct ReceiptPreviewView: View {
+    let image: UIImage
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppTheme.background
+                    .ignoresSafeArea()
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .padding()
+            }
+            .navigationTitle("Receipt")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
     }
 }
 
@@ -3350,7 +3385,7 @@ struct PaymentStatusIcon: View {
         Image(systemName: hasPending ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
             .font(.title3)
             .foregroundColor(hasPending ? .orange : .green)
-            .accessibilityLabel(hasPending ? "Pending payments" : "No pending payments")
+            .accessibilityLabel(Text(hasPending ? "Pending payments" : "No pending payments"))
     }
 }
 
@@ -3378,10 +3413,10 @@ struct FinanceRow: View {
                         StatusPill(label: method.label, color: .blue.opacity(0.8))
                     }
                     if entry.kind == .invoiceClient && entry.isDisputed {
-                        StatusPill(label: "Disputed", color: .red)
+                        StatusPill(label: NSLocalizedString("Disputed", comment: ""), color: .red)
                     }
                     if entry.kind == .expenseOutOfPocket, entry.receiptData != nil {
-                        StatusPill(label: "Receipt", color: .blue.opacity(0.7))
+                        StatusPill(label: NSLocalizedString("Receipt", comment: ""), color: .blue.opacity(0.7))
                     }
                 }
             }
