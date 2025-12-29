@@ -7,6 +7,7 @@ struct Client: Identifiable, Codable, Hashable {
     var address: String
     var propertyDetails: String
     var phone: String
+    var whatsappPhone: String
     var email: String
     var accessNotes: String
     var preferredSchedule: String
@@ -15,7 +16,7 @@ struct Client: Identifiable, Codable, Hashable {
     enum DeliveryChannel: String, Codable, CaseIterable, Identifiable {
         case email
         case whatsapp
-        case imessage
+        case sms
 
         var id: String { rawValue }
 
@@ -23,8 +24,33 @@ struct Client: Identifiable, Codable, Hashable {
             switch self {
             case .email: return NSLocalizedString("Email", comment: "")
             case .whatsapp: return NSLocalizedString("WhatsApp", comment: "")
-            case .imessage: return NSLocalizedString("iMessage", comment: "")
+            case .sms: return NSLocalizedString("Text Message", comment: "")
             }
+        }
+
+        static func from(rawValue: String) -> DeliveryChannel? {
+            switch rawValue {
+            case "email": return .email
+            case "whatsapp": return .whatsapp
+            case "sms": return .sms
+            case "imessage": return .sms
+            default: return nil
+            }
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            if let mapped = DeliveryChannel.from(rawValue: raw) {
+                self = mapped
+            } else {
+                self = .email
+            }
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(rawValue)
         }
     }
 
@@ -35,6 +61,7 @@ struct Client: Identifiable, Codable, Hashable {
         address: String,
         propertyDetails: String,
         phone: String = "",
+        whatsappPhone: String = "",
         email: String = "",
         accessNotes: String = "",
         preferredSchedule: String = "",
@@ -46,6 +73,7 @@ struct Client: Identifiable, Codable, Hashable {
         self.address = address
         self.propertyDetails = propertyDetails
         self.phone = phone
+        self.whatsappPhone = whatsappPhone
         self.email = email
         self.accessNotes = accessNotes
         self.preferredSchedule = preferredSchedule
@@ -59,6 +87,7 @@ struct Client: Identifiable, Codable, Hashable {
         case address
         case propertyDetails
         case phone
+        case whatsappPhone
         case email
         case accessNotes
         case preferredSchedule
@@ -73,6 +102,7 @@ struct Client: Identifiable, Codable, Hashable {
         self.address = try container.decode(String.self, forKey: .address)
         self.propertyDetails = try container.decode(String.self, forKey: .propertyDetails)
         self.phone = try container.decodeIfPresent(String.self, forKey: .phone) ?? ""
+        self.whatsappPhone = try container.decodeIfPresent(String.self, forKey: .whatsappPhone) ?? ""
         self.email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
         self.accessNotes = try container.decodeIfPresent(String.self, forKey: .accessNotes) ?? ""
         self.preferredSchedule = try container.decodeIfPresent(String.self, forKey: .preferredSchedule) ?? ""

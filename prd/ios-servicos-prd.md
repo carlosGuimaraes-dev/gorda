@@ -29,11 +29,11 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Administradoras de serviços residenciais e suas equipes operacionais.
 
 ## Funcionalidades
-- **Cadastro de Clientes e Imóveis**: dados pessoais, telefone (com DDI), e-mail, endereços e detalhes do imóvel administrado.
+- **Cadastro de Clientes e Imóveis**: dados pessoais, telefone (com DDI), WhatsApp opcional (pode ser diferente do telefone), e-mail, endereços e detalhes do imóvel administrado.
 - **Cadastro de Funcionários**: perfil com foto (a partir dos Contatos do iOS quando disponível), documentos, telefone (com DDI) e informações de remuneração.
 - **Gestão de Equipes e Catálogos**: menu lateral em sheet (hambúrguer) com atalhos para Dashboard/Agenda/Clients/Finance/Settings e catálogos de Services/Employees/Teams; criação de times, movimentação de funcionários entre times e gerenciamento de tipos de serviço (CRUD).
 - **Perfis de Usuário (Employee/Manager)**: o usuário escolhe seu perfil no primeiro acesso; toda a experiência (dashboard, agenda, financeiro) é filtrada de acordo com o papel (Employee vê apenas payroll no Finance).
-- **Preferências do App (Manager)**: idioma (en-US/es-ES) e moeda padrão (USD/EUR) são escolhidos na aba Settings e aplicados aos cadastros.
+- **Preferências do App (Manager)**: idioma (en-US/es-ES), moeda padrão (USD/EUR) e canais de envio de invoice (WhatsApp/SMS/Email) são escolhidos na aba Settings e aplicados aos cadastros/fluxos.
 - **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe. Cancelamentos mantêm histórico e não entram nos cálculos financeiros.
 - **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos priorizando dados locais e registrando conflitos quando houver divergências.
 - **Sync/Conflitos**: local-first com fila local; quando houver backend, aplicar merge com prioridade local e registrar conflitos em log.
@@ -47,7 +47,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Exibir avatar/foto de cliente e funcionário a partir dos Contatos, quando existir correspondência por nome/telefone.
   - Permitir importar dados básicos (nome, telefone) de um contato na criação/edição de funcionário e cliente.
 - **Invoices e Payroll**:
-  - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição permitida respeitando janela pós‑vencimento configurável (D+N), marcação de disputa com motivo e reenvio pelo canal preferido do cliente (email/WhatsApp/iMessage).
+  - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição permitida respeitando janela pós‑vencimento configurável (D+N), marcação de disputa com motivo e reenvio pelo canal definido pelo Manager (WhatsApp/SMS/Email), em ordem de prioridade.
   - Geração de invoices agregados por cliente dentro de um período, separados por moeda (um invoice por cliente por moeda), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento; permitir re-geração parcial por período.
   - Payroll pode ser gerado manualmente sem check-in/out, com confirmação do Manager.
   - Disputa de invoice iniciada pelo cliente via e-mail/texto ou botao no PDF; permitida a qualquer momento (mantendo historico) e com ajustes permitidos pelo Manager; janela pos-vencimento e configuravel (D+N dias).

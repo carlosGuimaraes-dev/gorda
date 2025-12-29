@@ -134,6 +134,11 @@ final class PersistenceController {
         clientEmail.attributeType = .stringAttributeType
         clientEmail.isOptional = true
 
+        let clientWhatsappPhone = NSAttributeDescription()
+        clientWhatsappPhone.name = "whatsappPhone"
+        clientWhatsappPhone.attributeType = .stringAttributeType
+        clientWhatsappPhone.isOptional = true
+
         let clientAccessNotes = NSAttributeDescription()
         clientAccessNotes.name = "accessNotes"
         clientAccessNotes.attributeType = .stringAttributeType
@@ -156,6 +161,7 @@ final class PersistenceController {
             clientAddress,
             clientPropertyDetails,
             clientPhone,
+            clientWhatsappPhone,
             clientEmail,
             clientAccessNotes,
             clientPreferredSchedule,

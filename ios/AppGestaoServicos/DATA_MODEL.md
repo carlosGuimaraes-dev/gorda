@@ -42,10 +42,11 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `name: String`
   - `contactName: String`
   - `phone: String`
+  - `whatsappPhone: String` (opcional, pode ser diferente do telefone)
   - `email: String`
   - `accessNotes: String`
   - `preferredSchedule: String`
-  - `preferredDeliveryChannels: [String]` (`"email"`, `"whatsapp"`, `"imessage"`)
+  - `preferredDeliveryChannels: [String]` (`"email"`, `"whatsapp"`, `"sms"`)
   - Relacionamentos:
     - `properties: [Property]`
     - `serviceTasks: [ServiceTask]`
@@ -136,6 +137,9 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `language: String` (`"en-US"` ou `"es-ES"`)
   - `preferredCurrency: String` (`"USD"` ou `"EUR"`)
   - `disputeWindowDays: Int` (D+N após vencimento; `0` = até vencimento)
+  - `enableWhatsApp: Bool`
+  - `enableTextMessages: Bool`
+  - `enableEmail: Bool`
   - Observação: `preferredCurrency` é global e bloqueia a moeda usada em cadastros e lançamentos financeiros.
 
 - **ConflictLogEntry**

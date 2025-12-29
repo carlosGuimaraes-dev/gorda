@@ -874,7 +874,8 @@ struct ClientsView: View {
 
                     NavigationLink(destination: ClientDetailView(client: client)) {
                         HStack(spacing: 12) {
-                            ContactAvatarView(name: client.name, phone: client.phone, size: 44)
+                            let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
+                            ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(client.name).bold()
@@ -884,6 +885,15 @@ struct ClientsView: View {
                                             .font(.caption)
                                             .foregroundColor(AppTheme.primary)
                                         Text(client.phone)
+                                            .font(.footnote)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else if !client.whatsappPhone.isEmpty {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "message.fill")
+                                            .font(.caption)
+                                            .foregroundColor(AppTheme.primary)
+                                        Text(client.whatsappPhone)
                                             .font(.footnote)
                                             .foregroundColor(.secondary)
                                     }
@@ -1362,6 +1372,30 @@ struct InvoiceDetailView: View {
         return items.sorted { $0.date < $1.date }
     }
 
+    private var managerChannels: [Client.DeliveryChannel] {
+        var channels: [Client.DeliveryChannel] = []
+        if store.appPreferences.enableWhatsApp { channels.append(.whatsapp) }
+        if store.appPreferences.enableTextMessages { channels.append(.sms) }
+        if store.appPreferences.enableEmail { channels.append(.email) }
+        return channels
+    }
+
+    private var availableChannels: [Client.DeliveryChannel] {
+        managerChannels.filter { channelHasContact($0) }
+    }
+
+    private func channelHasContact(_ channel: Client.DeliveryChannel) -> Bool {
+        guard let client else { return false }
+        switch channel {
+        case .email:
+            return !client.email.isEmpty
+        case .sms:
+            return !client.phone.isEmpty
+        case .whatsapp:
+            return !client.whatsappPhone.isEmpty || !client.phone.isEmpty
+        }
+    }
+
     private var canAdjustInvoice: Bool {
         let calendar = Calendar.current
         let limit = calendar.date(byAdding: .day, value: -1, to: dueDate) ?? dueDate
@@ -1437,13 +1471,20 @@ struct InvoiceDetailView: View {
 
                 Section("Send invoice") {
                     if let client {
-                        Text(String(format: NSLocalizedString("Preferred channels: %@", comment: ""), client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", ")))
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                        Picker("Channel", selection: $selectedChannel) {
-                            ForEach(client.preferredDeliveryChannels) { channel in
-                                Text(channel.label).tag(channel)
+                        let channelLabels = availableChannels.map { $0.label }.joined(separator: ", ")
+                        if !channelLabels.isEmpty {
+                            Text(String(format: NSLocalizedString("Available channels: %@", comment: ""), channelLabels))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                            Picker("Channel", selection: $selectedChannel) {
+                                ForEach(availableChannels) { channel in
+                                    Text(channel.label).tag(channel)
+                                }
                             }
+                        } else {
+                            Text(NSLocalizedString("No available channels. Add phone or email for this client.", comment: ""))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
                         }
                     }
                     Button {
@@ -1451,6 +1492,7 @@ struct InvoiceDetailView: View {
                     } label: {
                         Label("Send / Reissue", systemImage: "square.and.arrow.up")
                     }
+                    .disabled(availableChannels.isEmpty)
                     Button {
                         preparePDFShare()
                     } label: {
@@ -1491,7 +1533,7 @@ struct InvoiceDetailView: View {
                 .ignoresSafeArea()
         }
         .onAppear {
-            if let firstChannel = client?.preferredDeliveryChannels.first {
+            if let firstChannel = availableChannels.first {
                 selectedChannel = firstChannel
             }
             currency = store.appPreferences.preferredCurrency
@@ -1675,8 +1717,9 @@ struct InvoiceDetailView: View {
             let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
         case .whatsapp:
-            guard !client.phone.isEmpty else { return nil }
-            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let targetPhone = client.whatsappPhone.isEmpty ? client.phone : client.whatsappPhone
+            guard !targetPhone.isEmpty else { return nil }
+            let digits = targetPhone.filter { $0.isNumber || $0 == "+" }
             let text = String(
                 format: NSLocalizedString("Invoice %@ - due %@", comment: ""),
                 title,
@@ -1684,7 +1727,7 @@ struct InvoiceDetailView: View {
             )
             let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
-        case .imessage:
+        case .sms:
             guard !client.phone.isEmpty else { return nil }
             let digits = client.phone.filter { $0.isNumber || $0 == "+" }
             return URL(string: "sms:\(digits)")
@@ -1693,15 +1736,14 @@ struct InvoiceDetailView: View {
 
     private func makeDisputeURL() -> URL? {
         guard let client else { return nil }
-
-        let preferredChannels = client.preferredDeliveryChannels
-        for channel in preferredChannels {
+        let channels = availableChannels
+        for channel in channels {
             if let url = disputeURL(for: channel, client: client) {
                 return url
             }
         }
         return disputeURL(for: .email, client: client)
-            ?? disputeURL(for: .imessage, client: client)
+            ?? disputeURL(for: .sms, client: client)
             ?? disputeURL(for: .whatsapp, client: client)
     }
 
@@ -1719,11 +1761,12 @@ struct InvoiceDetailView: View {
             let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "mailto:\(client.email)?subject=\(encodedSubject)&body=\(encodedBody)")
         case .whatsapp:
-            guard !client.phone.isEmpty else { return nil }
-            let digits = client.phone.filter { $0.isNumber || $0 == "+" }
+            let targetPhone = client.whatsappPhone.isEmpty ? client.phone : client.whatsappPhone
+            guard !targetPhone.isEmpty else { return nil }
+            let digits = targetPhone.filter { $0.isNumber || $0 == "+" }
             let encoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
             return URL(string: "https://wa.me/\(digits)?text=\(encoded)")
-        case .imessage:
+        case .sms:
             guard !client.phone.isEmpty else { return nil }
             let digits = client.phone.filter { $0.isNumber || $0 == "+" }
             let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -2696,6 +2739,21 @@ struct SettingsView: View {
                     }
                     Toggle("Siri suggestions", isOn: $store.notificationPreferences.enableSiri)
                 }
+
+                if store.session?.role == .manager {
+                    Section("Delivery channels") {
+                        Toggle("WhatsApp", isOn: $store.appPreferences.enableWhatsApp)
+                        Toggle("Text Message", isOn: $store.appPreferences.enableTextMessages)
+                        Toggle("Email", isOn: $store.appPreferences.enableEmail)
+                        if !store.appPreferences.enableWhatsApp &&
+                            !store.appPreferences.enableTextMessages &&
+                            !store.appPreferences.enableEmail {
+                            Text("Enable at least one channel to send invoices.")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -2842,6 +2900,11 @@ struct ClientDetailView: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
+                if !client.whatsappPhone.isEmpty {
+                    Text(String(format: NSLocalizedString("WhatsApp phone: %@", comment: ""), client.whatsappPhone))
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
                 if !client.email.isEmpty {
                     Text(String(format: NSLocalizedString("Email: %@", comment: ""), client.email))
                         .font(.footnote)
@@ -2857,11 +2920,6 @@ struct ClientDetailView: View {
                 }
                 if !client.preferredSchedule.isEmpty {
                     Text(String(format: NSLocalizedString("Preferred schedule: %@", comment: ""), client.preferredSchedule))
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                if !client.preferredDeliveryChannels.isEmpty {
-                Text(String(format: NSLocalizedString("Invoice delivery: %@", comment: ""), client.preferredDeliveryChannels.map { $0.label }.joined(separator: ", ")))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -3638,20 +3696,11 @@ struct ClientForm: View {
     @State private var propertyDetails = ""
     @State private var phoneLocal = ""
     @State private var phoneCode: CountryCode = .defaultCode
+    @State private var whatsappPhoneLocal = ""
+    @State private var whatsappPhoneCode: CountryCode = .defaultCode
     @State private var email = ""
     @State private var preferredSchedule = ""
     @State private var accessNotes = ""
-    @State private var prefersEmail = true
-    @State private var prefersWhatsApp = false
-    @State private var prefersIMessage = false
-
-    private var selectedChannels: [Client.DeliveryChannel] {
-        var result: [Client.DeliveryChannel] = []
-        if prefersEmail { result.append(.email) }
-        if prefersWhatsApp { result.append(.whatsapp) }
-        if prefersIMessage { result.append(.imessage) }
-        return result.isEmpty ? [.email] : result
-    }
 
     var body: some View {
         NavigationStack {
@@ -3666,6 +3715,11 @@ struct ClientForm: View {
                             TextField("Phone", text: $phoneLocal)
                                 .keyboardType(.phonePad)
                         }
+                        HStack {
+                            CountryCodePicker(selection: $whatsappPhoneCode)
+                            TextField("WhatsApp phone", text: $whatsappPhoneLocal)
+                                .keyboardType(.phonePad)
+                        }
                         TextField("Email", text: $email)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
@@ -3678,29 +3732,22 @@ struct ClientForm: View {
                     Section("Access") {
                         TextField("Access instructions / front desk", text: $accessNotes)
                     }
-                    Section("Delivery channels for invoices") {
-                        Toggle("Email", isOn: $prefersEmail)
-                        Toggle("WhatsApp", isOn: $prefersWhatsApp)
-                        Toggle("iMessage", isOn: $prefersIMessage)
-                        Text("Used when sending invoices or receipts.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
                 }
                 .scrollContentBackground(.hidden)
 
                 PrimaryButton(title: "Save") {
                     let fullPhone = phoneLocal.isEmpty ? "" : "\(phoneCode.dialCode) \(phoneLocal)"
+                    let fullWhatsApp = whatsappPhoneLocal.isEmpty ? "" : "\(whatsappPhoneCode.dialCode) \(whatsappPhoneLocal)"
                     store.addClient(
                         name: name,
                         contact: name,
                         address: address,
                         propertyDetails: propertyDetails,
                         phone: fullPhone,
+                        whatsappPhone: fullWhatsApp,
                         email: email,
                         accessNotes: accessNotes,
-                        preferredSchedule: preferredSchedule,
-                        preferredDeliveryChannels: selectedChannels
+                        preferredSchedule: preferredSchedule
                     )
                     dismiss()
                 }

@@ -283,7 +283,13 @@
 "\nChannel: %@" = "\nCanal: %@";
 "\nClient: %@" = "\nCliente: %@";
 "\nStatus: DISPUTED - %@" = "\nEstado: EN DISPUTA - %@";
-"iMessage" = "iMessage";
 "Service \"%@\" updated for %@." = "Servicio \"%@\" actualizado para %@.";
 "Spain" = "España";
 "%.1f h" = "%.1f h";
+"Available channels: %@" = "Canales disponibles: %@";
+"No available channels. Add phone or email for this client." = "No hay canales disponibles. Agrega teléfono o correo para este cliente.";
+"Text Message" = "Mensaje de texto";
+"WhatsApp phone: %@" = "WhatsApp: %@";
+"Delivery channels" = "Canales de envío";
+"Enable at least one channel to send invoices." = "Habilita al menos un canal para enviar facturas.";
+"WhatsApp phone" = "Teléfono de WhatsApp";

@@ -117,11 +117,12 @@ final class OfflineStore: ObservableObject {
         address: String,
         propertyDetails: String,
         phone: String,
+        whatsappPhone: String,
         email: String,
         accessNotes: String,
-        preferredSchedule: String,
-        preferredDeliveryChannels: [Client.DeliveryChannel]
+        preferredSchedule: String
     ) {
+        let channels = availableDeliveryChannels(phone: phone, whatsappPhone: whatsappPhone, email: email)
         let client = Client(
             id: UUID(),
             name: name,
@@ -129,10 +130,11 @@ final class OfflineStore: ObservableObject {
             address: address,
             propertyDetails: propertyDetails,
             phone: phone,
+            whatsappPhone: whatsappPhone,
             email: email,
             accessNotes: accessNotes,
             preferredSchedule: preferredSchedule,
-            preferredDeliveryChannels: preferredDeliveryChannels
+            preferredDeliveryChannels: channels
         )
         clients.append(client)
         pendingChanges.append(PendingChange(operation: .addClient, entityId: client.id))
@@ -759,6 +761,20 @@ final class OfflineStore: ObservableObject {
         Employee.Currency(rawValue: currency.rawValue) ?? .usd
     }
 
+    private func availableDeliveryChannels(phone: String, whatsappPhone: String, email: String) -> [Client.DeliveryChannel] {
+        var channels: [Client.DeliveryChannel] = []
+        if !whatsappPhone.isEmpty || !phone.isEmpty {
+            channels.append(.whatsapp)
+        }
+        if !phone.isEmpty {
+            channels.append(.sms)
+        }
+        if !email.isEmpty {
+            channels.append(.email)
+        }
+        return channels.isEmpty ? [.email] : channels
+    }
+
     private func encryptSnapshotData(_ data: Data) throws -> Data {
         let header = Data("ENCv1:".utf8)
         let encrypted = try CryptoHelper.encrypt(data)
@@ -904,6 +920,7 @@ final class OfflineStore: ObservableObject {
             address: "Rua das Flores, 123, Lisbon",
             propertyDetails: "Apartment 302, 90m²",
             phone: "+351 912 000 001",
+            whatsappPhone: "+351 912 000 001",
             email: "carla@example.com",
             accessNotes: "Call front desk on arrival",
             preferredSchedule: "Weekdays 8am–12pm",
@@ -916,6 +933,7 @@ final class OfflineStore: ObservableObject {
             address: "1200 Market St, San Francisco, CA",
             propertyDetails: "Townhouse, 3 bedrooms",
             phone: "+1 (415) 555-0100",
+            whatsappPhone: "+1 (415) 555-0100",
             email: "james@example.com",
             accessNotes: "Ring the side doorbell",
             preferredSchedule: "Mon/Wed/Fri 2pm–6pm",
@@ -928,10 +946,11 @@ final class OfflineStore: ObservableObject {
             address: "Calle Mayor 45, Madrid",
             propertyDetails: "Flat, 2 bedrooms",
             phone: "+34 600 123 456",
+            whatsappPhone: "+34 600 123 456",
             email: "lucia@example.com",
             accessNotes: "Entrance B, 4th floor",
             preferredSchedule: "Tuesday and Thursday mornings",
-            preferredDeliveryChannels: [.imessage, .email]
+            preferredDeliveryChannels: [.sms, .email]
         )
         clients = [clientCarla, clientJames, clientLucia]
         clients.forEach(saveClientToCoreData)
@@ -1334,6 +1353,7 @@ final class OfflineStore: ObservableObject {
         object.setValue(encryptString(client.address), forKey: "address")
         object.setValue(encryptString(client.propertyDetails), forKey: "propertyDetails")
         object.setValue(encryptString(client.phone), forKey: "phone")
+        object.setValue(encryptString(client.whatsappPhone), forKey: "whatsappPhone")
         object.setValue(encryptString(client.email), forKey: "email")
         object.setValue(encryptString(client.accessNotes), forKey: "accessNotes")
         object.setValue(encryptString(client.preferredSchedule), forKey: "preferredSchedule")
@@ -1488,6 +1508,7 @@ final class OfflineStore: ObservableObject {
         let address = CryptoHelper.decryptString(addressRaw)
         let propertyDetails = CryptoHelper.decryptString(propertyRaw)
         let phone = CryptoHelper.decryptString(object.value(forKey: "phone") as? String ?? "")
+        let whatsappPhone = CryptoHelper.decryptString(object.value(forKey: "whatsappPhone") as? String ?? "")
         let email = CryptoHelper.decryptString(object.value(forKey: "email") as? String ?? "")
         let accessNotes = CryptoHelper.decryptString(object.value(forKey: "accessNotes") as? String ?? "")
         let preferredSchedule = CryptoHelper.decryptString(object.value(forKey: "preferredSchedule") as? String ?? "")
@@ -1496,7 +1517,7 @@ final class OfflineStore: ObservableObject {
         if let preferredChannelsRaw, !preferredChannelsRaw.isEmpty {
             preferredChannels = preferredChannelsRaw
                 .split(separator: ",")
-                .compactMap { Client.DeliveryChannel(rawValue: String($0)) }
+                .compactMap { Client.DeliveryChannel.from(rawValue: String($0)) }
         } else {
             preferredChannels = [.email]
         }
@@ -1508,6 +1529,7 @@ final class OfflineStore: ObservableObject {
             address: address,
             propertyDetails: propertyDetails,
             phone: phone,
+            whatsappPhone: whatsappPhone,
             email: email,
             accessNotes: accessNotes,
             preferredSchedule: preferredSchedule,
@@ -1781,21 +1803,33 @@ struct AppPreferences: Codable {
     var language: AppLanguage
     var preferredCurrency: FinanceEntry.Currency
     var disputeWindowDays: Int
+    var enableWhatsApp: Bool
+    var enableTextMessages: Bool
+    var enableEmail: Bool
 
     init(
         language: AppLanguage = .enUS,
         preferredCurrency: FinanceEntry.Currency = .usd,
-        disputeWindowDays: Int = 0
+        disputeWindowDays: Int = 0,
+        enableWhatsApp: Bool = true,
+        enableTextMessages: Bool = true,
+        enableEmail: Bool = true
     ) {
         self.language = language
         self.preferredCurrency = preferredCurrency
         self.disputeWindowDays = disputeWindowDays
+        self.enableWhatsApp = enableWhatsApp
+        self.enableTextMessages = enableTextMessages
+        self.enableEmail = enableEmail
     }
 
     enum CodingKeys: String, CodingKey {
         case language
         case preferredCurrency
         case disputeWindowDays
+        case enableWhatsApp
+        case enableTextMessages
+        case enableEmail
     }
 
     init(from decoder: Decoder) throws {
@@ -1803,6 +1837,9 @@ struct AppPreferences: Codable {
         language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .enUS
         preferredCurrency = try container.decodeIfPresent(FinanceEntry.Currency.self, forKey: .preferredCurrency) ?? .usd
         disputeWindowDays = try container.decodeIfPresent(Int.self, forKey: .disputeWindowDays) ?? 0
+        enableWhatsApp = try container.decodeIfPresent(Bool.self, forKey: .enableWhatsApp) ?? true
+        enableTextMessages = try container.decodeIfPresent(Bool.self, forKey: .enableTextMessages) ?? true
+        enableEmail = try container.decodeIfPresent(Bool.self, forKey: .enableEmail) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
@@ -1810,6 +1847,9 @@ struct AppPreferences: Codable {
         try container.encode(language, forKey: .language)
         try container.encode(preferredCurrency, forKey: .preferredCurrency)
         try container.encode(disputeWindowDays, forKey: .disputeWindowDays)
+        try container.encode(enableWhatsApp, forKey: .enableWhatsApp)
+        try container.encode(enableTextMessages, forKey: .enableTextMessages)
+        try container.encode(enableEmail, forKey: .enableEmail)
     }
 }
 

@@ -283,7 +283,13 @@
 "\nChannel: %@" = "\nChannel: %@";
 "\nClient: %@" = "\nClient: %@";
 "\nStatus: DISPUTED - %@" = "\nStatus: DISPUTED - %@";
-"iMessage" = "iMessage";
 "Service \"%@\" updated for %@." = "Service \"%@\" updated for %@.";
 "Spain" = "Spain";
 "%.1f h" = "%.1f h";
+"Available channels: %@" = "Available channels: %@";
+"No available channels. Add phone or email for this client." = "No available channels. Add phone or email for this client.";
+"Text Message" = "Text Message";
+"WhatsApp phone: %@" = "WhatsApp phone: %@";
+"Delivery channels" = "Delivery channels";
+"Enable at least one channel to send invoices." = "Enable at least one channel to send invoices.";
+"WhatsApp phone" = "WhatsApp phone";

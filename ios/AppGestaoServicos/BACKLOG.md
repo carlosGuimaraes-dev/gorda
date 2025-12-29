@@ -49,7 +49,7 @@
 - ✅ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
 - ✅ Fluxo de contestacao de faturas pelo cliente: iniciar disputa via e-mail/texto ou botao no PDF, registrar motivo e respeitar janela D+N configuravel
 - ✅ Visualização dos recibos anexados às despesas (preview da imagem a partir de FinanceEntry.receiptData) e possibilidade de reenviar o comprovante
-- ⏳ Configuração por cliente dos canais preferidos para envio (e-mail, WhatsApp, iMessage) e integração mais direta nesses canais na emissão da fatura
+- ✅ Canais de envio definidos pelo Manager (WhatsApp/Text/Email) + telefone WhatsApp opcional por cliente, usados na emissão/reenvio de invoices
 
 ## Decision Log (2025-12-29)
 
