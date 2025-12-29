@@ -1,0 +1,10 @@
+installation:
+  version: 6.0.0-alpha.21
+  installDate: 2025-12-29T04:57:44.550Z
+  lastUpdated: 2025-12-29T04:57:44.550Z
+modules:
+  - core
+  - bmb
+  - bmm
+ides:
+  - codex
