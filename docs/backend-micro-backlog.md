@@ -65,11 +65,14 @@
 ## Notifications
 ### POST /v1/invoices/:id/send
 - Validate JWT + tenant
-- Resolve client + channels (WhatsApp/SMS/Email)
+- Resolve client + channels (WhatsApp/Email)
 - Generate PDF URL (from R2 or PDF service)
 - Queue messages per channel
 - Create notifications rows (queued)
 - Return notificationIds
+
+Notes:
+- SMS/iMessage is device-only; backend does not send SMS.
 
 ## Shared / Cross‑cutting
 - Middleware: Clerk JWT validation (JWKS cache)

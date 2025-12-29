@@ -238,12 +238,12 @@ Response:
 
 ## Notifications
 ### POST /v1/invoices/:id/send
-Send invoice via manager-selected channels (WhatsApp/SMS/Email).
+Send invoice via manager-selected channels (WhatsApp/Email). SMS/iMessage is device-only.
 
 Request:
 ```json
 {
-  "channels": ["whatsapp", "sms", "email"],
+  "channels": ["whatsapp", "email"],
   "message": "Invoice for Dec. Please see PDF.",
   "includePdf": true
 }
@@ -253,7 +253,7 @@ Response:
 ```json
 {
   "status": "queued",
-  "notificationIds": ["uuid", "uuid"]
+  "notificationIds": ["uuid"]
 }
 ```
 

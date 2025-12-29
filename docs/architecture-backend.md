@@ -97,7 +97,9 @@ Notes:
 - Multi-tenant: Enabled in v1.
 - Consistency: Eventual (sync-first).
 - R2 access: Signed URLs for all attachments.
-- Notifications: Enabled in v1 (WhatsApp/SMS/Email).
+- Notifications: Enabled in v1 (WhatsApp + Email). SMS/iMessage is device-only.
+- WhatsApp provider: Meta Cloud API (direct).
+- Email provider: Resend.
 
 ## Security
 - TLS required.
@@ -105,7 +107,7 @@ Notes:
 - Sensitive fields encrypted at rest on backend (contacts, notes, documents).
 
 ## Open Decisions
-- Notification provider selection (WhatsApp via Meta, SMS, Email).
+- (none)
 
 ## References
 - `docs/backend-api-contract.md` (payloads + examples)

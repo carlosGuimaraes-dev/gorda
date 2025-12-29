@@ -71,7 +71,7 @@
 - Banco: Postgres.
 - Multi-tenant: habilitado na v1.
 - Sync: last-write-wins com log de conflito.
-- Notificações reais (WhatsApp/SMS/Email) habilitadas na v1.
+- Notificações reais habilitadas na v1: WhatsApp (Meta Cloud API) + Email (Resend). SMS/iMessage é device-only.
 - Consistência: eventual.
 
 ## Roadmap (Now)

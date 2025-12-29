@@ -231,7 +231,7 @@ components:
           type: array
           items:
             type: string
-            enum: [whatsapp, sms, email]
+            enum: [whatsapp, email]
         message:
           type: string
         includePdf:
