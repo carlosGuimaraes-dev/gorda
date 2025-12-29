@@ -9,10 +9,11 @@ No backend is implemented yet. This document describes the intended backend resp
 - Support Manager/Employee roles and auditability.
 
 ## Core Services (Planned)
-- Auth: session tokens and role claims (Manager/Employee).
+- Auth: Clerk (JWTs with Manager/Employee role claims).
 - Sync: pull/push changes for offline queue.
 - Data APIs: CRUD for Clients, Employees, Service Types, Tasks, Finance Entries.
 - Conflict Log: store conflict records for visibility in the app.
+- Attachments: receipts and invoice PDFs stored in Cloudflare R2.
 
 ## Data Model (High Level)
 - Client
@@ -38,7 +39,6 @@ No backend is implemented yet. This document describes the intended backend resp
 - Sensitive fields encrypted at rest on backend (contacts, notes, documents).
 
 ## Open Decisions
-- Hosting (AWS vs managed services).
-- Database (Postgres vs managed NoSQL).
-- Auth provider (custom vs Cognito/Clerk).
-- File storage for receipt images (S3-like).
+- Backend runtime (Node/TS vs Go vs other).
+- Database (Postgres vs other).
+- Hosting (AWS vs Cloudflare vs managed).

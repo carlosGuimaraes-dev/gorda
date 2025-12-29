@@ -24,6 +24,8 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Localização: en-US e es-ES implementados.
 - Moeda global: Manager define e aplica sem conversão.
 - Dashboard: contagens + cashflow + estimativa de payroll.
+- Backend/Auth: Clerk.
+- Storage de anexos: Cloudflare R2.
 
 ## Público-Alvo
 - Administradoras de serviços residenciais e suas equipes operacionais.
