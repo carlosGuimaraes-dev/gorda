@@ -26,7 +26,7 @@
 - ✅ Internacionalização da interface para Inglês Americano (en-US) e Espanhol da Espanha (es-ES)
 - ✅ Armazenamento seguro de credenciais no Keychain e comunicação criptografada
 - ✅ Ajustes de acessibilidade (Dynamic Type, VoiceOver e contraste) nas principais telas
-- ✅ Integração com Siri para criação de serviços por comando de voz
+- 🟡 Integração com Siri para criação de serviços (Siri Suggestions ativas; comando de voz completo ainda pendente)
 - ✅ Splash Screen da AG Home Organizer International antes do login
 - ✅ Redesign completo do login, dashboard, agenda, clientes, financeiro e configurações com cards e tema azul
 - ✅ Cards de clientes e funcionários com avatar, telefone e indicador visual de pendências financeiras
@@ -105,19 +105,23 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 
 ### EPIC 1 — Sessão, Perfis e Settings
 - ✅ **Story 1.1**: Como Manager, quero definir idioma (en-US/es-ES) e moeda global para o app.  
-  **AC**: idioma afeta locale do app; moeda é aplicada a novos registros; moeda fica visível no Settings.
+  **AC**: Given o usuário é Manager e abre Settings; When altera idioma e moeda global; Then o locale do app é atualizado, a moeda padrão passa a valer para novos registros e a configuração fica persistida e visível no Settings.
 - ✅ **Story 1.2**: Como Manager, quero definir janela de disputa pós‑vencimento (D+N dias).  
   **AC**: campo numérico em Settings; disputas após o vencimento só até D+N; valor 0 significa apenas até o vencimento.
 - ✅ **Story 1.3**: Como usuário, quero manter sessão local segura.  
-  **AC**: token/sessão em Keychain; logout limpa sessão.
+  **AC**: Given login válido; When sessão é criada; Then token/sessão são armazenados no Keychain; Given logout; When usuário encerra sessão; Then credenciais locais são removidas e o app retorna ao estado não autenticado.
 - ❌ **Story 1.4**: Como Manager, quero cadastrar o perfil da empresa (logo + dados fiscais por país) para usar nas invoices.  
   **AC**: um perfil por conta; campos comuns (nome/endereço/contato) + ID fiscal variável (NIF/VAT vs EIN/SSN); logo opcional.
+- ✅ **Story 1.5**: Como usuário, quero escolher meu perfil (Employee/Manager) no primeiro acesso.  
+  **AC**: Given primeiro login sem perfil definido; When o usuário escolhe Employee ou Manager; Then o perfil é salvo e as telas passam a respeitar o papel escolhido no app inteiro.
 
 ### EPIC 2 — Offline, Sync e Conflitos
 - ✅ **Story 2.1**: Como usuário, quero operar offline e sincronizar depois.  
   **AC**: fila local registra mudanças; botão “Force sync” mantém comportamento atual.
 - ✅ **Story 2.2**: Como Manager, quero ver conflitos em um log simples.  
   **AC**: log acessível em Settings; badge ao abrir app se houver conflitos; cada item mostra entidade, data e ação.
+- ✅ **Story 2.3**: Como Manager, quero ver auditoria básica (quem/quando) em tarefas e finanças no Settings.  
+  **AC**: Given uma alteração em task ou finance; When o usuário abre a auditoria; Then cada item mostra entidade, ação, autor e timestamp, com ordenação por data mais recente.
 
 ### EPIC 3 — Segurança Local
 - ✅ **Story 3.1**: Como Manager, quero criptografia local de dados sensíveis.  
@@ -127,7 +131,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 - ✅ **Story 4.1**: Como Manager, quero CRUD completo de clientes com telefone e canais preferidos.  
   **AC**: criar, editar, apagar; validação de campos mínimos.
 - ✅ **Story 4.2**: Como Manager, quero importar dados básicos de Contatos.  
-  **AC**: fluxo opcional; não bloqueia cadastro.
+  **AC**: Given o Manager inicia criação/edição de cliente; When escolhe importar de Contatos; Then nome e telefone são preenchidos automaticamente; Given o usuário não concede permissão ou cancela; When retorna ao formulário; Then o cadastro manual continua disponível sem bloqueio.
 
 ### EPIC 5 — Employees & Teams
 - ✅ **Story 5.1**: Como Manager, quero CRUD de funcionários com remuneração e documentos.  
@@ -139,7 +143,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 - ✅ **Story 6.1**: Como Manager, quero CRUD de tipos de serviço com preço base.  
   **AC**: moeda global aplicada; não permitir excluir se houver tasks vinculadas.
 - ❌ **Story 6.2**: Como Manager, quero definir se o preço é por tarefa ou por hora.  
-  **AC**: pricing model em ServiceType; preço base vira “valor por tarefa” ou “valor/hora”; visível no catálogo.
+  **AC**: Given criação/edição de ServiceType; When o Manager seleciona pricing model (por tarefa ou por hora); Then o preço base é interpretado conforme o modelo e exibido no catálogo com o rótulo correto.
 
 ### EPIC 7 — Schedule / Tasks
 - ✅ **Story 7.1**: Como Employee, quero ver apenas minhas tasks.  
@@ -149,15 +153,21 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 - ✅ **Story 7.3**: Como Manager, quero cancelar tasks sem perder histórico.  
   **AC**: status “canceled”; não entra em cálculos financeiros.
 - ✅ **Story 7.4**: Como Employee, quero registrar check‑in/out.  
-  **AC**: check-in/out salvos; usados nos cálculos de payroll automático.
+  **AC**: Given task atribuída ao Employee; When registra check-in e check-out; Then os timestamps são salvos na task e ficam disponíveis para cálculo de horas no payroll automático.
 - ❌ **Story 7.5**: Como Employee, quero check‑in/out com foto obrigatória via câmera.  
   **AC**: sem upload da galeria; foto é capturada no momento; botão de check‑out só aparece após check‑in.
+- 🟡 **Story 7.6**: Como usuário, quero receber notificações de agenda e poder criar serviço por Siri.  
+  **AC**: Given uma task criada/alterada/cancelada; When o evento ocorre; Then o app agenda notificação local e, quando disponível, dispara push; Given Siri Suggestions habilitado; When uma task é criada; Then o app doa atalho de criação de serviço para sugestões da Siri; Given comando de voz completo via intent dedicado; When o usuário solicitar criação de serviço por voz; Then o fluxo deve criar serviço com dados mínimos e confirmar agendamento (pendente).
 
 ### EPIC 8 — Finance Base
 - ✅ **Story 8.1**: Como Manager, quero lançamentos financeiros manuais (payable/receivable).  
   **AC**: CRUD completo; moeda global aplicada; método opcional.
 - ✅ **Story 8.2**: Como Employee, quero ver apenas payroll no Finance.  
   **AC**: listas ocultam receivables; mostra só payroll do próprio usuário.
+- ✅ **Story 8.3**: Como Manager, quero relatórios financeiros por período com export (CSV/PDF).  
+  **AC**: Given filtros por período/cliente/funcionário; When o Manager gera relatório; Then o resumo semanal/mensal/custom é exibido e pode ser exportado em CSV/PDF.
+- ✅ **Story 8.4**: Como Manager, quero visualizar e reenviar recibos de despesas out-of-pocket.  
+  **AC**: Given uma despesa com receiptData; When o usuário abre o detalhe; Then o recibo é exibido em preview e pode ser reenviado por share sheet/canal configurado.
 
 ### EPIC 9 — Invoices
 - ✅ **Story 9.1**: Como Manager, quero gerar invoices por cliente e período.  
@@ -169,13 +179,13 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 - ✅ **Story 9.4**: Como Manager, quero re‑gerar invoice e marcar anterior como “superseded”.  
   **AC**: invoice anterior permanece para histórico; nova invoice criada.
 - ❌ **Story 9.5**: Como Manager, quero invoices com line items detalhados por task.  
-  **AC**: item mostra tipo/descrição/quantidade/valor unitário/total; qty = horas quando pricing model for por hora (check‑in/out) e qty = 1 quando por tarefa.
+  **AC**: Given geração de invoice com tasks no período; When o documento é criado; Then cada line item exibe tipo, descrição, quantidade, valor unitário e total; Given o ServiceType é por hora; When há check-in/out válidos; Then qty usa horas trabalhadas; Given o ServiceType é por tarefa; When item é calculado; Then qty = 1.
 
 ### EPIC 10 — Payroll
 - ✅ **Story 10.1**: Como Manager, quero gerar payroll automático com check‑in/out.  
-  **AC**: calcula horas e valor; moeda global aplicada.
+  **AC**: Given período e funcionário selecionados com tasks fechadas; When o Manager gera payroll automático; Then horas são calculadas a partir de check-in/out, valor é calculado pela taxa aplicável e a moeda global é respeitada.
 - ✅ **Story 10.2**: Como Manager, quero registrar payroll manual com horas informadas.  
-  **AC**: confirmação explícita do Manager; mantém histórico.
+  **AC**: Given criação de payroll manual; When o Manager informa horas/valores e confirma explicitamente; Then o lançamento é salvo com histórico de criação/edição e permanece auditável.
 
 ### EPIC 11 — Dashboard & KPIs
 - ✅ **Story 11.1**: Como Manager, quero KPIs de cashflow e payroll estimado.  
@@ -186,3 +196,10 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 ### EPIC 12 — Localização
 - ✅ **Story 12.1**: Como Manager, quero app totalmente traduzido em en-US/es-ES.  
   **AC**: todas telas principais com strings localizadas; fallback para en-US.
+
+### Dependências explícitas (ordem de execução)
+
+- Story 1.5 antecede fluxos role-based de 7.1, 8.2 e 11.2.
+- Story 6.2 antecede Story 9.5 (line items por hora vs por tarefa).
+- Story 7.4 antecede Story 10.1 (payroll automático por check-in/out).
+- Story 7.6 depende de 7.2 (eventos de agenda) e 1.5 (contexto de perfil).

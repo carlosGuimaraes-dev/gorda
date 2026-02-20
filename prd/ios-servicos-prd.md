@@ -19,7 +19,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Task cancelada mantém histórico e não entra nos cálculos.
 - Disputa de invoice permitida a qualquer momento e iniciada pelo cliente.
 - Disputa: Manager pode ajustar invoice mesmo após disputa, respeitando janela pos-vencimento configuravel (D+N dias).
-- Notificações: locais + base pronta para push.
+- Notificações: locais + base pronta para push; Siri Suggestions habilitadas para criação de serviço (comando de voz dedicado em evolução).
 - Segurança: Keychain + criptografia local de dados sensíveis.
 - Localização: en-US e es-ES implementados.
 - Moeda global: Manager define e aplica sem conversão.
@@ -45,7 +45,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - **Agendamento e Agenda**: CRUD de serviços; cada funcionário visualiza apenas sua agenda e tarefas da equipe; visões diária, semanal e mensal, com cards de tarefas e filtro por equipe. Cancelamentos mantêm histórico e não entram nos cálculos financeiros.
 - **Modo Offline**: uso completo sem conexão; sincronização automática ao voltar online com resolução de conflitos priorizando dados locais e registrando conflitos quando houver divergências.
 - **Sync/Conflitos**: local-first com fila local; quando houver backend, aplicar merge com prioridade local e registrar conflitos em log.
-- **Notificações e Siri**: comandos de voz para agendar; push/local notifications para chegadas, cancelamentos e alterações.
+- **Notificações e Siri**: Siri Suggestions para criação de serviço e push/local notifications para chegadas, cancelamentos e alterações; comando de voz dedicado pode evoluir em iteração posterior.
 - **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão), com vínculo automático entre serviços, clientes e funcionários quando houver preço base de serviço.
 - **Relatórios financeiros**: resumo mensal/semanal e intervalo custom por cliente e funcionário, com export simples (CSV/PDF) para compartilhamento interno.
 - **Dashboard** (cards + gráficos):
