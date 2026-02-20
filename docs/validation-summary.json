@@ -1,0 +1,133 @@
+{
+  "files_count": 31,
+  "total_lines": 2652,
+  "strict_markers": 0,
+  "fuzzy_markers": 0,
+  "missing_links": [],
+  "size_list": [
+    {
+      "file": "DATA_MODEL.md",
+      "size": 5251
+    },
+    {
+      "file": "Wireframes.md",
+      "size": 3084
+    },
+    {
+      "file": "api-contracts-backend.md",
+      "size": 1452
+    },
+    {
+      "file": "api-contracts-ios_app.md",
+      "size": 762
+    },
+    {
+      "file": "architecture-backend.md",
+      "size": 1507
+    },
+    {
+      "file": "architecture-frontend.md",
+      "size": 1862
+    },
+    {
+      "file": "architecture-ios_app.md",
+      "size": 1524
+    },
+    {
+      "file": "asset-inventory-ios_app.md",
+      "size": 550
+    },
+    {
+      "file": "backend-api-contract.md",
+      "size": 7101
+    },
+    {
+      "file": "backend-integration-checklist.md",
+      "size": 2362
+    },
+    {
+      "file": "backend-micro-backlog.md",
+      "size": 2078
+    },
+    {
+      "file": "backend-migrations.sql",
+      "size": 8041
+    },
+    {
+      "file": "backend-openapi.yaml",
+      "size": 11385
+    },
+    {
+      "file": "backend-schema.sql",
+      "size": 8054
+    },
+    {
+      "file": "backend-sprint-plan.md",
+      "size": 1552
+    },
+    {
+      "file": "component-inventory-backend.md",
+      "size": 460
+    },
+    {
+      "file": "component-inventory-ios_app.md",
+      "size": 838
+    },
+    {
+      "file": "comprehensive-analysis-backend.md",
+      "size": 968
+    },
+    {
+      "file": "comprehensive-analysis-ios_app.md",
+      "size": 1044
+    },
+    {
+      "file": "data-models-backend.md",
+      "size": 1113
+    },
+    {
+      "file": "data-models-ios_app.md",
+      "size": 961
+    },
+    {
+      "file": "deployment-guide.md",
+      "size": 949
+    },
+    {
+      "file": "development-guide-backend.md",
+      "size": 748
+    },
+    {
+      "file": "development-guide-ios_app.md",
+      "size": 877
+    },
+    {
+      "file": "index.md",
+      "size": 2599
+    },
+    {
+      "file": "integration-architecture.md",
+      "size": 996
+    },
+    {
+      "file": "project-overview.md",
+      "size": 1004
+    },
+    {
+      "file": "project-parts.json",
+      "size": 714
+    },
+    {
+      "file": "project-scan-report.json",
+      "size": 4827
+    },
+    {
+      "file": "source-tree-analysis.md",
+      "size": 2643
+    },
+    {
+      "file": "state-management-ios_app.md",
+      "size": 813
+    }
+  ]
+}

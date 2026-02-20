@@ -1,0 +1,31 @@
+{
+  "repository_type": "monorepo",
+  "parts": [
+    {
+      "part_id": "backend",
+      "type": "backend",
+      "root": "backend",
+      "stack": ["nodejs", "typescript", "express", "postgres", "clerk"]
+    },
+    {
+      "part_id": "ios_app",
+      "type": "mobile",
+      "root": "ios/AppGestaoServicos",
+      "stack": ["swift", "swiftui", "coredata", "keychain", "cryptokit"]
+    }
+  ],
+  "integration_points": [
+    {
+      "from": "ios_app",
+      "to": "backend",
+      "type": "REST",
+      "details": ["/v1/sync/push", "/v1/sync/pull", "/v1/conflicts", "/v1/audit"]
+    },
+    {
+      "from": "ios_app",
+      "to": "backend",
+      "type": "REST",
+      "details": ["/v1/invoices/:id/send"]
+    }
+  ]
+}
