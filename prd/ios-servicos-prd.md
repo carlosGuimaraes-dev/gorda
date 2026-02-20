@@ -59,6 +59,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
   - Tela dedicada para invoices (recebíveis) e payroll (pagáveis) com CRUD, edição permitida respeitando janela pós‑vencimento configurável (D+N), marcação de disputa com motivo e reenvio pelo canal definido pelo Manager (WhatsApp/SMS/Email), em ordem de prioridade.
   - Geração de invoices agregados por cliente dentro de um período, separados por moeda (um invoice por cliente por moeda), com PDF (QuickLook + share sheet) contendo line items das tasks do intervalo e instruções de pagamento; permitir re-geração parcial por período.
   - Payroll pode ser gerado manualmente sem check-in/out, com confirmação do Manager.
+  - Payroll detalhado por funcionário: período, horas/dias trabalhados, taxa/hora, base pay, bônus, descontos, impostos, reembolsos, net pay e notas (CRUD completo pelo Manager).
   - Disputa de invoice iniciada pelo cliente via e-mail/texto ou botao no PDF; permitida a qualquer momento (mantendo historico) e com ajustes permitidos pelo Manager; janela pos-vencimento e configuravel (D+N dias).
   - Despesas out-of-pocket com preview e reenvio de recibo (receiptData) para o cliente/gestor.
   - Auditoria básica: log de alterações em tarefas e finanças (quem/quando), visível no Settings.

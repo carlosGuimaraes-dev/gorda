@@ -198,12 +198,18 @@ final class PersistenceController {
         serviceTypeCurrency.attributeType = .stringAttributeType
         serviceTypeCurrency.isOptional = false
 
+        let serviceTypePricingModel = NSAttributeDescription()
+        serviceTypePricingModel.name = "pricingModel"
+        serviceTypePricingModel.attributeType = .stringAttributeType
+        serviceTypePricingModel.isOptional = true
+
         serviceType.properties = [
             serviceTypeId,
             serviceTypeName,
             serviceTypeDescription,
             serviceTypePrice,
-            serviceTypeCurrency
+            serviceTypeCurrency,
+            serviceTypePricingModel
         ]
 
         // ServiceTask
@@ -286,6 +292,16 @@ final class PersistenceController {
         serviceTaskCheckOut.attributeType = .dateAttributeType
         serviceTaskCheckOut.isOptional = true
 
+        let serviceTaskCheckInPhoto = NSAttributeDescription()
+        serviceTaskCheckInPhoto.name = "checkInPhotoData"
+        serviceTaskCheckInPhoto.attributeType = .binaryDataAttributeType
+        serviceTaskCheckInPhoto.isOptional = true
+
+        let serviceTaskCheckOutPhoto = NSAttributeDescription()
+        serviceTaskCheckOutPhoto.name = "checkOutPhotoData"
+        serviceTaskCheckOutPhoto.attributeType = .binaryDataAttributeType
+        serviceTaskCheckOutPhoto.isOptional = true
+
         serviceTask.properties = [
             serviceTaskId,
             serviceTaskTitle,
@@ -301,7 +317,9 @@ final class PersistenceController {
             serviceTaskAddress,
             serviceTaskServiceTypeId,
             serviceTaskCheckIn,
-            serviceTaskCheckOut
+            serviceTaskCheckOut,
+            serviceTaskCheckInPhoto,
+            serviceTaskCheckOutPhoto
         ]
 
         // FinanceEntry
@@ -389,6 +407,81 @@ final class PersistenceController {
         financeReceiptData.attributeType = .binaryDataAttributeType
         financeReceiptData.isOptional = true
 
+        let financeSupersededById = NSAttributeDescription()
+        financeSupersededById.name = "supersededById"
+        financeSupersededById.attributeType = .UUIDAttributeType
+        financeSupersededById.isOptional = true
+
+        let financeSupersedesId = NSAttributeDescription()
+        financeSupersedesId.name = "supersedesId"
+        financeSupersedesId.attributeType = .UUIDAttributeType
+        financeSupersedesId.isOptional = true
+
+        let financeSupersededAt = NSAttributeDescription()
+        financeSupersededAt.name = "supersededAt"
+        financeSupersededAt.attributeType = .dateAttributeType
+        financeSupersededAt.isOptional = true
+
+        let financePayrollPeriodStart = NSAttributeDescription()
+        financePayrollPeriodStart.name = "payrollPeriodStart"
+        financePayrollPeriodStart.attributeType = .dateAttributeType
+        financePayrollPeriodStart.isOptional = true
+
+        let financePayrollPeriodEnd = NSAttributeDescription()
+        financePayrollPeriodEnd.name = "payrollPeriodEnd"
+        financePayrollPeriodEnd.attributeType = .dateAttributeType
+        financePayrollPeriodEnd.isOptional = true
+
+        let financePayrollHoursWorked = NSAttributeDescription()
+        financePayrollHoursWorked.name = "payrollHoursWorked"
+        financePayrollHoursWorked.attributeType = .doubleAttributeType
+        financePayrollHoursWorked.isOptional = true
+
+        let financePayrollDaysWorked = NSAttributeDescription()
+        financePayrollDaysWorked.name = "payrollDaysWorked"
+        financePayrollDaysWorked.attributeType = .integer32AttributeType
+        financePayrollDaysWorked.isOptional = true
+
+        let financePayrollHourlyRate = NSAttributeDescription()
+        financePayrollHourlyRate.name = "payrollHourlyRate"
+        financePayrollHourlyRate.attributeType = .doubleAttributeType
+        financePayrollHourlyRate.isOptional = true
+
+        let financePayrollBasePay = NSAttributeDescription()
+        financePayrollBasePay.name = "payrollBasePay"
+        financePayrollBasePay.attributeType = .doubleAttributeType
+        financePayrollBasePay.isOptional = true
+
+        let financePayrollBonus = NSAttributeDescription()
+        financePayrollBonus.name = "payrollBonus"
+        financePayrollBonus.attributeType = .doubleAttributeType
+        financePayrollBonus.isOptional = true
+
+        let financePayrollDeductions = NSAttributeDescription()
+        financePayrollDeductions.name = "payrollDeductions"
+        financePayrollDeductions.attributeType = .doubleAttributeType
+        financePayrollDeductions.isOptional = true
+
+        let financePayrollTaxes = NSAttributeDescription()
+        financePayrollTaxes.name = "payrollTaxes"
+        financePayrollTaxes.attributeType = .doubleAttributeType
+        financePayrollTaxes.isOptional = true
+
+        let financePayrollReimbursements = NSAttributeDescription()
+        financePayrollReimbursements.name = "payrollReimbursements"
+        financePayrollReimbursements.attributeType = .doubleAttributeType
+        financePayrollReimbursements.isOptional = true
+
+        let financePayrollNetPay = NSAttributeDescription()
+        financePayrollNetPay.name = "payrollNetPay"
+        financePayrollNetPay.attributeType = .doubleAttributeType
+        financePayrollNetPay.isOptional = true
+
+        let financePayrollNotes = NSAttributeDescription()
+        financePayrollNotes.name = "payrollNotes"
+        financePayrollNotes.attributeType = .stringAttributeType
+        financePayrollNotes.isOptional = true
+
         finance.properties = [
             financeId,
             financeTitle,
@@ -405,7 +498,22 @@ final class PersistenceController {
             financeKind,
             financeIsDisputed,
             financeDisputeReason,
-            financeReceiptData
+            financeReceiptData,
+            financeSupersededById,
+            financeSupersedesId,
+            financeSupersededAt,
+            financePayrollPeriodStart,
+            financePayrollPeriodEnd,
+            financePayrollHoursWorked,
+            financePayrollDaysWorked,
+            financePayrollHourlyRate,
+            financePayrollBasePay,
+            financePayrollBonus,
+            financePayrollDeductions,
+            financePayrollTaxes,
+            financePayrollReimbursements,
+            financePayrollNetPay,
+            financePayrollNotes
         ]
 
         model.entities = [employee, client, serviceType, serviceTask, finance]

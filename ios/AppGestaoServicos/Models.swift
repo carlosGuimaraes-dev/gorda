@@ -142,19 +142,36 @@ struct ServiceType: Identifiable, Codable, Hashable {
     var description: String
     var basePrice: Double
     var currency: FinanceEntry.Currency
+    var pricingModel: PricingModel
+
+    enum PricingModel: String, Codable, CaseIterable, Identifiable {
+        case perTask
+        case perHour
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .perTask: return NSLocalizedString("Per task", comment: "")
+            case .perHour: return NSLocalizedString("Per hour", comment: "")
+            }
+        }
+    }
 
     init(
         id: UUID = UUID(),
         name: String,
         description: String = "",
         basePrice: Double,
-        currency: FinanceEntry.Currency
+        currency: FinanceEntry.Currency,
+        pricingModel: PricingModel = .perTask
     ) {
         self.id = id
         self.name = name
         self.description = description
         self.basePrice = basePrice
         self.currency = currency
+        self.pricingModel = pricingModel
     }
 }
 
@@ -173,6 +190,8 @@ struct ServiceTask: Identifiable, Codable, Hashable {
     var serviceTypeId: UUID?
     var checkInTime: Date?
     var checkOutTime: Date?
+    var checkInPhotoData: Data?
+    var checkOutPhotoData: Data?
 
     init(
         id: UUID = UUID(),
@@ -188,7 +207,9 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         notes: String,
         serviceTypeId: UUID? = nil,
         checkInTime: Date? = nil,
-        checkOutTime: Date? = nil
+        checkOutTime: Date? = nil,
+        checkInPhotoData: Data? = nil,
+        checkOutPhotoData: Data? = nil
     ) {
         self.id = id
         self.title = title
@@ -204,6 +225,8 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.serviceTypeId = serviceTypeId
         self.checkInTime = checkInTime
         self.checkOutTime = checkOutTime
+        self.checkInPhotoData = checkInPhotoData
+        self.checkOutPhotoData = checkOutPhotoData
     }
 
     enum Status: String, Codable, CaseIterable, Identifiable {
@@ -238,6 +261,8 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         case serviceTypeId
         case checkInTime
         case checkOutTime
+        case checkInPhotoData
+        case checkOutPhotoData
     }
 
     init(from decoder: Decoder) throws {
@@ -256,6 +281,8 @@ struct ServiceTask: Identifiable, Codable, Hashable {
         self.serviceTypeId = try container.decodeIfPresent(UUID.self, forKey: .serviceTypeId)
         self.checkInTime = try container.decodeIfPresent(Date.self, forKey: .checkInTime)
         self.checkOutTime = try container.decodeIfPresent(Date.self, forKey: .checkOutTime)
+        self.checkInPhotoData = try container.decodeIfPresent(Data.self, forKey: .checkInPhotoData)
+        self.checkOutPhotoData = try container.decodeIfPresent(Data.self, forKey: .checkOutPhotoData)
     }
 }
 
@@ -276,6 +303,21 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
     var isDisputed: Bool
     var disputeReason: String?
     var receiptData: Data?
+    var supersededById: UUID?
+    var supersedesId: UUID?
+    var supersededAt: Date?
+    var payrollPeriodStart: Date?
+    var payrollPeriodEnd: Date?
+    var payrollHoursWorked: Double
+    var payrollDaysWorked: Int
+    var payrollHourlyRate: Double
+    var payrollBasePay: Double
+    var payrollBonus: Double
+    var payrollDeductions: Double
+    var payrollTaxes: Double
+    var payrollReimbursements: Double
+    var payrollNetPay: Double
+    var payrollNotes: String?
 
     init(
         id: UUID = UUID(),
@@ -293,7 +335,22 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         kind: Kind = .general,
         isDisputed: Bool = false,
         disputeReason: String? = nil,
-        receiptData: Data? = nil
+        receiptData: Data? = nil,
+        supersededById: UUID? = nil,
+        supersedesId: UUID? = nil,
+        supersededAt: Date? = nil,
+        payrollPeriodStart: Date? = nil,
+        payrollPeriodEnd: Date? = nil,
+        payrollHoursWorked: Double = 0,
+        payrollDaysWorked: Int = 0,
+        payrollHourlyRate: Double = 0,
+        payrollBasePay: Double = 0,
+        payrollBonus: Double = 0,
+        payrollDeductions: Double = 0,
+        payrollTaxes: Double = 0,
+        payrollReimbursements: Double = 0,
+        payrollNetPay: Double = 0,
+        payrollNotes: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -311,6 +368,21 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.isDisputed = isDisputed
         self.disputeReason = disputeReason
         self.receiptData = receiptData
+        self.supersededById = supersededById
+        self.supersedesId = supersedesId
+        self.supersededAt = supersededAt
+        self.payrollPeriodStart = payrollPeriodStart
+        self.payrollPeriodEnd = payrollPeriodEnd
+        self.payrollHoursWorked = payrollHoursWorked
+        self.payrollDaysWorked = payrollDaysWorked
+        self.payrollHourlyRate = payrollHourlyRate
+        self.payrollBasePay = payrollBasePay
+        self.payrollBonus = payrollBonus
+        self.payrollDeductions = payrollDeductions
+        self.payrollTaxes = payrollTaxes
+        self.payrollReimbursements = payrollReimbursements
+        self.payrollNetPay = payrollNetPay
+        self.payrollNotes = payrollNotes
     }
 
     enum EntryType: String, Codable {
@@ -383,6 +455,21 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         case isDisputed
         case disputeReason
         case receiptData
+        case supersededById
+        case supersedesId
+        case supersededAt
+        case payrollPeriodStart
+        case payrollPeriodEnd
+        case payrollHoursWorked
+        case payrollDaysWorked
+        case payrollHourlyRate
+        case payrollBasePay
+        case payrollBonus
+        case payrollDeductions
+        case payrollTaxes
+        case payrollReimbursements
+        case payrollNetPay
+        case payrollNotes
     }
 
     init(from decoder: Decoder) throws {
@@ -403,6 +490,21 @@ struct FinanceEntry: Identifiable, Codable, Hashable {
         self.isDisputed = try container.decodeIfPresent(Bool.self, forKey: .isDisputed) ?? false
         self.disputeReason = try container.decodeIfPresent(String.self, forKey: .disputeReason)
         self.receiptData = try container.decodeIfPresent(Data.self, forKey: .receiptData)
+        self.supersededById = try container.decodeIfPresent(UUID.self, forKey: .supersededById)
+        self.supersedesId = try container.decodeIfPresent(UUID.self, forKey: .supersedesId)
+        self.supersededAt = try container.decodeIfPresent(Date.self, forKey: .supersededAt)
+        self.payrollPeriodStart = try container.decodeIfPresent(Date.self, forKey: .payrollPeriodStart)
+        self.payrollPeriodEnd = try container.decodeIfPresent(Date.self, forKey: .payrollPeriodEnd)
+        self.payrollHoursWorked = try container.decodeIfPresent(Double.self, forKey: .payrollHoursWorked) ?? 0
+        self.payrollDaysWorked = try container.decodeIfPresent(Int.self, forKey: .payrollDaysWorked) ?? 0
+        self.payrollHourlyRate = try container.decodeIfPresent(Double.self, forKey: .payrollHourlyRate) ?? 0
+        self.payrollBasePay = try container.decodeIfPresent(Double.self, forKey: .payrollBasePay) ?? 0
+        self.payrollBonus = try container.decodeIfPresent(Double.self, forKey: .payrollBonus) ?? 0
+        self.payrollDeductions = try container.decodeIfPresent(Double.self, forKey: .payrollDeductions) ?? 0
+        self.payrollTaxes = try container.decodeIfPresent(Double.self, forKey: .payrollTaxes) ?? 0
+        self.payrollReimbursements = try container.decodeIfPresent(Double.self, forKey: .payrollReimbursements) ?? 0
+        self.payrollNetPay = try container.decodeIfPresent(Double.self, forKey: .payrollNetPay) ?? self.amount
+        self.payrollNotes = try container.decodeIfPresent(String.self, forKey: .payrollNotes)
     }
 }
 

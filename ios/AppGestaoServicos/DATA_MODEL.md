@@ -112,6 +112,21 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `isDisputed: Bool`
   - `disputeReason: String?`
   - `receiptData: Data?` (imagem de comprovante para despesas)
+  - `supersededById: UUID?`
+  - `supersedesId: UUID?`
+  - `supersededAt: Date?`
+  - `payrollPeriodStart: Date?`
+  - `payrollPeriodEnd: Date?`
+  - `payrollHoursWorked: Double`
+  - `payrollDaysWorked: Int`
+  - `payrollHourlyRate: Double`
+  - `payrollBasePay: Double`
+  - `payrollBonus: Double`
+  - `payrollDeductions: Double`
+  - `payrollTaxes: Double`
+  - `payrollReimbursements: Double`
+  - `payrollNetPay: Double`
+  - `payrollNotes: String?`
   - `notes: String?`
   - Relacionamentos:
     - `client: Client?`

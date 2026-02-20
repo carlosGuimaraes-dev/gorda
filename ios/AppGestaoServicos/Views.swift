@@ -2,6 +2,9 @@ import SwiftUI
 import Charts
 import UIKit
 import QuickLook
+#if canImport(Contacts)
+import Contacts
+#endif
 
 struct AppCard<Content: View>: View {
     let content: Content
@@ -707,17 +710,41 @@ struct AgendaView: View {
         }
     }
 
+    private var isEmployee: Bool {
+        store.session?.role == .employee
+    }
+
+    private var sessionEmployee: Employee? {
+        guard isEmployee, let name = store.session?.name else { return nil }
+        return store.employees.first { $0.name == name }
+    }
+
+    private var visibleTasks: [ServiceTask] {
+        guard isEmployee else { return store.tasks }
+        guard let sessionName = store.session?.name else { return [] }
+        if let employeeId = sessionEmployee?.id {
+            let sessionTeam = sessionEmployee?.team ?? ""
+            return store.tasks.filter {
+                let matchesEmployee = $0.assignedEmployee.id == employeeId || $0.assignedEmployee.name == sessionName
+                let matchesTeam = sessionTeam.isEmpty || $0.assignedEmployee.team == sessionTeam
+                return matchesEmployee && matchesTeam
+            }
+        }
+        return store.tasks.filter { $0.assignedEmployee.name == sessionName }
+    }
+
     private var teams: [String] {
-        Array(Set(store.employees.map { $0.team })).sorted()
+        guard !isEmployee else { return [] }
+        return Array(Set(store.employees.map { $0.team })).sorted()
     }
 
     private var tasksForSelectedScope: [ServiceTask] {
         let calendar = Calendar.current
         switch scope {
         case .day:
-            return store.tasks.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+            return visibleTasks.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
         case .month:
-            return store.tasks.filter { calendar.isDate($0.date, equalTo: selectedDate, toGranularity: .month) }
+            return visibleTasks.filter { calendar.isDate($0.date, equalTo: selectedDate, toGranularity: .month) }
         }
     }
 
@@ -741,7 +768,7 @@ struct AgendaView: View {
 
     private var datesWithTasks: Set<Date> {
         let calendar = Calendar.current
-        let allTasks = store.tasks
+        let allTasks = visibleTasks
         let days = allTasks.map { calendar.startOfDay(for: $0.date) }
         return Set(days)
     }
@@ -858,7 +885,13 @@ struct ClientsView: View {
     @EnvironmentObject private var store: OfflineStore
     @EnvironmentObject private var menuController: MenuController
     @State private var showingForm = false
+    @State private var showingDeleteBlocked = false
+    @State private var deleteBlockedMessage = ""
     let onMenu: (() -> Void)?
+
+    private var isManager: Bool {
+        store.session?.role == .manager
+    }
 
     init(onMenu: (() -> Void)? = nil) {
         self.onMenu = onMenu
@@ -867,53 +900,116 @@ struct ClientsView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(store.clients) { client in
-                    let hasPendingReceivables = store.finance.contains {
-                        $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
-                    }
+                if isManager {
+                    ForEach(store.clients) { client in
+                        let hasPendingReceivables = store.finance.contains {
+                            $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
+                        }
 
-                    NavigationLink(destination: ClientDetailView(client: client)) {
-                        HStack(spacing: 12) {
-                            let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
-                            ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
+                        NavigationLink(destination: ClientDetailView(client: client)) {
+                            HStack(spacing: 12) {
+                                let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
+                                ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(client.name).bold()
-                                if !client.phone.isEmpty {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "phone.fill")
-                                            .font(.caption)
-                                            .foregroundColor(AppTheme.primary)
-                                        Text(client.phone)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(client.name).bold()
+                                    if !client.phone.isEmpty {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "phone.fill")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.primary)
+                                            Text(client.phone)
+                                                .font(.footnote)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else if !client.whatsappPhone.isEmpty {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "message.fill")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.primary)
+                                            Text(client.whatsappPhone)
+                                                .font(.footnote)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else if !client.email.isEmpty {
+                                        Text(client.email)
                                             .font(.footnote)
                                             .foregroundColor(.secondary)
                                     }
-                                } else if !client.whatsappPhone.isEmpty {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "message.fill")
-                                            .font(.caption)
-                                            .foregroundColor(AppTheme.primary)
-                                        Text(client.whatsappPhone)
-                                            .font(.footnote)
-                                            .foregroundColor(.secondary)
-                                    }
-                                } else if !client.email.isEmpty {
-                                    Text(client.email)
+                                    Text(client.address)
                                         .font(.footnote)
                                         .foregroundColor(.secondary)
                                 }
-                                Text(client.address)
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
+
+                                Spacer()
+
+                                PaymentStatusIcon(hasPending: hasPendingReceivables)
                             }
-
-                            Spacer()
-
-                            PaymentStatusIcon(hasPending: hasPendingReceivables)
+                            .padding(10)
+                            .background(AppTheme.cardBackground)
+                            .cornerRadius(AppTheme.cornerRadius)
                         }
-                        .padding(10)
-                        .background(AppTheme.cardBackground)
-                        .cornerRadius(AppTheme.cornerRadius)
+                    }
+                    .onDelete { indexSet in
+                        let items = indexSet.map { store.clients[$0] }
+                        let failed = items.filter { !store.deleteClient($0) }
+                        if !failed.isEmpty {
+                            deleteBlockedMessage = NSLocalizedString(
+                                "This client has linked services or finance entries. Resolve them before deleting.",
+                                comment: ""
+                            )
+                            showingDeleteBlocked = true
+                        }
+                    }
+                } else {
+                    ForEach(store.clients) { client in
+                        let hasPendingReceivables = store.finance.contains {
+                            $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
+                        }
+
+                        NavigationLink(destination: ClientDetailView(client: client)) {
+                            HStack(spacing: 12) {
+                                let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
+                                ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(client.name).bold()
+                                    if !client.phone.isEmpty {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "phone.fill")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.primary)
+                                            Text(client.phone)
+                                                .font(.footnote)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else if !client.whatsappPhone.isEmpty {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "message.fill")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.primary)
+                                            Text(client.whatsappPhone)
+                                                .font(.footnote)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else if !client.email.isEmpty {
+                                        Text(client.email)
+                                            .font(.footnote)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Text(client.address)
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                PaymentStatusIcon(hasPending: hasPendingReceivables)
+                            }
+                            .padding(10)
+                            .background(AppTheme.cardBackground)
+                            .cornerRadius(AppTheme.cornerRadius)
+                        }
                     }
                 }
             }
@@ -933,6 +1029,11 @@ struct ClientsView: View {
             }
             .sheet(isPresented: $showingForm) {
                 ClientForm()
+            }
+            .alert(NSLocalizedString("Cannot delete", comment: ""), isPresented: $showingDeleteBlocked) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(deleteBlockedMessage)
             }
         }
     }
@@ -1609,6 +1710,9 @@ private struct InvoiceRow: View {
                     if entry.isDisputed {
                         StatusPill(label: NSLocalizedString("Disputed", comment: ""), color: .red)
                     }
+                    if entry.supersededById != nil {
+                        StatusPill(label: NSLocalizedString("Superseded", comment: ""), color: .gray)
+                    }
                 }
             }
             Spacer()
@@ -1736,6 +1840,7 @@ struct InvoiceDetailView: View {
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var pdfPreview: DocumentPreview?
+    @State private var showingReissueConfirm = false
 
     init(entry: FinanceEntry) {
         self.entry = entry
@@ -1823,7 +1928,13 @@ struct InvoiceDetailView: View {
     }
 
     private var availableChannels: [Client.DeliveryChannel] {
-        managerChannels.filter { channelHasContact($0) }
+        guard let client else { return [] }
+        let base = managerChannels.filter { channelHasContact($0) }
+        let preferred = client.preferredDeliveryChannels
+        if preferred.isEmpty {
+            return base
+        }
+        return base.filter { preferred.contains($0) }
     }
 
     private func channelHasContact(_ channel: Client.DeliveryChannel) -> Bool {
@@ -1841,7 +1952,7 @@ struct InvoiceDetailView: View {
     private var canAdjustInvoice: Bool {
         let calendar = Calendar.current
         let limit = calendar.date(byAdding: .day, value: -1, to: dueDate) ?? dueDate
-        return Date() <= limit
+        return !isSuperseded && Date() <= limit
     }
 
     private var disputeDeadline: Date {
@@ -1854,10 +1965,14 @@ struct InvoiceDetailView: View {
         Date() < disputeDeadline
     }
 
+    private var isSuperseded: Bool {
+        entry.supersededById != nil
+    }
+
     private var canSave: Bool {
         guard let amount = parsedAmount else { return false }
         if isDisputed && disputeReason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
-        return amount > 0 && !title.isEmpty
+        return !isSuperseded && amount > 0 && !title.isEmpty
     }
 
     var body: some View {
@@ -1912,6 +2027,12 @@ struct InvoiceDetailView: View {
                 }
 
                 Section("Send invoice") {
+                    if isSuperseded {
+                        let dateText = entry.supersededAt?.formatted(date: .abbreviated, time: .shortened) ?? "-"
+                        Text(String(format: NSLocalizedString("Superseded on %@", comment: ""), dateText))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
                     if let client {
                         let channelLabels = availableChannels.map { $0.label }.joined(separator: ", ")
                         if !channelLabels.isEmpty {
@@ -1953,6 +2074,15 @@ struct InvoiceDetailView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+
+                Section("Reissue") {
+                    Button {
+                        showingReissueConfirm = true
+                    } label: {
+                        Label("Reissue invoice", systemImage: "arrow.clockwise.circle.fill")
+                    }
+                    .disabled(isSuperseded)
+                }
             }
             .scrollContentBackground(.hidden)
 
@@ -1973,6 +2103,12 @@ struct InvoiceDetailView: View {
         .sheet(item: $pdfPreview) { preview in
             PDFPreviewController(url: preview.url)
                 .ignoresSafeArea()
+        }
+        .confirmationDialog("Reissue invoice?", isPresented: $showingReissueConfirm) {
+            Button("Reissue invoice", role: .destructive) {
+                reissueInvoice()
+            }
+            Button("Cancel", role: .cancel) { }
         }
         .onAppear {
             if let firstChannel = availableChannels.first {
@@ -1997,6 +2133,12 @@ struct InvoiceDetailView: View {
             current.disputeReason = isDisputed ? trimmedReason : nil
         }
         dismiss()
+    }
+
+    private func reissueInvoice() {
+        let recomputedTotal = lineItems.reduce(0) { $0 + $1.amount }
+        let finalAmount = recomputedTotal > 0 ? recomputedTotal : entry.amount
+        store.reissueInvoice(entry, amount: finalAmount, dueDate: dueDate)
     }
 
     private func prepareShare() {
@@ -2339,22 +2481,86 @@ struct PayrollFormView: View {
 
     @State private var title: String = ""
     @State private var selectedEmployeeName: String = ""
-    @State private var amountText: String = ""
-    @State private var currency: FinanceEntry.Currency = .usd
     @State private var dueDate: Date = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+    @State private var periodStart: Date = {
+        let calendar = Calendar.current
+        let now = Date()
+        let comps = calendar.dateComponents([.year, .month], from: now)
+        return calendar.date(from: comps) ?? now
+    }()
+    @State private var periodEnd: Date = Date()
     @State private var method: FinanceEntry.PaymentMethod? = nil
     @State private var showingConfirmation = false
+    @State private var hoursWorkedText: String = ""
+    @State private var daysWorkedText: String = ""
+    @State private var hourlyRateText: String = ""
+    @State private var bonusText: String = ""
+    @State private var deductionsText: String = ""
+    @State private var taxesText: String = ""
+    @State private var reimbursementsText: String = ""
+    @State private var payrollNotes: String = ""
 
     private var employeeNames: [String] {
         Array(Set(store.employees.map { $0.name })).sorted()
     }
 
-    private var parsedAmount: Double? {
-        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    private var hoursWorked: Double {
+        parseDouble(hoursWorkedText)
+    }
+
+    private var daysWorked: Int {
+        parseInt(daysWorkedText)
+    }
+
+    private var hourlyRate: Double {
+        parseDouble(hourlyRateText)
+    }
+
+    private var bonus: Double {
+        parseDouble(bonusText)
+    }
+
+    private var deductions: Double {
+        parseDouble(deductionsText)
+    }
+
+    private var taxes: Double {
+        parseDouble(taxesText)
+    }
+
+    private var reimbursements: Double {
+        parseDouble(reimbursementsText)
+    }
+
+    private var computedDaysFromPeriod: Int {
+        daysBetween(start: periodStart, end: periodEnd)
+    }
+
+    private var finalDaysWorked: Int {
+        daysWorkedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? computedDaysFromPeriod
+            : daysWorked
+    }
+
+    private var basePay: Double {
+        let computed = hoursWorked * hourlyRate
+        if computed == 0, entry.payrollBasePay > 0 {
+            return entry.payrollBasePay
+        }
+        return computed
+    }
+
+    private var netPay: Double {
+        let computed = basePay + bonus + reimbursements - deductions - taxes
+        if computed == 0 {
+            if entry.payrollNetPay > 0 { return entry.payrollNetPay }
+            if entry.amount > 0 { return entry.amount }
+        }
+        return computed
     }
 
     private var canSave: Bool {
-        parsedAmount != nil && !selectedEmployeeName.isEmpty && !title.isEmpty
+        netPay > 0 && !selectedEmployeeName.isEmpty && !title.isEmpty
     }
 
     var body: some View {
@@ -2369,8 +2575,6 @@ struct PayrollFormView: View {
                                 Text(name).tag(name)
                             }
                         }
-                        TextField("Amount", text: $amountText)
-                            .keyboardType(.decimalPad)
                         HStack {
                             Text("Currency")
                             Spacer()
@@ -2384,6 +2588,37 @@ struct PayrollFormView: View {
                                 Text(method.label).tag(method as FinanceEntry.PaymentMethod?)
                             }
                         }
+                    }
+                    Section(NSLocalizedString("Period", comment: "")) {
+                        DatePicker(NSLocalizedString("From", comment: ""), selection: $periodStart, displayedComponents: .date)
+                        DatePicker(NSLocalizedString("To", comment: ""), selection: $periodEnd, displayedComponents: .date)
+                        TextField(NSLocalizedString("Days worked", comment: ""), text: $daysWorkedText)
+                            .keyboardType(.numberPad)
+                        Text(String(format: NSLocalizedString("Calculated days: %d", comment: ""), computedDaysFromPeriod))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Section(NSLocalizedString("Breakdown", comment: "")) {
+                        TextField(NSLocalizedString("Hours worked", comment: ""), text: $hoursWorkedText)
+                            .keyboardType(.decimalPad)
+                        TextField(NSLocalizedString("Hourly rate", comment: ""), text: $hourlyRateText)
+                            .keyboardType(.decimalPad)
+                        Text(String(format: NSLocalizedString("Base pay: %@ %.2f", comment: ""), store.appPreferences.preferredCurrency.code, basePay))
+                            .font(.subheadline)
+                        TextField(NSLocalizedString("Bonus", comment: ""), text: $bonusText)
+                            .keyboardType(.decimalPad)
+                        TextField(NSLocalizedString("Deductions", comment: ""), text: $deductionsText)
+                            .keyboardType(.decimalPad)
+                        TextField(NSLocalizedString("Taxes", comment: ""), text: $taxesText)
+                            .keyboardType(.decimalPad)
+                        TextField(NSLocalizedString("Reimbursements", comment: ""), text: $reimbursementsText)
+                            .keyboardType(.decimalPad)
+                        Text(String(format: NSLocalizedString("Net pay: %@ %.2f", comment: ""), store.appPreferences.preferredCurrency.code, netPay))
+                            .font(.headline)
+                    }
+                    Section(NSLocalizedString("Notes", comment: "")) {
+                        TextEditor(text: $payrollNotes)
+                            .frame(minHeight: 80)
                     }
                 }
                 PrimaryButton(title: "Save") {
@@ -2413,17 +2648,30 @@ struct PayrollFormView: View {
                 if title.isEmpty, let employee = employeeNames.first {
                     title = String(format: NSLocalizedString("Payroll - %@", comment: ""), employee)
                 }
-                currency = store.appPreferences.preferredCurrency
+                if hourlyRateText.isEmpty, let employee = store.employees.first(where: { $0.name == selectedEmployeeName }) {
+                    if let rate = employee.hourlyRate {
+                        hourlyRateText = String(format: "%.2f", rate)
+                    }
+                }
+            }
+            .onChange(of: selectedEmployeeName) { newValue in
+                if title.isEmpty {
+                    title = String(format: NSLocalizedString("Payroll - %@", comment: ""), newValue)
+                }
+                if hourlyRateText.isEmpty,
+                   let employee = store.employees.first(where: { $0.name == newValue }),
+                   let rate = employee.hourlyRate {
+                    hourlyRateText = String(format: "%.2f", rate)
+                }
             }
         }
     }
 
     private func save() {
-        guard let amount = parsedAmount else { return }
         let employeeId = store.employees.first(where: { $0.name == selectedEmployeeName })?.id
         store.addFinanceEntry(
             title: title,
-            amount: amount,
+            amount: netPay,
             type: .payable,
             dueDate: dueDate,
             method: method,
@@ -2431,9 +2679,38 @@ struct PayrollFormView: View {
             clientName: nil,
             employeeId: employeeId,
             employeeName: selectedEmployeeName,
-            kind: .payrollEmployee
+            kind: .payrollEmployee,
+            payrollPeriodStart: periodStart,
+            payrollPeriodEnd: periodEnd,
+            payrollHoursWorked: hoursWorked,
+            payrollDaysWorked: finalDaysWorked,
+            payrollHourlyRate: hourlyRate,
+            payrollBasePay: basePay,
+            payrollBonus: bonus,
+            payrollDeductions: deductions,
+            payrollTaxes: taxes,
+            payrollReimbursements: reimbursements,
+            payrollNetPay: netPay,
+            payrollNotes: payrollNotes.isEmpty ? nil : payrollNotes
         )
         dismiss()
+    }
+
+    private func parseDouble(_ text: String) -> Double {
+        Double(text.replacingOccurrences(of: ",", with: ".")) ?? 0
+    }
+
+    private func parseInt(_ text: String) -> Int {
+        Int(text.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+    }
+
+    private func daysBetween(start: Date, end: Date) -> Int {
+        let calendar = Calendar.current
+        let startDay = calendar.startOfDay(for: start)
+        let endDay = calendar.startOfDay(for: end)
+        guard endDay >= startDay else { return 0 }
+        let components = calendar.dateComponents([.day], from: startDay, to: endDay)
+        return (components.day ?? 0) + 1
     }
 }
 
@@ -2444,32 +2721,96 @@ struct PayrollDetailView: View {
     let entry: FinanceEntry
 
     @State private var title: String
-    @State private var amountText: String
     @State private var dueDate: Date
     @State private var currency: FinanceEntry.Currency
     @State private var method: FinanceEntry.PaymentMethod?
     @State private var status: FinanceEntry.Status
+    @State private var periodStart: Date
+    @State private var periodEnd: Date
+    @State private var hoursWorkedText: String
+    @State private var daysWorkedText: String
+    @State private var hourlyRateText: String
+    @State private var bonusText: String
+    @State private var deductionsText: String
+    @State private var taxesText: String
+    @State private var reimbursementsText: String
+    @State private var payrollNotes: String
 
     init(entry: FinanceEntry) {
         self.entry = entry
         _title = State(initialValue: entry.title)
-        _amountText = State(initialValue: String(format: "%.2f", entry.amount))
         _dueDate = State(initialValue: entry.dueDate)
         _currency = State(initialValue: entry.currency)
         _method = State(initialValue: entry.method)
         _status = State(initialValue: entry.status)
+        _periodStart = State(initialValue: entry.payrollPeriodStart ?? entry.dueDate)
+        _periodEnd = State(initialValue: entry.payrollPeriodEnd ?? entry.dueDate)
+        _hoursWorkedText = State(initialValue: entry.payrollHoursWorked > 0 ? String(format: "%.2f", entry.payrollHoursWorked) : "")
+        _daysWorkedText = State(initialValue: entry.payrollDaysWorked > 0 ? "\(entry.payrollDaysWorked)" : "")
+        _hourlyRateText = State(initialValue: entry.payrollHourlyRate > 0 ? String(format: "%.2f", entry.payrollHourlyRate) : "")
+        _bonusText = State(initialValue: entry.payrollBonus > 0 ? String(format: "%.2f", entry.payrollBonus) : "")
+        _deductionsText = State(initialValue: entry.payrollDeductions > 0 ? String(format: "%.2f", entry.payrollDeductions) : "")
+        _taxesText = State(initialValue: entry.payrollTaxes > 0 ? String(format: "%.2f", entry.payrollTaxes) : "")
+        _reimbursementsText = State(initialValue: entry.payrollReimbursements > 0 ? String(format: "%.2f", entry.payrollReimbursements) : "")
+        _payrollNotes = State(initialValue: entry.payrollNotes ?? "")
     }
 
-    private var parsedAmount: Double? {
-        Double(amountText.replacingOccurrences(of: ",", with: "."))
+    private var isManager: Bool {
+        store.session?.role == .manager
+    }
+
+    private var hoursWorked: Double {
+        parseDouble(hoursWorkedText)
+    }
+
+    private var daysWorked: Int {
+        parseInt(daysWorkedText)
+    }
+
+    private var hourlyRate: Double {
+        parseDouble(hourlyRateText)
+    }
+
+    private var bonus: Double {
+        parseDouble(bonusText)
+    }
+
+    private var deductions: Double {
+        parseDouble(deductionsText)
+    }
+
+    private var taxes: Double {
+        parseDouble(taxesText)
+    }
+
+    private var reimbursements: Double {
+        parseDouble(reimbursementsText)
+    }
+
+    private var computedDaysFromPeriod: Int {
+        daysBetween(start: periodStart, end: periodEnd)
+    }
+
+    private var finalDaysWorked: Int {
+        daysWorkedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? computedDaysFromPeriod
+            : daysWorked
+    }
+
+    private var basePay: Double {
+        hoursWorked * hourlyRate
+    }
+
+    private var netPay: Double {
+        basePay + bonus + reimbursements - deductions - taxes
     }
 
     private var canEditFields: Bool {
-        status == .pending
+        status == .pending && isManager
     }
 
     private var canSave: Bool {
-        parsedAmount != nil && !title.isEmpty
+        isManager && netPay > 0 && !title.isEmpty
     }
 
     var body: some View {
@@ -2481,9 +2822,6 @@ struct PayrollDetailView: View {
                             .font(.subheadline)
                     }
                     TextField("Title", text: $title)
-                        .disabled(!canEditFields)
-                    TextField("Amount", text: $amountText)
-                        .keyboardType(.decimalPad)
                         .disabled(!canEditFields)
                     HStack {
                         Text("Currency")
@@ -2503,6 +2841,47 @@ struct PayrollDetailView: View {
                         Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
                         Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
                     }
+                }
+                Section(NSLocalizedString("Period", comment: "")) {
+                    DatePicker(NSLocalizedString("From", comment: ""), selection: $periodStart, displayedComponents: .date)
+                        .disabled(!canEditFields)
+                    DatePicker(NSLocalizedString("To", comment: ""), selection: $periodEnd, displayedComponents: .date)
+                        .disabled(!canEditFields)
+                    TextField(NSLocalizedString("Days worked", comment: ""), text: $daysWorkedText)
+                        .keyboardType(.numberPad)
+                        .disabled(!canEditFields)
+                    Text(String(format: NSLocalizedString("Calculated days: %d", comment: ""), computedDaysFromPeriod))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Section(NSLocalizedString("Breakdown", comment: "")) {
+                    TextField(NSLocalizedString("Hours worked", comment: ""), text: $hoursWorkedText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    TextField(NSLocalizedString("Hourly rate", comment: ""), text: $hourlyRateText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    Text(String(format: NSLocalizedString("Base pay: %@ %.2f", comment: ""), store.appPreferences.preferredCurrency.code, basePay))
+                        .font(.subheadline)
+                    TextField(NSLocalizedString("Bonus", comment: ""), text: $bonusText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    TextField(NSLocalizedString("Deductions", comment: ""), text: $deductionsText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    TextField(NSLocalizedString("Taxes", comment: ""), text: $taxesText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    TextField(NSLocalizedString("Reimbursements", comment: ""), text: $reimbursementsText)
+                        .keyboardType(.decimalPad)
+                        .disabled(!canEditFields)
+                    Text(String(format: NSLocalizedString("Net pay: %@ %.2f", comment: ""), store.appPreferences.preferredCurrency.code, netPay))
+                        .font(.headline)
+                }
+                Section(NSLocalizedString("Notes", comment: "")) {
+                    TextEditor(text: $payrollNotes)
+                        .frame(minHeight: 80)
+                        .disabled(!canEditFields)
                 }
                 if !canEditFields {
                     Text("Editing is locked after payment confirmation.")
@@ -2529,16 +2908,44 @@ struct PayrollDetailView: View {
     }
 
     private func save() {
-        guard let amount = parsedAmount else { return }
         store.updateFinanceEntry(entry) { current in
             current.title = title
-            current.amount = amount
+            current.amount = netPay
             current.dueDate = dueDate
             current.currency = store.appPreferences.preferredCurrency
             current.method = method
             current.status = status
+            current.payrollPeriodStart = periodStart
+            current.payrollPeriodEnd = periodEnd
+            current.payrollHoursWorked = hoursWorked
+            current.payrollDaysWorked = finalDaysWorked
+            current.payrollHourlyRate = hourlyRate
+            current.payrollBasePay = basePay
+            current.payrollBonus = bonus
+            current.payrollDeductions = deductions
+            current.payrollTaxes = taxes
+            current.payrollReimbursements = reimbursements
+            current.payrollNetPay = netPay
+            current.payrollNotes = payrollNotes.isEmpty ? nil : payrollNotes
         }
         dismiss()
+    }
+
+    private func parseDouble(_ text: String) -> Double {
+        Double(text.replacingOccurrences(of: ",", with: ".")) ?? 0
+    }
+
+    private func parseInt(_ text: String) -> Int {
+        Int(text.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+    }
+
+    private func daysBetween(start: Date, end: Date) -> Int {
+        let calendar = Calendar.current
+        let startDay = calendar.startOfDay(for: start)
+        let endDay = calendar.startOfDay(for: end)
+        guard endDay >= startDay else { return 0 }
+        let components = calendar.dateComponents([.day], from: startDay, to: endDay)
+        return (components.day ?? 0) + 1
     }
 }
 
@@ -3388,10 +3795,14 @@ struct ClientDetailView: View {
     @EnvironmentObject private var store: OfflineStore
     let client: Client
     @State private var showingServiceForm = false
+    @State private var showingEditForm = false
+    @State private var showingDeleteConfirm = false
+    @State private var showingDeleteBlocked = false
+    @State private var deleteBlockedMessage = ""
 
     private var clientTasks: [ServiceTask] {
         store.tasks
-            .filter { $0.clientName == client.name }
+            .filter { $0.clientName == currentClient.name || $0.clientId == currentClient.id }
             .sorted {
                 let lhsDate = $0.startTime ?? $0.date
                 let rhsDate = $1.startTime ?? $1.date
@@ -3399,43 +3810,60 @@ struct ClientDetailView: View {
             }
     }
 
+    private var currentClient: Client {
+        store.clients.first(where: { $0.id == client.id }) ?? client
+    }
+
+    private var isManager: Bool {
+        store.session?.role == .manager
+    }
+
     var body: some View {
         List {
             Section("Client") {
-                Text(client.name).bold()
-                if !client.phone.isEmpty {
-                    Text(String(format: NSLocalizedString("Phone: %@", comment: ""), client.phone))
+                Text(currentClient.name).bold()
+                if !currentClient.phone.isEmpty {
+                    Text(String(format: NSLocalizedString("Phone: %@", comment: ""), currentClient.phone))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                if !client.whatsappPhone.isEmpty {
-                    Text(String(format: NSLocalizedString("WhatsApp phone: %@", comment: ""), client.whatsappPhone))
+                if !currentClient.whatsappPhone.isEmpty {
+                    Text(String(format: NSLocalizedString("WhatsApp phone: %@", comment: ""), currentClient.whatsappPhone))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                if !client.email.isEmpty {
-                    Text(String(format: NSLocalizedString("Email: %@", comment: ""), client.email))
+                if !currentClient.email.isEmpty {
+                    Text(String(format: NSLocalizedString("Email: %@", comment: ""), currentClient.email))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                Text(client.address)
+                Text(currentClient.address)
                     .font(.footnote)
                     .foregroundColor(.secondary)
-                if !client.propertyDetails.isEmpty {
-                    Text(String(format: NSLocalizedString("Property: %@", comment: ""), client.propertyDetails))
+                if !currentClient.propertyDetails.isEmpty {
+                    Text(String(format: NSLocalizedString("Property: %@", comment: ""), currentClient.propertyDetails))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                if !client.preferredSchedule.isEmpty {
-                    Text(String(format: NSLocalizedString("Preferred schedule: %@", comment: ""), client.preferredSchedule))
+                if !currentClient.preferredSchedule.isEmpty {
+                    Text(String(format: NSLocalizedString("Preferred schedule: %@", comment: ""), currentClient.preferredSchedule))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                if !client.accessNotes.isEmpty {
-                    Text(String(format: NSLocalizedString("Access notes: %@", comment: ""), client.accessNotes))
+                if !currentClient.accessNotes.isEmpty {
+                    Text(String(format: NSLocalizedString("Access notes: %@", comment: ""), currentClient.accessNotes))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
+            }
+
+            Section("Delivery channels") {
+                let channels = currentClient.preferredDeliveryChannels.isEmpty
+                    ? [Client.DeliveryChannel.email]
+                    : currentClient.preferredDeliveryChannels
+                Text(channels.map { $0.label }.joined(separator: ", "))
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
             }
 
             Section("Service history") {
@@ -3473,9 +3901,39 @@ struct ClientDetailView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle(client.name)
+        .navigationTitle(currentClient.name)
+        .toolbar {
+            if isManager {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Edit") { showingEditForm = true }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Delete", role: .destructive) { showingDeleteConfirm = true }
+                }
+            }
+        }
         .sheet(isPresented: $showingServiceForm) {
-            ServiceFormView(initialDate: Date(), client: client)
+            ServiceFormView(initialDate: Date(), client: currentClient)
+        }
+        .sheet(isPresented: $showingEditForm) {
+            ClientForm(client: currentClient)
+        }
+        .confirmationDialog("Delete client?", isPresented: $showingDeleteConfirm) {
+            Button("Delete client", role: .destructive) {
+                if !store.deleteClient(currentClient) {
+                    deleteBlockedMessage = NSLocalizedString(
+                        "This client has linked services or finance entries. Resolve them before deleting.",
+                        comment: ""
+                    )
+                    showingDeleteBlocked = true
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+        .alert("Cannot delete", isPresented: $showingDeleteBlocked) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(deleteBlockedMessage)
         }
     }
 }
@@ -4023,6 +4481,7 @@ struct FinanceRow: View {
 struct ServiceDetailView: View {
     @EnvironmentObject private var store: OfflineStore
     @Environment(\.dismiss) private var dismiss
+    @State private var title: String
     @State private var status: ServiceTask.Status
     @State private var startTime: Date
     @State private var endTime: Date
@@ -4031,22 +4490,59 @@ struct ServiceDetailView: View {
     @State private var showTeamAlert = false
     @State private var checkInTime: Date?
     @State private var checkOutTime: Date?
+    @State private var selectedEmployeeID: UUID?
+    @State private var selectedClientID: UUID?
+    @State private var selectedServiceTypeID: UUID?
     let task: ServiceTask
 
     init(task: ServiceTask) {
         self.task = task
+        _title = State(initialValue: task.title)
         _status = State(initialValue: task.status)
         _startTime = State(initialValue: task.startTime ?? task.date)
         _endTime = State(initialValue: task.endTime ?? task.date.addingTimeInterval(60 * 60))
         _notes = State(initialValue: task.notes)
         _checkInTime = State(initialValue: task.checkInTime)
         _checkOutTime = State(initialValue: task.checkOutTime)
+        _selectedEmployeeID = State(initialValue: task.assignedEmployee.id)
+        _selectedClientID = State(initialValue: task.clientId)
+        _selectedServiceTypeID = State(initialValue: task.serviceTypeId)
+    }
+
+    private var isManager: Bool {
+        store.session?.role == .manager
+    }
+
+    private var selectedEmployee: Employee? {
+        if let selectedEmployeeID {
+            return store.employees.first { $0.id == selectedEmployeeID }
+        }
+        return store.employees.first { $0.name == task.assignedEmployee.name }
+    }
+
+    private var selectedClient: Client? {
+        if let selectedClientID {
+            return store.clients.first { $0.id == selectedClientID }
+        }
+        return store.clients.first { $0.name == task.clientName }
+    }
+
+    private var selectedServiceType: ServiceType? {
+        if let selectedServiceTypeID {
+            return store.serviceTypes.first { $0.id == selectedServiceTypeID }
+        }
+        if let serviceTypeId = task.serviceTypeId {
+            return store.serviceTypes.first { $0.id == serviceTypeId }
+        }
+        return nil
     }
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                Section("Status") {
+                Section("Service") {
+                    TextField("Title", text: $title)
+                        .disabled(!isManager)
                     Picker("Status", selection: $status) {
                         ForEach(ServiceTask.Status.allCases) { value in
                             Text(value.label).tag(value)
@@ -4059,13 +4555,68 @@ struct ServiceDetailView: View {
                     DatePicker("End", selection: $endTime, displayedComponents: [.hourAndMinute, .date])
                 }
 
-                Section("Client") {
-                    Text(task.clientName).bold()
-                    Text(task.address)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    Text(task.assignedEmployee.name)
-                        .font(.subheadline)
+                Section("Assignments") {
+                    if store.employees.isEmpty {
+                        Text("Add at least one employee to create services.")
+                            .foregroundColor(.secondary)
+                    } else if isManager {
+                        Picker("Employee", selection: Binding(
+                            get: { selectedEmployeeID ?? store.employees.first?.id },
+                            set: { selectedEmployeeID = $0 }
+                        )) {
+                            ForEach(store.employees, id: \.id) { employee in
+                                Text(employee.name).tag(employee.id as UUID?)
+                            }
+                        }
+                    } else {
+                        Text(selectedEmployee?.name ?? task.assignedEmployee.name)
+                            .font(.subheadline)
+                    }
+
+                    if store.clients.isEmpty {
+                        Text("Add at least one client to create services.")
+                            .foregroundColor(.secondary)
+                    } else if isManager {
+                        Picker("Client", selection: Binding(
+                            get: { selectedClientID ?? store.clients.first?.id },
+                            set: { selectedClientID = $0 }
+                        )) {
+                            ForEach(store.clients, id: \.id) { client in
+                                Text(client.name).tag(client.id as UUID?)
+                            }
+                        }
+                    } else {
+                        Text(selectedClient?.name ?? task.clientName)
+                            .bold()
+                    }
+
+                    if let address = selectedClient?.address, !address.isEmpty {
+                        Text(address)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    } else if !task.address.isEmpty {
+                        Text(task.address)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if !store.serviceTypes.isEmpty {
+                    Section("Service type") {
+                        if isManager {
+                            Picker("Type", selection: Binding(
+                                get: { selectedServiceTypeID ?? store.serviceTypes.first?.id },
+                                set: { selectedServiceTypeID = $0 }
+                            )) {
+                                ForEach(store.serviceTypes, id: \.id) { type in
+                                    Text(type.name).tag(type.id as UUID?)
+                                }
+                            }
+                        } else if let selectedServiceType {
+                            Text(selectedServiceType.name)
+                                .font(.subheadline)
+                        }
+                    }
                 }
 
                 Section("Notes") {
@@ -4130,26 +4681,46 @@ struct ServiceDetailView: View {
             .scrollContentBackground(.hidden)
 
             PrimaryButton(title: "Save") {
+                let employee = selectedEmployee
+                let client = selectedClient
                 store.updateTask(
                     task,
+                    title: isManager ? title : nil,
                     status: status,
                     startTime: startTime,
                     endTime: endTime,
                     notes: notes,
                     checkInTime: checkInTime,
-                    checkOutTime: checkOutTime
+                    checkOutTime: checkOutTime,
+                    employee: isManager ? employee : nil,
+                    client: isManager ? client : nil,
+                    serviceTypeId: isManager ? selectedServiceTypeID : nil
                 )
                 dismiss()
             }
             .padding()
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle(task.title)
+        .navigationTitle(title)
         .alert("Notification sent to client", isPresented: $showClientAlert) {
             Button("OK", role: .cancel) { }
         }
         .alert("Notification sent to team", isPresented: $showTeamAlert) {
             Button("OK", role: .cancel) { }
+        }
+        .onAppear {
+            if selectedEmployeeID == nil {
+                selectedEmployeeID = store.employees.first(where: { $0.id == task.assignedEmployee.id })?.id
+                    ?? store.employees.first?.id
+            }
+            if selectedClientID == nil {
+                selectedClientID = store.clients.first(where: { $0.id == task.clientId })?.id
+                    ?? store.clients.first(where: { $0.name == task.clientName })?.id
+                    ?? store.clients.first?.id
+            }
+            if selectedServiceTypeID == nil {
+                selectedServiceTypeID = task.serviceTypeId ?? store.serviceTypes.first?.id
+            }
         }
     }
 }
@@ -4199,6 +4770,8 @@ struct PrimaryButton: View {
 struct ClientForm: View {
     @EnvironmentObject private var store: OfflineStore
     @Environment(\.dismiss) private var dismiss
+    private let client: Client?
+    private let onSave: (() -> Void)?
     @State private var name = ""
     @State private var address = ""
     @State private var propertyDetails = ""
@@ -4209,6 +4782,47 @@ struct ClientForm: View {
     @State private var email = ""
     @State private var preferredSchedule = ""
     @State private var accessNotes = ""
+    @State private var enableEmail = true
+    @State private var enableWhatsApp = false
+    @State private var enableText = false
+    @State private var showContactPicker = false
+
+    init(client: Client? = nil, onSave: (() -> Void)? = nil) {
+        self.client = client
+        self.onSave = onSave
+        _name = State(initialValue: client?.name ?? "")
+        _address = State(initialValue: client?.address ?? "")
+        _propertyDetails = State(initialValue: client?.propertyDetails ?? "")
+        _email = State(initialValue: client?.email ?? "")
+        _preferredSchedule = State(initialValue: client?.preferredSchedule ?? "")
+        _accessNotes = State(initialValue: client?.accessNotes ?? "")
+        if let phone = client?.phone, !phone.isEmpty {
+            let split = ClientForm.splitPhone(phone)
+            _phoneCode = State(initialValue: split.code)
+            _phoneLocal = State(initialValue: split.number)
+        }
+        if let whatsapp = client?.whatsappPhone, !whatsapp.isEmpty {
+            let split = ClientForm.splitPhone(whatsapp)
+            _whatsappPhoneCode = State(initialValue: split.code)
+            _whatsappPhoneLocal = State(initialValue: split.number)
+        }
+        let channels = client?.preferredDeliveryChannels ?? []
+        _enableEmail = State(initialValue: channels.isEmpty ? true : channels.contains(.email))
+        _enableWhatsApp = State(initialValue: channels.contains(.whatsapp))
+        _enableText = State(initialValue: channels.contains(.sms))
+    }
+
+    private var isEditing: Bool {
+        client != nil
+    }
+
+    private var selectedChannels: [Client.DeliveryChannel] {
+        var channels: [Client.DeliveryChannel] = []
+        if enableEmail { channels.append(.email) }
+        if enableWhatsApp { channels.append(.whatsapp) }
+        if enableText { channels.append(.sms) }
+        return channels.isEmpty ? [.email] : channels
+    }
 
     var body: some View {
         NavigationStack {
@@ -4231,6 +4845,17 @@ struct ClientForm: View {
                         TextField("Email", text: $email)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
+                        if !name.isEmpty {
+                            let previewPhone = phoneLocal.isEmpty ? whatsappPhoneLocal : phoneLocal
+                            let previewNumber = previewPhone.isEmpty ? nil : "\(phoneCode.dialCode) \(previewPhone)"
+                            ContactAvatarView(name: name, phone: previewNumber, size: 56)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        Button {
+                            showContactPicker = true
+                        } label: {
+                            Label("Import from Contacts", systemImage: "person.crop.circle.badge.plus")
+                        }
                     }
                     Section("Property & schedule") {
                         TextField("Address", text: $address)
@@ -4240,35 +4865,125 @@ struct ClientForm: View {
                     Section("Access") {
                         TextField("Access instructions / front desk", text: $accessNotes)
                     }
+                    Section("Delivery channels") {
+                        Toggle("Email", isOn: $enableEmail)
+                        Toggle("WhatsApp", isOn: $enableWhatsApp)
+                        Toggle("Text Message", isOn: $enableText)
+                        Text("Used when sending invoices or receipts.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .scrollContentBackground(.hidden)
 
                 PrimaryButton(title: "Save") {
                     let fullPhone = phoneLocal.isEmpty ? "" : "\(phoneCode.dialCode) \(phoneLocal)"
                     let fullWhatsApp = whatsappPhoneLocal.isEmpty ? "" : "\(whatsappPhoneCode.dialCode) \(whatsappPhoneLocal)"
-                    store.addClient(
-                        name: name,
-                        contact: name,
-                        address: address,
-                        propertyDetails: propertyDetails,
-                        phone: fullPhone,
-                        whatsappPhone: fullWhatsApp,
-                        email: email,
-                        accessNotes: accessNotes,
-                        preferredSchedule: preferredSchedule
-                    )
+                    if let client {
+                        store.updateClient(
+                            client,
+                            name: name,
+                            contact: name,
+                            address: address,
+                            propertyDetails: propertyDetails,
+                            phone: fullPhone,
+                            whatsappPhone: fullWhatsApp,
+                            email: email,
+                            accessNotes: accessNotes,
+                            preferredSchedule: preferredSchedule,
+                            preferredDeliveryChannels: selectedChannels
+                        )
+                    } else {
+                        store.addClient(
+                            name: name,
+                            contact: name,
+                            address: address,
+                            propertyDetails: propertyDetails,
+                            phone: fullPhone,
+                            whatsappPhone: fullWhatsApp,
+                            email: email,
+                            accessNotes: accessNotes,
+                            preferredSchedule: preferredSchedule,
+                            preferredDeliveryChannels: selectedChannels
+                        )
+                    }
+                    onSave?()
                     dismiss()
                 }
                 .padding()
                 .disabled(name.isEmpty)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle("New Client")
+            .navigationTitle(isEditing ? "Edit Client" : "New Client")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
             }
+            .onAppear {
+                if client == nil {
+                    enableEmail = true
+                }
+            }
+#if canImport(ContactsUI) && canImport(UIKit)
+            .sheet(isPresented: $showContactPicker) {
+                ContactPickerView { contact in
+                    apply(contact: contact)
+                    showContactPicker = false
+                } onCancel: {
+                    showContactPicker = false
+                }
+            }
+#endif
         }
     }
+
+    private static func splitPhone(_ fullPhone: String) -> (code: CountryCode, number: String) {
+        let trimmed = fullPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+        for code in CountryCode.all {
+            if trimmed.hasPrefix(code.dialCode) {
+                let number = trimmed
+                    .replacingOccurrences(of: code.dialCode, with: "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return (code, number)
+            }
+        }
+        return (.defaultCode, trimmed)
+    }
+
+#if canImport(Contacts)
+    private func apply(contact: CNContact) {
+        if name.isEmpty {
+            if let fullName = CNContactFormatter.string(from: contact, style: .fullName) {
+                name = fullName
+            } else {
+                let composed = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
+                if !composed.isEmpty { name = composed }
+            }
+        }
+
+        if email.isEmpty, let value = contact.emailAddresses.first?.value as String?, !value.isEmpty {
+            email = value
+        }
+
+        let numbers = contact.phoneNumbers.map { $0.value.stringValue }.filter { !$0.isEmpty }
+        if phoneLocal.isEmpty, let first = numbers.first {
+            applyPhone(first, code: &phoneCode, local: &phoneLocal)
+        }
+        if whatsappPhoneLocal.isEmpty, let second = numbers.dropFirst().first {
+            applyPhone(second, code: &whatsappPhoneCode, local: &whatsappPhoneLocal)
+        }
+    }
+
+    private func applyPhone(_ value: String, code: inout CountryCode, local: inout String) {
+        let normalized = value.replacingOccurrences(of: " ", with: "")
+        if let match = CountryCode.all.first(where: { normalized.hasPrefix($0.dialCode) }) {
+            code = match
+            let localPart = normalized.dropFirst(match.dialCode.count)
+            local = String(localPart)
+        } else {
+            local = value
+        }
+    }
+#endif
 }

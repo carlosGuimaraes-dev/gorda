@@ -98,20 +98,38 @@ final class OfflineStore: ObservableObject {
 
     func updateTask(
         _ task: ServiceTask,
+        title: String? = nil,
         status: ServiceTask.Status,
         startTime: Date? = nil,
         endTime: Date? = nil,
         notes: String? = nil,
         checkInTime: Date? = nil,
-        checkOutTime: Date? = nil
+        checkOutTime: Date? = nil,
+        employee: Employee? = nil,
+        client: Client? = nil,
+        serviceTypeId: UUID? = nil
     ) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
+        if let title {
+            tasks[index].title = title
+        }
         tasks[index].status = status
         tasks[index].startTime = startTime ?? tasks[index].startTime
         tasks[index].endTime = endTime ?? tasks[index].endTime
         tasks[index].notes = notes ?? tasks[index].notes
         tasks[index].checkInTime = checkInTime ?? tasks[index].checkInTime
         tasks[index].checkOutTime = checkOutTime ?? tasks[index].checkOutTime
+        if let employee {
+            tasks[index].assignedEmployee = employee
+        }
+        if let client {
+            tasks[index].clientId = client.id
+            tasks[index].clientName = client.name
+            tasks[index].address = client.address
+        }
+        if let serviceTypeId {
+            tasks[index].serviceTypeId = serviceTypeId
+        }
         recordAudit(
             entity: "Task",
             action: NSLocalizedString("Updated", comment: ""),
@@ -131,9 +149,12 @@ final class OfflineStore: ObservableObject {
         whatsappPhone: String,
         email: String,
         accessNotes: String,
-        preferredSchedule: String
+        preferredSchedule: String,
+        preferredDeliveryChannels: [Client.DeliveryChannel]? = nil
     ) {
-        let channels = availableDeliveryChannels(phone: phone, whatsappPhone: whatsappPhone, email: email)
+        let channels = (preferredDeliveryChannels?.isEmpty == false)
+            ? preferredDeliveryChannels!
+            : availableDeliveryChannels(phone: phone, whatsappPhone: whatsappPhone, email: email)
         let client = Client(
             id: UUID(),
             name: name,
@@ -153,6 +174,83 @@ final class OfflineStore: ObservableObject {
         persist()
     }
 
+    func updateClient(
+        _ client: Client,
+        name: String,
+        contact: String,
+        address: String,
+        propertyDetails: String,
+        phone: String,
+        whatsappPhone: String,
+        email: String,
+        accessNotes: String,
+        preferredSchedule: String,
+        preferredDeliveryChannels: [Client.DeliveryChannel]
+    ) {
+        guard let index = clients.firstIndex(where: { $0.id == client.id }) else { return }
+        clients[index].name = name
+        clients[index].contact = contact
+        clients[index].address = address
+        clients[index].propertyDetails = propertyDetails
+        clients[index].phone = phone
+        clients[index].whatsappPhone = whatsappPhone
+        clients[index].email = email
+        clients[index].accessNotes = accessNotes
+        clients[index].preferredSchedule = preferredSchedule
+        let channels = preferredDeliveryChannels.isEmpty
+            ? availableDeliveryChannels(phone: phone, whatsappPhone: whatsappPhone, email: email)
+            : preferredDeliveryChannels
+        clients[index].preferredDeliveryChannels = channels
+
+        for taskIndex in tasks.indices {
+            let matchesClient = tasks[taskIndex].clientId == client.id
+            let matchesName = tasks[taskIndex].clientName == client.name
+            if matchesClient || matchesName {
+                tasks[taskIndex].clientId = client.id
+                tasks[taskIndex].clientName = name
+                tasks[taskIndex].address = address
+            }
+        }
+
+        for entryIndex in finance.indices {
+            let matchesClient = finance[entryIndex].clientId == client.id
+            let matchesName = finance[entryIndex].clientName == client.name
+            if matchesClient || matchesName {
+                finance[entryIndex].clientId = client.id
+                finance[entryIndex].clientName = name
+            }
+        }
+
+        recordAudit(
+            entity: "Client",
+            action: NSLocalizedString("Updated", comment: ""),
+            summary: String(format: NSLocalizedString("Client updated: %@", comment: ""), name)
+        )
+        pendingChanges.append(PendingChange(operation: .updateClient, entityId: client.id))
+        saveClientToCoreData(clients[index])
+        persist()
+    }
+
+    func deleteClient(_ client: Client) -> Bool {
+        let hasTasks = tasks.contains {
+            ($0.clientId == client.id) || $0.clientName == client.name
+        }
+        let hasFinance = finance.contains {
+            ($0.clientId == client.id) || $0.clientName == client.name
+        }
+        guard !hasTasks && !hasFinance else { return false }
+        clients.removeAll { $0.id == client.id }
+        recordAudit(
+            entity: "Client",
+            action: NSLocalizedString("Deleted", comment: ""),
+            summary: String(format: NSLocalizedString("Client deleted: %@", comment: ""), client.name)
+        )
+        pendingChanges.append(PendingChange(operation: .deleteClient, entityId: client.id))
+        deleteClientFromCoreData(client.id)
+        persist()
+        return true
+    }
+
     func addFinanceEntry(
         title: String,
         amount: Double,
@@ -167,7 +265,22 @@ final class OfflineStore: ObservableObject {
         kind: FinanceEntry.Kind = .general,
         receiptData: Data? = nil,
         isDisputed: Bool = false,
-        disputeReason: String? = nil
+        disputeReason: String? = nil,
+        supersededById: UUID? = nil,
+        supersedesId: UUID? = nil,
+        supersededAt: Date? = nil,
+        payrollPeriodStart: Date? = nil,
+        payrollPeriodEnd: Date? = nil,
+        payrollHoursWorked: Double = 0,
+        payrollDaysWorked: Int = 0,
+        payrollHourlyRate: Double = 0,
+        payrollBasePay: Double = 0,
+        payrollBonus: Double = 0,
+        payrollDeductions: Double = 0,
+        payrollTaxes: Double = 0,
+        payrollReimbursements: Double = 0,
+        payrollNetPay: Double = 0,
+        payrollNotes: String? = nil
     ) {
         let matchedClient = clientId.flatMap { id in
             clients.first(where: { $0.id == id })
@@ -196,7 +309,22 @@ final class OfflineStore: ObservableObject {
             kind: kind,
             isDisputed: isDisputed,
             disputeReason: disputeReason,
-            receiptData: receiptData
+            receiptData: receiptData,
+            supersededById: supersededById,
+            supersedesId: supersedesId,
+            supersededAt: supersededAt,
+            payrollPeriodStart: payrollPeriodStart,
+            payrollPeriodEnd: payrollPeriodEnd,
+            payrollHoursWorked: payrollHoursWorked,
+            payrollDaysWorked: payrollDaysWorked,
+            payrollHourlyRate: payrollHourlyRate,
+            payrollBasePay: payrollBasePay,
+            payrollBonus: payrollBonus,
+            payrollDeductions: payrollDeductions,
+            payrollTaxes: payrollTaxes,
+            payrollReimbursements: payrollReimbursements,
+            payrollNetPay: payrollNetPay,
+            payrollNotes: payrollNotes
         )
         finance.append(entry)
         recordAudit(
@@ -213,14 +341,16 @@ final class OfflineStore: ObservableObject {
         name: String,
         description: String,
         basePrice: Double,
-        currency: FinanceEntry.Currency
+        currency: FinanceEntry.Currency,
+        pricingModel: ServiceType.PricingModel
     ) {
         let lockedCurrency = appPreferences.preferredCurrency
         let serviceType = ServiceType(
             name: name,
             description: description,
             basePrice: basePrice,
-            currency: lockedCurrency
+            currency: lockedCurrency,
+            pricingModel: pricingModel
         )
         serviceTypes.append(serviceType)
         pendingChanges.append(PendingChange(operation: .addServiceType, entityId: serviceType.id))
@@ -233,7 +363,8 @@ final class OfflineStore: ObservableObject {
         name: String,
         description: String,
         basePrice: Double,
-        currency: FinanceEntry.Currency
+        currency: FinanceEntry.Currency,
+        pricingModel: ServiceType.PricingModel
     ) {
         guard let index = serviceTypes.firstIndex(where: { $0.id == serviceType.id }) else { return }
         let lockedCurrency = appPreferences.preferredCurrency
@@ -241,6 +372,7 @@ final class OfflineStore: ObservableObject {
         serviceTypes[index].description = description
         serviceTypes[index].basePrice = basePrice
         serviceTypes[index].currency = lockedCurrency
+        serviceTypes[index].pricingModel = pricingModel
         pendingChanges.append(PendingChange(operation: .updateServiceType, entityId: serviceType.id))
         saveServiceTypeToCoreData(serviceTypes[index])
         persist()
@@ -296,6 +428,48 @@ final class OfflineStore: ObservableObject {
         updateFinanceEntry(entry) { current in
             current.isDisputed = true
             current.disputeReason = reason
+        }
+    }
+
+    func reissueInvoice(_ entry: FinanceEntry, amount: Double, dueDate: Date) {
+        guard entry.kind == .invoiceClient else { return }
+        let newId = UUID()
+        let suffix = NSLocalizedString("Reissued", comment: "")
+        let newTitle = "\(entry.title) · \(suffix)"
+        let lockedCurrency = appPreferences.preferredCurrency
+
+        let newEntry = FinanceEntry(
+            id: newId,
+            title: newTitle,
+            amount: amount,
+            type: entry.type,
+            dueDate: dueDate,
+            status: .pending,
+            method: nil,
+            currency: lockedCurrency,
+            clientId: entry.clientId,
+            clientName: entry.clientName,
+            employeeId: nil,
+            employeeName: nil,
+            kind: .invoiceClient,
+            isDisputed: false,
+            disputeReason: nil,
+            receiptData: nil,
+            supersedesId: entry.id
+        )
+
+        finance.append(newEntry)
+        recordAudit(
+            entity: "Finance",
+            action: NSLocalizedString("Created", comment: ""),
+            summary: String(format: NSLocalizedString("Finance entry created: %@", comment: ""), newEntry.title)
+        )
+        pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: newEntry.id))
+        saveFinanceEntryToCoreData(newEntry)
+
+        updateFinanceEntry(entry) { current in
+            current.supersededById = newId
+            current.supersededAt = Date()
         }
     }
 
@@ -437,6 +611,15 @@ final class OfflineStore: ObservableObject {
             guard totalHours > 0 else { continue }
 
             let totalAmount = totalHours * rate
+            let calendar = Calendar.current
+            let uniqueDays = Set(employeeTasks.map { calendar.startOfDay(for: $0.date) })
+            let daysWorked = uniqueDays.count
+            let basePay = totalAmount
+            let bonus: Double = 0
+            let deductions: Double = 0
+            let taxes: Double = 0
+            let reimbursements: Double = 0
+            let netPay = basePay + bonus + reimbursements - deductions - taxes
 
             let formatter = DateFormatter()
             formatter.dateFormat = "MMM yyyy"
@@ -446,7 +629,7 @@ final class OfflineStore: ObservableObject {
 
             let entry = FinanceEntry(
                 title: title,
-                amount: totalAmount,
+                amount: netPay,
                 type: .payable,
                 dueDate: dueDate,
                 status: .pending,
@@ -456,7 +639,18 @@ final class OfflineStore: ObservableObject {
                 clientName: nil,
                 employeeId: employee.id,
                 employeeName: employee.name,
-                kind: .payrollEmployee
+                kind: .payrollEmployee,
+                payrollPeriodStart: startDate,
+                payrollPeriodEnd: endDate,
+                payrollHoursWorked: totalHours,
+                payrollDaysWorked: daysWorked,
+                payrollHourlyRate: rate,
+                payrollBasePay: basePay,
+                payrollBonus: bonus,
+                payrollDeductions: deductions,
+                payrollTaxes: taxes,
+                payrollReimbursements: reimbursements,
+                payrollNetPay: netPay
             )
             finance.append(entry)
             pendingChanges.append(PendingChange(operation: .addFinanceEntry, entityId: entry.id))
@@ -1441,6 +1635,15 @@ final class OfflineStore: ObservableObject {
         saveContext()
     }
 
+    private func deleteClientFromCoreData(_ id: UUID) {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "ClientEntity")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        if let object = try? context.fetch(request).first {
+            context.delete(object)
+            saveContext()
+        }
+    }
+
     private func saveTaskToCoreData(_ task: ServiceTask) {
         let request = NSFetchRequest<NSManagedObject>(entityName: "ServiceTaskEntity")
         request.predicate = NSPredicate(format: "id == %@", task.id as CVarArg)
@@ -1498,6 +1701,21 @@ final class OfflineStore: ObservableObject {
         object.setValue(entry.isDisputed, forKey: "isDisputed")
         object.setValue(entry.disputeReason.map(encryptString), forKey: "disputeReason")
         object.setValue(encryptData(entry.receiptData), forKey: "receiptData")
+        object.setValue(entry.supersededById, forKey: "supersededById")
+        object.setValue(entry.supersedesId, forKey: "supersedesId")
+        object.setValue(entry.supersededAt, forKey: "supersededAt")
+        object.setValue(entry.payrollPeriodStart, forKey: "payrollPeriodStart")
+        object.setValue(entry.payrollPeriodEnd, forKey: "payrollPeriodEnd")
+        object.setValue(entry.payrollHoursWorked, forKey: "payrollHoursWorked")
+        object.setValue(entry.payrollDaysWorked, forKey: "payrollDaysWorked")
+        object.setValue(entry.payrollHourlyRate, forKey: "payrollHourlyRate")
+        object.setValue(entry.payrollBasePay, forKey: "payrollBasePay")
+        object.setValue(entry.payrollBonus, forKey: "payrollBonus")
+        object.setValue(entry.payrollDeductions, forKey: "payrollDeductions")
+        object.setValue(entry.payrollTaxes, forKey: "payrollTaxes")
+        object.setValue(entry.payrollReimbursements, forKey: "payrollReimbursements")
+        object.setValue(entry.payrollNetPay, forKey: "payrollNetPay")
+        object.setValue(entry.payrollNotes.map(encryptString), forKey: "payrollNotes")
 
         saveContext()
     }
@@ -1527,6 +1745,7 @@ final class OfflineStore: ObservableObject {
         object.setValue(serviceType.description, forKey: "serviceDescription")
         object.setValue(serviceType.basePrice, forKey: "basePrice")
         object.setValue(serviceType.currency.rawValue, forKey: "currency")
+        object.setValue(serviceType.pricingModel.rawValue, forKey: "pricingModel")
 
         saveContext()
     }
@@ -1720,13 +1939,16 @@ final class OfflineStore: ObservableObject {
         else { return nil }
 
         let description = object.value(forKey: "serviceDescription") as? String ?? ""
+        let pricingRaw = object.value(forKey: "pricingModel") as? String
+        let pricingModel = pricingRaw.flatMap { ServiceType.PricingModel(rawValue: $0) } ?? .perTask
 
         return ServiceType(
             id: id,
             name: name,
             description: description,
             basePrice: basePrice,
-            currency: currency
+            currency: currency,
+            pricingModel: pricingModel
         )
     }
 
@@ -1757,6 +1979,21 @@ final class OfflineStore: ObservableObject {
         let isDisputed = object.value(forKey: "isDisputed") as? Bool ?? false
         let disputeReason = (object.value(forKey: "disputeReason") as? String).map { CryptoHelper.decryptString($0) }
         let receiptData = CryptoHelper.decryptData(object.value(forKey: "receiptData") as? Data)
+        let supersededById = object.value(forKey: "supersededById") as? UUID
+        let supersedesId = object.value(forKey: "supersedesId") as? UUID
+        let supersededAt = object.value(forKey: "supersededAt") as? Date
+        let payrollPeriodStart = object.value(forKey: "payrollPeriodStart") as? Date
+        let payrollPeriodEnd = object.value(forKey: "payrollPeriodEnd") as? Date
+        let payrollHoursWorked = object.value(forKey: "payrollHoursWorked") as? Double ?? 0
+        let payrollDaysWorked = object.value(forKey: "payrollDaysWorked") as? Int ?? 0
+        let payrollHourlyRate = object.value(forKey: "payrollHourlyRate") as? Double ?? 0
+        let payrollBasePay = object.value(forKey: "payrollBasePay") as? Double ?? 0
+        let payrollBonus = object.value(forKey: "payrollBonus") as? Double ?? 0
+        let payrollDeductions = object.value(forKey: "payrollDeductions") as? Double ?? 0
+        let payrollTaxes = object.value(forKey: "payrollTaxes") as? Double ?? 0
+        let payrollReimbursements = object.value(forKey: "payrollReimbursements") as? Double ?? 0
+        let payrollNetPay = object.value(forKey: "payrollNetPay") as? Double ?? amount
+        let payrollNotes = (object.value(forKey: "payrollNotes") as? String).map { CryptoHelper.decryptString($0) }
 
         let resolvedClientName: String? = {
             if let clientName, !clientName.isEmpty { return clientName }
@@ -1789,7 +2026,22 @@ final class OfflineStore: ObservableObject {
             kind: kind,
             isDisputed: isDisputed,
             disputeReason: disputeReason,
-            receiptData: receiptData
+            receiptData: receiptData,
+            supersededById: supersededById,
+            supersedesId: supersedesId,
+            supersededAt: supersededAt,
+            payrollPeriodStart: payrollPeriodStart,
+            payrollPeriodEnd: payrollPeriodEnd,
+            payrollHoursWorked: payrollHoursWorked,
+            payrollDaysWorked: payrollDaysWorked,
+            payrollHourlyRate: payrollHourlyRate,
+            payrollBasePay: payrollBasePay,
+            payrollBonus: payrollBonus,
+            payrollDeductions: payrollDeductions,
+            payrollTaxes: payrollTaxes,
+            payrollReimbursements: payrollReimbursements,
+            payrollNetPay: payrollNetPay,
+            payrollNotes: payrollNotes
         )
     }
 }
@@ -1797,6 +2049,8 @@ final class OfflineStore: ObservableObject {
 struct PendingChange: Codable, Identifiable {
     enum Operation: String, Codable {
         case addClient
+        case updateClient
+        case deleteClient
         case addEmployee
         case updateEmployee
         case deleteEmployee
