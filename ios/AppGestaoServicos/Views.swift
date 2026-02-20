@@ -677,6 +677,24 @@ private struct ManagerDashboardView: View {
                     }
                 }
                 .padding(.horizontal)
+
+                AppCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Monthly closing")
+                            .font(.headline)
+                        Text("Review pending issues and complete monthly emission in guided steps.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        NavigationLink {
+                            MonthlyClosingWizardView()
+                        } label: {
+                            Label("Open closing wizard", systemImage: "list.number")
+                                .font(.subheadline.bold())
+                                .foregroundColor(AppTheme.primary)
+                        }
+                    }
+                }
+                .padding(.horizontal)
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
@@ -881,16 +899,148 @@ struct AgendaView: View {
     }
 }
 
+private enum ClientStatusFilter: String, CaseIterable, Identifiable {
+    case all
+    case active
+    case inactive
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: return NSLocalizedString("All", comment: "")
+        case .active: return NSLocalizedString("Active", comment: "")
+        case .inactive: return NSLocalizedString("Inactive", comment: "")
+        }
+    }
+}
+
+private enum ClientPeriodFilter: String, CaseIterable, Identifiable {
+    case all
+    case currentMonth
+    case last30Days
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: return NSLocalizedString("All time", comment: "")
+        case .currentMonth: return NSLocalizedString("Current month", comment: "")
+        case .last30Days: return NSLocalizedString("Last 30 days", comment: "")
+        }
+    }
+}
+
+private enum ClientSortOrder: String, CaseIterable, Identifiable {
+    case nameAsc
+    case nameDesc
+    case pendingReceivablesDesc
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .nameAsc: return NSLocalizedString("Name (A-Z)", comment: "")
+        case .nameDesc: return NSLocalizedString("Name (Z-A)", comment: "")
+        case .pendingReceivablesDesc: return NSLocalizedString("Pending receivables", comment: "")
+        }
+    }
+}
+
 struct ClientsView: View {
     @EnvironmentObject private var store: OfflineStore
     @EnvironmentObject private var menuController: MenuController
     @State private var showingForm = false
     @State private var showingDeleteBlocked = false
     @State private var deleteBlockedMessage = ""
+    @State private var showingFilters = false
+    @State private var searchText = ""
+    @State private var statusFilter: ClientStatusFilter = .all
+    @State private var periodFilter: ClientPeriodFilter = .all
+    @State private var sortOrder: ClientSortOrder = .nameAsc
+    @State private var selectedTeamFilter = ""
     let onMenu: (() -> Void)?
 
     private var isManager: Bool {
         store.session?.role == .manager
+    }
+
+    private var teamOptions: [String] {
+        Array(Set(store.tasks.map(\.assignedEmployee.team).filter { !$0.isEmpty })).sorted()
+    }
+
+    private var periodRange: ClosedRange<Date>? {
+        let calendar = Calendar.current
+        let now = Date()
+        switch periodFilter {
+        case .all:
+            return nil
+        case .currentMonth:
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+            let end = calendar.date(byAdding: .month, value: 1, to: start)?.addingTimeInterval(-1) ?? now
+            return start...end
+        case .last30Days:
+            let start = calendar.date(byAdding: .day, value: -30, to: now) ?? now
+            return start...now
+        }
+    }
+
+    private var filteredClients: [Client] {
+        var clients = store.clients.filter { client in
+            let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let matchesSearch: Bool
+            if normalizedQuery.isEmpty {
+                matchesSearch = true
+            } else {
+                let haystack = [
+                    client.name,
+                    client.phone,
+                    client.whatsappPhone,
+                    client.email,
+                    client.address
+                ]
+                .joined(separator: " ")
+                .lowercased()
+                matchesSearch = haystack.contains(normalizedQuery)
+            }
+
+            let clientTasks = tasksForClient(client)
+            let matchesStatus: Bool
+            switch statusFilter {
+            case .all:
+                matchesStatus = true
+            case .active:
+                matchesStatus = clientTasks.contains { $0.status != .canceled }
+            case .inactive:
+                matchesStatus = !clientTasks.contains { $0.status != .canceled }
+            }
+
+            let matchesPeriod: Bool
+            if let range = periodRange {
+                matchesPeriod = clientTasks.contains { range.contains($0.date) }
+            } else {
+                matchesPeriod = true
+            }
+
+            let matchesTeam: Bool
+            if selectedTeamFilter.isEmpty {
+                matchesTeam = true
+            } else {
+                matchesTeam = clientTasks.contains { $0.assignedEmployee.team == selectedTeamFilter }
+            }
+
+            return matchesSearch && matchesStatus && matchesPeriod && matchesTeam
+        }
+
+        switch sortOrder {
+        case .nameAsc:
+            clients.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .nameDesc:
+            clients.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+        case .pendingReceivablesDesc:
+            clients.sort { pendingReceivables(for: $0) > pendingReceivables(for: $1) }
+        }
+        return clients
     }
 
     init(onMenu: (() -> Void)? = nil) {
@@ -900,58 +1050,15 @@ struct ClientsView: View {
     var body: some View {
         NavigationStack {
             List {
-                if isManager {
-                    ForEach(store.clients) { client in
-                        let hasPendingReceivables = store.finance.contains {
-                            $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
-                        }
-
-                        NavigationLink(destination: ClientDetailView(client: client)) {
-                            HStack(spacing: 12) {
-                                let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
-                                ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(client.name).bold()
-                                    if !client.phone.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "phone.fill")
-                                                .font(.caption)
-                                                .foregroundColor(AppTheme.primary)
-                                            Text(client.phone)
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    } else if !client.whatsappPhone.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "message.fill")
-                                                .font(.caption)
-                                                .foregroundColor(AppTheme.primary)
-                                            Text(client.whatsappPhone)
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    } else if !client.email.isEmpty {
-                                        Text(client.email)
-                                            .font(.footnote)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    Text(client.address)
-                                        .font(.footnote)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                PaymentStatusIcon(hasPending: hasPendingReceivables)
-                            }
-                            .padding(10)
-                            .background(AppTheme.cardBackground)
-                            .cornerRadius(AppTheme.cornerRadius)
-                        }
+                if filteredClients.isEmpty {
+                    Text("No clients match current filters.")
+                        .foregroundColor(.secondary)
+                } else if isManager {
+                    ForEach(filteredClients) { client in
+                        clientRow(for: client)
                     }
                     .onDelete { indexSet in
-                        let items = indexSet.map { store.clients[$0] }
+                        let items = indexSet.map { filteredClients[$0] }
                         let failed = items.filter { !store.deleteClient($0) }
                         if !failed.isEmpty {
                             deleteBlockedMessage = NSLocalizedString(
@@ -962,57 +1069,12 @@ struct ClientsView: View {
                         }
                     }
                 } else {
-                    ForEach(store.clients) { client in
-                        let hasPendingReceivables = store.finance.contains {
-                            $0.clientName == client.name && $0.type == .receivable && $0.status == .pending
-                        }
-
-                        NavigationLink(destination: ClientDetailView(client: client)) {
-                            HStack(spacing: 12) {
-                                let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
-                                ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(client.name).bold()
-                                    if !client.phone.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "phone.fill")
-                                                .font(.caption)
-                                                .foregroundColor(AppTheme.primary)
-                                            Text(client.phone)
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    } else if !client.whatsappPhone.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "message.fill")
-                                                .font(.caption)
-                                                .foregroundColor(AppTheme.primary)
-                                            Text(client.whatsappPhone)
-                                                .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    } else if !client.email.isEmpty {
-                                        Text(client.email)
-                                            .font(.footnote)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    Text(client.address)
-                                        .font(.footnote)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                PaymentStatusIcon(hasPending: hasPendingReceivables)
-                            }
-                            .padding(10)
-                            .background(AppTheme.cardBackground)
-                            .cornerRadius(AppTheme.cornerRadius)
-                        }
+                    ForEach(filteredClients) { client in
+                        clientRow(for: client)
                     }
                 }
             }
+            .searchable(text: $searchText, prompt: "Search client")
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AppTheme.background.ignoresSafeArea())
@@ -1021,19 +1083,176 @@ struct ClientsView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     MenuButton { onMenu?() ?? { menuController.isPresented = true }() }
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showingForm = true }) {
-                        Label("New", systemImage: "plus")
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        showingFilters = true
+                    } label: {
+                        Label("Filters", systemImage: "line.3.horizontal.decrease.circle")
+                    }
+                    if isManager {
+                        Button(action: { showingForm = true }) {
+                            Label("New", systemImage: "plus")
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingForm) {
                 ClientForm()
             }
+            .sheet(isPresented: $showingFilters) {
+                ClientFiltersSheet(
+                    statusFilter: $statusFilter,
+                    periodFilter: $periodFilter,
+                    sortOrder: $sortOrder,
+                    selectedTeam: $selectedTeamFilter,
+                    teamOptions: teamOptions
+                )
+            }
             .alert(NSLocalizedString("Cannot delete", comment: ""), isPresented: $showingDeleteBlocked) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(deleteBlockedMessage)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func clientRow(for client: Client) -> some View {
+        let hasPendingReceivables = pendingReceivables(for: client) > 0
+        let primaryPhone = client.phone.isEmpty ? client.whatsappPhone : client.phone
+        let clientIsActive = tasksForClient(client).contains { $0.status != .canceled }
+
+        NavigationLink(destination: ClientDetailView(client: client)) {
+            HStack(spacing: 12) {
+                ContactAvatarView(name: client.name, phone: primaryPhone, size: 44)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(client.name).bold()
+                        Text(clientIsActive ? "Active" : "Inactive")
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background((clientIsActive ? Color.green : Color.gray).opacity(0.2))
+                            .foregroundColor(clientIsActive ? .green : .secondary)
+                            .cornerRadius(6)
+                    }
+                    if !client.phone.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "phone.fill")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.primary)
+                            Text(client.phone)
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if !client.whatsappPhone.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "message.fill")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.primary)
+                            Text(client.whatsappPhone)
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if !client.email.isEmpty {
+                        Text(client.email)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    Text(client.address)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                PaymentStatusIcon(hasPending: hasPendingReceivables)
+            }
+            .padding(10)
+            .background(AppTheme.cardBackground)
+            .cornerRadius(AppTheme.cornerRadius)
+        }
+    }
+
+    private func tasksForClient(_ client: Client) -> [ServiceTask] {
+        store.tasks.filter { task in
+            if let clientId = task.clientId, clientId == client.id {
+                return true
+            }
+            return task.clientName == client.name
+        }
+    }
+
+    private func pendingReceivables(for client: Client) -> Double {
+        store.finance
+            .filter { entry in
+                entry.type == .receivable &&
+                entry.status == .pending &&
+                (entry.clientId == client.id || entry.clientName == client.name)
+            }
+            .reduce(0) { $0 + $1.amount }
+    }
+}
+
+private struct ClientFiltersSheet: View {
+    @Binding var statusFilter: ClientStatusFilter
+    @Binding var periodFilter: ClientPeriodFilter
+    @Binding var sortOrder: ClientSortOrder
+    @Binding var selectedTeam: String
+    let teamOptions: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Status") {
+                    Picker("Status", selection: $statusFilter) {
+                        ForEach(ClientStatusFilter.allCases) { status in
+                            Text(status.label).tag(status)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Team") {
+                    Picker("Team", selection: $selectedTeam) {
+                        Text("All teams").tag("")
+                        ForEach(teamOptions, id: \.self) { team in
+                            Text(team).tag(team)
+                        }
+                    }
+                }
+
+                Section("Period") {
+                    Picker("Period", selection: $periodFilter) {
+                        ForEach(ClientPeriodFilter.allCases) { period in
+                            Text(period.label).tag(period)
+                        }
+                    }
+                }
+
+                Section("Sort by") {
+                    Picker("Sort", selection: $sortOrder) {
+                        ForEach(ClientSortOrder.allCases) { order in
+                            Text(order.label).tag(order)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Client Filters")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Reset") {
+                        statusFilter = .all
+                        periodFilter = .all
+                        sortOrder = .nameAsc
+                        selectedTeam = ""
+                    }
+                }
             }
         }
     }
@@ -1078,6 +1297,24 @@ struct FinanceView: View {
         NavigationStack {
             List {
                 if isManager {
+                    Section("Closing flow") {
+                        NavigationLink {
+                            MonthlyClosingWizardView()
+                        } label: {
+                            Label("Closing wizard", systemImage: "list.number")
+                        }
+                        NavigationLink {
+                            ReceiptsHubView()
+                        } label: {
+                            Label("Receipts hub", systemImage: "camera.viewfinder")
+                        }
+                        NavigationLink {
+                            EmissionReadyView()
+                        } label: {
+                            Label("Ready to emit", systemImage: "paperplane")
+                        }
+                    }
+
                     Section("End of month") {
                         Button {
                             showingInvoiceGenerator = true
@@ -1614,6 +1851,605 @@ struct ReportsView: View {
         let endExclusive = calendar.date(byAdding: .day, value: 1, to: endDay) ?? endDay
         let endInclusive = endExclusive.addingTimeInterval(-1)
         return startDay...endInclusive
+    }
+}
+
+struct MonthlyClosingWizardView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedMonth = Date()
+    @State private var stepIndex = 0
+    @State private var showingBlockedAlert = false
+
+    private let stepTitles = [
+        NSLocalizedString("Period", comment: ""),
+        NSLocalizedString("Pending", comment: ""),
+        NSLocalizedString("Review", comment: ""),
+        NSLocalizedString("Ready", comment: "")
+    ]
+
+    private var monthRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
+        let end = calendar.date(byAdding: .month, value: 1, to: start)?.addingTimeInterval(-1) ?? selectedMonth
+        return start...end
+    }
+
+    private var pendingOutOfPocketReceipts: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .expenseOutOfPocket && $0.status == .pending && monthRange.contains($0.dueDate) }
+            .sorted { $0.dueDate < $1.dueDate }
+    }
+
+    private var receiptsWithoutClientCount: Int {
+        pendingOutOfPocketReceipts.filter { $0.clientId == nil && ($0.clientName ?? "").isEmpty }.count
+    }
+
+    private var syncConflictsCount: Int {
+        store.conflictLog.count
+    }
+
+    private var blockingIssuesCount: Int {
+        receiptsWithoutClientCount + syncConflictsCount
+    }
+
+    private var draftInvoices: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .invoiceClient && $0.status == .pending && monthRange.contains($0.dueDate) }
+    }
+
+    private var draftPayrolls: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .payrollEmployee && $0.status == .pending && monthRange.contains($0.dueDate) }
+    }
+
+    private var invoicesTotal: Double {
+        draftInvoices.reduce(0) { $0 + $1.amount }
+    }
+
+    private var payrollTotal: Double {
+        draftPayrolls.reduce(0) { $0 + $1.amount }
+    }
+
+    private var ctaTitle: String {
+        stepIndex == stepTitles.count - 1 ? NSLocalizedString("Finish closing", comment: "") : NSLocalizedString("Continue", comment: "")
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    monthPickerCard
+                    stepHeader
+                    stepContent
+                }
+                .padding()
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+
+            PrimaryBottomCTA(title: ctaTitle, systemImage: "arrow.right.circle.fill") {
+                advance()
+            }
+        }
+        .navigationTitle("Monthly closing")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if stepIndex > 0 {
+                    Button("Back") { stepIndex -= 1 }
+                }
+            }
+        }
+        .alert("Resolve pending issues first", isPresented: $showingBlockedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Fix receipts without client link and resolve sync conflicts before moving forward.")
+        }
+    }
+
+    private var monthPickerCard: some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Closing period")
+                    .font(.headline)
+                DatePicker("Month", selection: $selectedMonth, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+                Text("Use this workflow to review issues and confirm invoice/payroll readiness.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var stepHeader: some View {
+        AppCard {
+            HStack(spacing: 8) {
+                ForEach(stepTitles.indices, id: \.self) { index in
+                    VStack(spacing: 6) {
+                        Text("\(index + 1)")
+                            .font(.caption.bold())
+                            .frame(width: 24, height: 24)
+                            .background(index <= stepIndex ? AppTheme.primary : Color.gray.opacity(0.25))
+                            .foregroundColor(index <= stepIndex ? .white : .secondary)
+                            .clipShape(Circle())
+                        Text(stepTitles[index])
+                            .font(.caption2)
+                            .foregroundColor(index == stepIndex ? AppTheme.primary : .secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    if index < stepTitles.count - 1 {
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var stepContent: some View {
+        switch stepIndex {
+        case 0:
+            AppCard {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Step 1: Select period")
+                        .font(.headline)
+                    Text("Choose the month to validate pending receipts, invoices and payroll before emission.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+        case 1:
+            AppCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Step 2: Pending checks")
+                        .font(.headline)
+                    HStack {
+                        Text("Receipts without client link")
+                        Spacer()
+                        Text("\(receiptsWithoutClientCount)")
+                            .bold()
+                            .foregroundColor(receiptsWithoutClientCount == 0 ? .green : .orange)
+                    }
+                    HStack {
+                        Text("Sync conflicts")
+                        Spacer()
+                        Text("\(syncConflictsCount)")
+                            .bold()
+                            .foregroundColor(syncConflictsCount == 0 ? .green : .orange)
+                    }
+                    if blockingIssuesCount > 0 {
+                        Text("Resolve these items to unlock the next step.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        case 2:
+            AppCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Step 3: Review totals")
+                        .font(.headline)
+                    HStack {
+                        Text("Invoices")
+                        Spacer()
+                        Text("\(draftInvoices.count)")
+                            .bold()
+                    }
+                    HStack {
+                        Text("Payroll")
+                        Spacer()
+                        Text("\(draftPayrolls.count)")
+                            .bold()
+                    }
+                    Divider()
+                    HStack {
+                        Text("Receivables")
+                        Spacer()
+                        Text(formatCurrency(invoicesTotal))
+                            .bold()
+                            .foregroundColor(.green)
+                    }
+                    HStack {
+                        Text("Payables")
+                        Spacer()
+                        Text(formatCurrency(payrollTotal))
+                            .bold()
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+        default:
+            AppCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Step 4: Ready to emit")
+                        .font(.headline)
+                    Text("Your monthly batch is ready. You can continue to invoice emission and payroll confirmation.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    Text("Tip: review invoice disputes before sending channels.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+
+    private func advance() {
+        if stepIndex == 1 && blockingIssuesCount > 0 {
+            showingBlockedAlert = true
+            return
+        }
+        if stepIndex == stepTitles.count - 1 {
+            dismiss()
+            return
+        }
+        stepIndex += 1
+    }
+
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = store.appPreferences.preferredCurrency.code
+        return formatter.string(from: NSNumber(value: value)) ?? "\(store.appPreferences.preferredCurrency.code) \(value)"
+    }
+}
+
+struct ReceiptsHubView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var showingCaptureCamera = false
+    @State private var capturedReceiptImage: UIImage?
+    @State private var showingQuickEntry = false
+    @State private var showCameraUnavailableAlert = false
+
+    private var pendingSyncCount: Int {
+        store.pendingChanges.count
+    }
+
+    private var suggestedTask: ServiceTask? {
+        store.tasks
+            .filter { $0.date >= Calendar.current.startOfDay(for: Date()) && $0.status != .canceled }
+            .sorted { $0.date < $1.date }
+            .first
+    }
+
+    private var suggestedClient: Client? {
+        guard let task = suggestedTask else { return nil }
+        if let clientId = task.clientId, let byId = store.clients.first(where: { $0.id == clientId }) {
+            return byId
+        }
+        return store.clients.first(where: { $0.name == task.clientName })
+    }
+
+    private var latestReceipts: [FinanceEntry] {
+        store.finance
+            .filter { $0.kind == .expenseOutOfPocket && $0.receiptData != nil }
+            .sorted { $0.dueDate > $1.dueDate }
+            .prefix(5)
+            .map { $0 }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Receipt queue")
+                                .font(.headline)
+                            HStack {
+                                Text("Offline queue")
+                                Spacer()
+                                Text("\(pendingSyncCount)")
+                                    .bold()
+                                    .foregroundColor(pendingSyncCount == 0 ? .green : .orange)
+                            }
+                            Button("Force sync now") {
+                                store.syncPendingChanges()
+                            }
+                            .font(.footnote.bold())
+                        }
+                    }
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Suggested context")
+                                .font(.headline)
+                            if let suggestedTask {
+                                Text("Task: \(suggestedTask.title)")
+                                    .font(.subheadline)
+                                Text("Client: \(suggestedClient?.name ?? suggestedTask.clientName)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("No suggested task available.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Latest local receipts")
+                                .font(.headline)
+                            if latestReceipts.isEmpty {
+                                Text("No receipts captured yet.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(latestReceipts) { entry in
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(entry.title)
+                                                .font(.subheadline.bold())
+                                            Text(entry.dueDate, style: .date)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                        Text(formatCurrency(entry.amount))
+                                            .font(.subheadline.bold())
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+
+            PrimaryBottomCTA(title: "Scan new", systemImage: "camera.fill") {
+                openCamera()
+            }
+        }
+        .navigationTitle("Receipts")
+        .sheet(isPresented: $showingCaptureCamera) {
+            ImagePickerView(
+                image: $capturedReceiptImage,
+                sourceType: .camera,
+                allowPhotoLibraryFallback: false,
+                onImagePicked: {
+                    showingQuickEntry = capturedReceiptImage != nil
+                }
+            )
+        }
+        .sheet(isPresented: $showingQuickEntry, onDismiss: {
+            capturedReceiptImage = nil
+        }) {
+            if let image = capturedReceiptImage {
+                QuickReceiptEntrySheet(
+                    image: image,
+                    suggestedClient: suggestedClient,
+                    clients: store.clients
+                ) { title, amount, dueDate, client in
+                    store.addFinanceEntry(
+                        title: title,
+                        amount: amount,
+                        type: .payable,
+                        dueDate: dueDate,
+                        method: nil,
+                        currency: store.appPreferences.preferredCurrency,
+                        clientId: client?.id,
+                        clientName: client?.name,
+                        employeeName: nil,
+                        kind: .expenseOutOfPocket,
+                        receiptData: image.jpegData(compressionQuality: 0.7)
+                    )
+                }
+            }
+        }
+        .alert("Camera unavailable", isPresented: $showCameraUnavailableAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("A device camera is required for receipt capture.")
+        }
+    }
+
+    private func openCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showCameraUnavailableAlert = true
+            return
+        }
+        showingCaptureCamera = true
+    }
+
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = store.appPreferences.preferredCurrency.code
+        return formatter.string(from: NSNumber(value: value)) ?? "\(store.appPreferences.preferredCurrency.code) \(value)"
+    }
+}
+
+private struct QuickReceiptEntrySheet: View {
+    let image: UIImage
+    let suggestedClient: Client?
+    let clients: [Client]
+    let onSave: (_ title: String, _ amount: Double, _ dueDate: Date, _ client: Client?) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title = NSLocalizedString("Out-of-pocket expense", comment: "")
+    @State private var amount = ""
+    @State private var dueDate = Date()
+    @State private var selectedClientId: UUID?
+
+    init(
+        image: UIImage,
+        suggestedClient: Client?,
+        clients: [Client],
+        onSave: @escaping (_ title: String, _ amount: Double, _ dueDate: Date, _ client: Client?) -> Void
+    ) {
+        self.image = image
+        self.suggestedClient = suggestedClient
+        self.clients = clients
+        self.onSave = onSave
+        _selectedClientId = State(initialValue: suggestedClient?.id)
+    }
+
+    private var parsedAmount: Double? {
+        Double(amount.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var canSave: Bool {
+        guard let parsedAmount else { return false }
+        return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && parsedAmount > 0
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Form {
+                    Section("Receipt") {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 220)
+                            .cornerRadius(AppTheme.cornerRadius)
+                    }
+
+                    Section("Details") {
+                        TextField("Title", text: $title)
+                        TextField("Amount", text: $amount)
+                            .keyboardType(.decimalPad)
+                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                    }
+
+                    Section("Client (optional)") {
+                        Picker("Client", selection: $selectedClientId) {
+                            Text("Unlinked").tag(nil as UUID?)
+                            ForEach(clients) { client in
+                                Text(client.name).tag(client.id as UUID?)
+                            }
+                        }
+                    }
+                }
+
+                PrimaryButton(title: "Save receipt") {
+                    guard let parsedAmount else { return }
+                    let selectedClient = clients.first(where: { $0.id == selectedClientId })
+                    onSave(
+                        title.trimmingCharacters(in: .whitespacesAndNewlines),
+                        parsedAmount,
+                        dueDate,
+                        selectedClient
+                    )
+                    dismiss()
+                }
+                .padding()
+                .disabled(!canSave)
+            }
+            .navigationTitle("New receipt")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+struct EmissionReadyView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @State private var openInvoices = false
+
+    private var pendingInvoices: [FinanceEntry] {
+        store.finance.filter { $0.kind == .invoiceClient && $0.status == .pending }
+    }
+
+    private var pendingPayrolls: [FinanceEntry] {
+        store.finance.filter { $0.kind == .payrollEmployee && $0.status == .pending }
+    }
+
+    private var pendingInvoicesTotal: Double {
+        pendingInvoices.reduce(0) { $0 + $1.amount }
+    }
+
+    private var pendingPayrollTotal: Double {
+        pendingPayrolls.reduce(0) { $0 + $1.amount }
+    }
+
+    private var enabledChannels: [String] {
+        var channels: [String] = []
+        if store.appPreferences.enableWhatsApp { channels.append("WhatsApp") }
+        if store.appPreferences.enableEmail { channels.append("Email") }
+        if store.appPreferences.enableTextMessages { channels.append("Text") }
+        return channels
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Ready for emission")
+                                .font(.headline)
+                            HStack {
+                                Text("Invoices")
+                                Spacer()
+                                Text("\(pendingInvoices.count)")
+                                    .bold()
+                            }
+                            HStack {
+                                Text("Payroll")
+                                Spacer()
+                                Text("\(pendingPayrolls.count)")
+                                    .bold()
+                            }
+                            Divider()
+                            HStack {
+                                Text("Receivables")
+                                Spacer()
+                                Text(formatCurrency(pendingInvoicesTotal))
+                                    .foregroundColor(.green)
+                                    .bold()
+                            }
+                            HStack {
+                                Text("Payables")
+                                Spacer()
+                                Text(formatCurrency(pendingPayrollTotal))
+                                    .foregroundColor(.red)
+                                    .bold()
+                            }
+                        }
+                    }
+
+                    AppCard {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Delivery channels")
+                                .font(.headline)
+                            Text("Primary: \(enabledChannels.first ?? "Not configured")")
+                                .font(.subheadline)
+                            Text("Fallback: \(enabledChannels.dropFirst().first ?? "Not configured")")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding()
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+
+            NavigationLink(isActive: $openInvoices) {
+                InvoicesListView()
+            } label: {
+                EmptyView()
+            }
+            .hidden()
+
+            PrimaryBottomCTA(title: "Emit now", systemImage: "paperplane.fill", isDisabled: pendingInvoices.isEmpty) {
+                openInvoices = true
+            }
+        }
+        .navigationTitle("Emission")
+    }
+
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = store.appPreferences.preferredCurrency.code
+        return formatter.string(from: NSNumber(value: value)) ?? "\(store.appPreferences.preferredCurrency.code) \(value)"
     }
 }
 
@@ -5250,6 +6086,46 @@ private struct StatusPill: View {
             .background(color.opacity(0.15))
             .foregroundColor(color)
             .cornerRadius(8)
+    }
+}
+
+struct PrimaryBottomCTA: View {
+    let title: String
+    var systemImage: String? = nil
+    var isDisabled = false
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    if let systemImage {
+                        Image(systemName: systemImage)
+                    }
+                    Text(title)
+                        .font(.headline)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    LinearGradient(
+                        colors: [AppTheme.primary, AppTheme.primary.opacity(0.85)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(AppTheme.cornerRadius)
+                .shadow(color: AppTheme.primary.opacity(0.2), radius: 8, x: 0, y: 4)
+            }
+            .disabled(isDisabled)
+            .opacity(isDisabled ? 0.5 : 1)
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
+            .background(AppTheme.background)
+        }
     }
 }
 

@@ -206,7 +206,9 @@ Response:
 {
   "attachmentId": "uuid",
   "uploadUrl": "https://r2...signed",
-  "r2Key": "tenants/<tenantId>/attachments/<uuid>"
+  "r2Key": "tenants/<tenantId>/attachments/<uuid>",
+  "expiresInSeconds": 900,
+  "method": "PUT"
 }
 ```
 
@@ -225,7 +227,12 @@ Request:
 
 Response:
 ```json
-{ "ok": true }
+{
+  "ok": true,
+  "attachmentId": "uuid",
+  "ownerType": "finance_entry",
+  "ownerId": "uuid"
+}
 ```
 
 ### GET /v1/attachments/:id/presign
@@ -233,7 +240,12 @@ Request a signed download URL.
 
 Response:
 ```json
-{ "downloadUrl": "https://r2...signed" }
+{
+  "downloadUrl": "https://r2...signed",
+  "r2Key": "tenants/<tenantId>/attachments/<uuid>",
+  "expiresInSeconds": 600,
+  "method": "GET"
+}
 ```
 
 ## Notifications
@@ -245,15 +257,24 @@ Request:
 {
   "channels": ["whatsapp", "email"],
   "message": "Invoice for Dec. Please see PDF.",
-  "includePdf": true
+  "includePdf": true,
+  "pdfUrl": "https://r2...signed"
 }
 ```
 
 Response:
 ```json
 {
-  "status": "queued",
-  "notificationIds": ["uuid"]
+  "status": "partial",
+  "notificationIds": ["uuid"],
+  "results": [
+    {
+      "notificationId": "uuid",
+      "channel": "email",
+      "status": "sent",
+      "providerMessageId": "provider-id"
+    }
+  ]
 }
 ```
 

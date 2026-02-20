@@ -3,8 +3,8 @@
 ## Status verificado (2026-02-20)
 
 - SwiftUI base do app está implementada (Login, Dashboard, Agenda, Clients, Finance, Settings + módulos auxiliares).
-- Wireframes/UX finais em `_bmad-output/planning-artifacts` ainda não foram implementados integralmente como telas dedicadas no app.
-- Backend Node/TS existe com rotas principais, mas ainda em estágio parcial para integrações externas.
+- Wireframes/UX finais em `_bmad-output/planning-artifacts` já estão implementados nas telas dedicadas prioritárias (closing wizard, receipts hub camera-first, emissão consolidada e clientes com busca/filtros em sheet).
+- Backend Node/TS com rotas principais e integrações externas de anexos R2 (URLs assinadas) + envio de invoices (WhatsApp/Email) implementadas, dependentes de credenciais válidas.
 - Integração real app iOS ↔ backend ainda pendente (sync no iOS permanece em stub local).
 
 - ✅ Login e sessão local com splash minimalista
@@ -83,7 +83,7 @@
 - Banco: Postgres.
 - Multi-tenant: habilitado na v1.
 - Sync: last-write-wins com log de conflito.
-- Meta de notificações da v1: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração de provedores ainda pendente. SMS/iMessage segue device-only.
+- Meta de notificações da v1: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração backend implementada (requer credenciais/webhooks em produção). SMS/iMessage segue device-only.
 - Consistência: eventual.
 
 ## Roadmap (Now)
@@ -99,8 +99,8 @@
 - ✅ Relatórios financeiros: resumo mensal/semanal e intervalo custom por cliente/funcionário com export simples.
 - Sync real com backend (API) e regras de reconciliação.
 - ✅ Auditoria básica de alterações (quem/quando) para tarefas e finanças.
-- Implementar no SwiftUI as telas dedicadas definidas no UX final (fechamento em passos/wizard, comprovantes camera-first, emissão consolidada e clientes com busca+filtros em sheet).
-- Finalizar backend de anexos (URLs assinadas reais) e envio externo de notificações (WhatsApp/Email), hoje apenas parcialmente implementados.
+- ✅ Implementar no SwiftUI as telas dedicadas definidas no UX final (fechamento em passos/wizard, comprovantes camera-first, emissão consolidada e clientes com busca+filtros em sheet).
+- ✅ Finalizar backend de anexos (URLs assinadas reais) e envio externo de notificações (WhatsApp/Email) no serviço Node/TS; depende apenas de configuração de credenciais para produção.
 
 ## Roadmap (Later)
 

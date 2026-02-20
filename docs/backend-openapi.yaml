@@ -219,11 +219,51 @@ components:
           type: string
         r2Key:
           type: string
+        expiresInSeconds:
+          type: integer
+        method:
+          type: string
+          enum: [PUT]
+    PresignCompleteRequest:
+      type: object
+      required: [attachmentId]
+      properties:
+        attachmentId:
+          type: string
+          format: uuid
+        ownerType:
+          type: string
+          enum: [finance_entry, task]
+        ownerId:
+          type: string
+          format: uuid
+        r2Key:
+          type: string
+    PresignCompleteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        attachmentId:
+          type: string
+          format: uuid
+        ownerType:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
     PresignDownloadResponse:
       type: object
       properties:
         downloadUrl:
           type: string
+        r2Key:
+          type: string
+        expiresInSeconds:
+          type: integer
+        method:
+          type: string
+          enum: [GET]
     InvoiceSendRequest:
       type: object
       properties:
@@ -236,6 +276,40 @@ components:
           type: string
         includePdf:
           type: boolean
+        pdfUrl:
+          type: string
+    InvoiceSendResult:
+      type: object
+      properties:
+        notificationId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [whatsapp, email]
+        status:
+          type: string
+          enum: [sent, failed]
+        providerMessageId:
+          type: string
+          nullable: true
+        error:
+          type: string
+    InvoiceSendResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [sent, failed, partial]
+        notificationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceSendResult'
 
 paths:
   /tenants:
@@ -429,6 +503,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/PresignUploadResponse'
 
+  /attachments/complete:
+    post:
+      summary: Confirm upload and link attachment owner
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignCompleteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignCompleteResponse'
+
   /attachments/{id}/presign:
     get:
       summary: Presign download
@@ -471,12 +564,4 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  notificationIds:
-                    type: array
-                    items:
-                      type: string
-                      format: uuid
+                $ref: '#/components/schemas/InvoiceSendResponse'

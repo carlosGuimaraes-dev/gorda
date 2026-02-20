@@ -30,7 +30,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Banco: Postgres.
 - Multi-tenant: habilitado na v1.
 - Sync: last-write-wins com log de conflito.
-- Meta de v1 para notificações: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração de provedores ainda pendente. SMS/iMessage é device-only.
+- Meta de v1 para notificações: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração backend implementada (requer credenciais/webhooks em produção). SMS/iMessage é device-only.
 - Consistência: eventual.
 
 ## Público-Alvo
@@ -47,6 +47,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - **Sync/Conflitos**: local-first com fila local; quando houver backend, aplicar merge com prioridade local e registrar conflitos em log.
 - **Notificações e Siri**: Siri Suggestions para criação de serviço e push/local notifications para chegadas, cancelamentos e alterações; comando de voz dedicado pode evoluir em iteração posterior.
 - **Contas a Pagar e Receber**: lançamento e acompanhamento de recebimentos e pagamentos em **USD** e **EUR** (sem suporte a BRL na primeira versão), com vínculo automático entre serviços, clientes e funcionários quando houver preço base de serviço.
+- **Fluxo de fechamento mensal (UX final em SwiftUI)**: telas dedicadas para fechamento em passos (wizard), hub de comprovantes com captura camera-first e emissão consolidada, além de clientes com busca e filtros avançados em sheet.
 - **Relatórios financeiros**: resumo mensal/semanal e intervalo custom por cliente e funcionário, com export simples (CSV/PDF) para compartilhamento interno.
 - **Dashboard** (cards + gráficos):
   - Para funcionários (Employee): visão diária/semanal/mensal da agenda, serviços concluídos no período e valor estimado a receber apenas para tasks com check-in/check-out efetivos.

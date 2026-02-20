@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireTenant, requireManager, ensureUser } from "../middleware/tenant.js";
+import { requireTenant, requireManager, ensureUser, TenantRequest } from "../middleware/tenant.js";
 import { AuthRequest } from "../middleware/auth.js";
 import { query, queryOne } from "../db.js";
 
@@ -50,7 +50,7 @@ router.post("/", async (req, res) => {
   res.json({ id: tenant.id, name: tenant.name, role: "manager" });
 });
 
-router.post("/:id/invite", requireTenant, requireManager, async (req, res) => {
+router.post("/:id/invite", requireTenant, requireManager, async (req: TenantRequest, res) => {
   const tenantId = req.params.id;
   if (tenantId !== req.tenant?.id) {
     res.status(400).json({ error: { code: "INVALID_REQUEST", message: "Tenant mismatch" } });
@@ -69,7 +69,7 @@ router.post("/:id/invite", requireTenant, requireManager, async (req, res) => {
   res.json({ inviteId: invite?.id ?? null, status: "sent" });
 });
 
-router.post("/:id/activate", requireTenant, async (req, res) => {
+router.post("/:id/activate", requireTenant, async (req: TenantRequest, res) => {
   const authReq = req as AuthRequest;
   const user = await ensureUser(authReq);
   if (!user) {

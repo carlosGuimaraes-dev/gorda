@@ -3,8 +3,8 @@
 ## Execution Status (2026-02-20)
 - Sprint 1: ✅ Concluído
 - Sprint 2: 🟡 Parcial (backend pronto; integração iOS pendente)
-- Sprint 3: 🟡 Parcial (attachments ainda com payload placeholder)
-- Sprint 4: 🟡 Parcial (fila/registro implementados; envio provider ainda pendente)
+- Sprint 3: ✅ Concluído (attachments com URLs assinadas e validação de upload no R2)
+- Sprint 4: ✅ Concluído (envio via WhatsApp/Email implementado com atualização de status; requer credenciais provider)
 
 ## Sprint 1 — Auth + Tenant Foundation
 **Goal:** Clerk auth integrated, tenant + membership model in place.

@@ -8,6 +8,7 @@ export const env = {
   r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
   r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
   r2Bucket: process.env.R2_BUCKET ?? "",
+  r2Region: process.env.R2_REGION ?? "auto",
   metaWabaId: process.env.META_WABA_ID ?? "",
   metaPhoneNumberId: process.env.META_PHONE_NUMBER_ID ?? "",
   metaAccessToken: process.env.META_ACCESS_TOKEN ?? "",
