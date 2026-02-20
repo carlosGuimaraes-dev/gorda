@@ -1,5 +1,12 @@
 # Backlog etiquetado (SwiftUI)
 
+## Status verificado (2026-02-20)
+
+- SwiftUI base do app está implementada (Login, Dashboard, Agenda, Clients, Finance, Settings + módulos auxiliares).
+- Wireframes/UX finais em `_bmad-output/planning-artifacts` ainda não foram implementados integralmente como telas dedicadas no app.
+- Backend Node/TS existe com rotas principais, mas ainda em estágio parcial para integrações externas.
+- Integração real app iOS ↔ backend ainda pendente (sync no iOS permanece em stub local).
+
 - ✅ Login e sessão local com splash minimalista
 - ✅ Agenda diária com detalhe editável (status, horários, notas, notificações rápidas)
 - ✅ Cadastro de clientes com telefone, e-mail, imóvel, notas de acesso e horário preferido
@@ -76,7 +83,7 @@
 - Banco: Postgres.
 - Multi-tenant: habilitado na v1.
 - Sync: last-write-wins com log de conflito.
-- Notificações reais habilitadas na v1: WhatsApp (Meta Cloud API) + Email (Resend). SMS/iMessage é device-only.
+- Meta de notificações da v1: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração de provedores ainda pendente. SMS/iMessage segue device-only.
 - Consistência: eventual.
 
 ## Roadmap (Now)
@@ -92,6 +99,8 @@
 - ✅ Relatórios financeiros: resumo mensal/semanal e intervalo custom por cliente/funcionário com export simples.
 - Sync real com backend (API) e regras de reconciliação.
 - ✅ Auditoria básica de alterações (quem/quando) para tarefas e finanças.
+- Implementar no SwiftUI as telas dedicadas definidas no UX final (fechamento em passos/wizard, comprovantes camera-first, emissão consolidada e clientes com busca+filtros em sheet).
+- Finalizar backend de anexos (URLs assinadas reais) e envio externo de notificações (WhatsApp/Email), hoje apenas parcialmente implementados.
 
 ## Roadmap (Later)
 

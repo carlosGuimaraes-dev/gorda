@@ -28,6 +28,9 @@ filesIncluded:
 
 # Implementation Readiness Assessment Report
 
+> Status note (2026-02-20): This report is historical and was generated before the final UX artifacts were written.  
+> Current UX references now exist in `_bmad-output/planning-artifacts/ux-design-specification.md` and `_bmad-output/planning-artifacts/wireframes-final-v1.md`.
+
 **Date:** 2026-02-19
 **Project:** gorda
 

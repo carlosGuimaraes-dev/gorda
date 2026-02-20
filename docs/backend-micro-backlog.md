@@ -1,5 +1,11 @@
 # Backend Micro‑Backlog (per endpoint)
 
+## Status Snapshot (2026-02-20)
+- `GET/POST /v1/tenants`, `POST /v1/tenants/:id/invite`, `POST /v1/tenants/:id/activate`: ✅ implemented
+- `POST /v1/sync/push`, `GET /v1/sync/pull`, `GET /v1/conflicts`, `GET /v1/audit`: ✅ implemented (backend)
+- `POST /v1/attachments/presign`, `POST /v1/attachments/complete`, `GET /v1/attachments/:id/presign`: 🟡 partial (signed URLs ainda placeholder)
+- `POST /v1/invoices/:id/send`: 🟡 partial (fila/DB ok, envio real provider pendente)
+
 ## Auth & Tenants
 ### GET /v1/tenants
 - Validate Clerk JWT

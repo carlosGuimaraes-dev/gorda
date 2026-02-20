@@ -1,5 +1,11 @@
 # Backend Sprint Plan (Auth + Sync + R2 + Notifications)
 
+## Execution Status (2026-02-20)
+- Sprint 1: ✅ Concluído
+- Sprint 2: 🟡 Parcial (backend pronto; integração iOS pendente)
+- Sprint 3: 🟡 Parcial (attachments ainda com payload placeholder)
+- Sprint 4: 🟡 Parcial (fila/registro implementados; envio provider ainda pendente)
+
 ## Sprint 1 — Auth + Tenant Foundation
 **Goal:** Clerk auth integrated, tenant + membership model in place.
 - Set up Vercel project + environment config

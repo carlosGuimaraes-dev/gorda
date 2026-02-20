@@ -30,7 +30,7 @@ Aplicativo iOS em Swift para administrar serviços domésticos, centralizando ge
 - Banco: Postgres.
 - Multi-tenant: habilitado na v1.
 - Sync: last-write-wins com log de conflito.
-- Notificações reais habilitadas na v1: WhatsApp (Meta Cloud API) + Email (Resend). SMS/iMessage é device-only.
+- Meta de v1 para notificações: WhatsApp (Meta Cloud API) + Email (Resend); status atual: integração de provedores ainda pendente. SMS/iMessage é device-only.
 - Consistência: eventual.
 
 ## Público-Alvo

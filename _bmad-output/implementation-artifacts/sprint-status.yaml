@@ -33,69 +33,69 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-19 20:39:03
+generated: 2026-02-20 10:12:00
 project: gorda
 project_key: gorda
 tracking_system: file-system
 story_location: /Users/carlosguimaraes/gorda-app/gorda/_bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: backlog
-  1-1-como-manager-quero-definir-idioma-en-us-es-es-e-moeda-global-para-o-app: backlog
-  1-2-como-manager-quero-definir-janela-de-disputa-pos-vencimento-d-n-dias: backlog
-  1-3-como-usuario-quero-manter-sessao-local-segura: backlog
-  1-4-como-manager-quero-cadastrar-o-perfil-da-empresa-logo-dados-fiscais-por-pais-para-usar-nas-invoices: backlog
-  1-5-como-usuario-quero-escolher-meu-perfil-employee-manager-no-primeiro-acesso: backlog
+  epic-1: done
+  1-1-como-manager-quero-definir-idioma-en-us-es-es-e-moeda-global-para-o-app: done
+  1-2-como-manager-quero-definir-janela-de-disputa-pos-vencimento-d-n-dias: done
+  1-3-como-usuario-quero-manter-sessao-local-segura: done
+  1-4-como-manager-quero-cadastrar-o-perfil-da-empresa-logo-dados-fiscais-por-pais-para-usar-nas-invoices: done
+  1-5-como-usuario-quero-escolher-meu-perfil-employee-manager-no-primeiro-acesso: done
   epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-como-usuario-quero-operar-offline-e-sincronizar-depois: backlog
-  2-2-como-manager-quero-ver-conflitos-em-um-log-simples: backlog
-  2-3-como-manager-quero-ver-auditoria-basica-quem-quando-em-tarefas-e-financas-no-settings: backlog
+  epic-2: in-progress
+  2-1-como-usuario-quero-operar-offline-e-sincronizar-depois: in-progress
+  2-2-como-manager-quero-ver-conflitos-em-um-log-simples: done
+  2-3-como-manager-quero-ver-auditoria-basica-quem-quando-em-tarefas-e-financas-no-settings: done
   epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-como-manager-quero-criptografia-local-de-dados-sensiveis: backlog
+  epic-3: done
+  3-1-como-manager-quero-criptografia-local-de-dados-sensiveis: done
   epic-3-retrospective: optional
-  epic-4: backlog
-  4-1-como-manager-quero-crud-completo-de-clientes-com-telefone-e-canais-preferidos: backlog
-  4-2-como-manager-quero-importar-dados-basicos-de-contatos: backlog
+  epic-4: done
+  4-1-como-manager-quero-crud-completo-de-clientes-com-telefone-e-canais-preferidos: done
+  4-2-como-manager-quero-importar-dados-basicos-de-contatos: done
   epic-4-retrospective: optional
-  epic-5: backlog
-  5-1-como-manager-quero-crud-de-funcionarios-com-remuneracao-e-documentos: backlog
-  5-2-como-manager-quero-gerenciar-times-e-mover-funcionarios: backlog
+  epic-5: done
+  5-1-como-manager-quero-crud-de-funcionarios-com-remuneracao-e-documentos: done
+  5-2-como-manager-quero-gerenciar-times-e-mover-funcionarios: done
   epic-5-retrospective: optional
-  epic-6: backlog
-  6-1-como-manager-quero-crud-de-tipos-de-servico-com-preco-base: backlog
-  6-2-como-manager-quero-definir-se-o-preco-e-por-tarefa-ou-por-hora: backlog
+  epic-6: done
+  6-1-como-manager-quero-crud-de-tipos-de-servico-com-preco-base: done
+  6-2-como-manager-quero-definir-se-o-preco-e-por-tarefa-ou-por-hora: done
   epic-6-retrospective: optional
-  epic-7: backlog
-  7-1-como-employee-quero-ver-apenas-minhas-tasks: backlog
-  7-2-como-manager-quero-criar-editar-tasks-com-cliente-e-servico: backlog
-  7-3-como-manager-quero-cancelar-tasks-sem-perder-historico: backlog
-  7-4-como-employee-quero-registrar-check-in-out: backlog
-  7-5-como-employee-quero-check-in-out-com-foto-obrigatoria-via-camera: backlog
-  7-6-como-usuario-quero-receber-notificacoes-de-agenda-e-poder-criar-servico-por-siri: backlog
+  epic-7: in-progress
+  7-1-como-employee-quero-ver-apenas-minhas-tasks: done
+  7-2-como-manager-quero-criar-editar-tasks-com-cliente-e-servico: done
+  7-3-como-manager-quero-cancelar-tasks-sem-perder-historico: done
+  7-4-como-employee-quero-registrar-check-in-out: done
+  7-5-como-employee-quero-check-in-out-com-foto-obrigatoria-via-camera: done
+  7-6-como-usuario-quero-receber-notificacoes-de-agenda-e-poder-criar-servico-por-siri: in-progress
   epic-7-retrospective: optional
-  epic-8: backlog
-  8-1-como-manager-quero-lancamentos-financeiros-manuais-payable-receivable: backlog
-  8-2-como-employee-quero-ver-apenas-payroll-no-finance: backlog
-  8-3-como-manager-quero-relatorios-financeiros-por-periodo-com-export-csv-pdf: backlog
-  8-4-como-manager-quero-visualizar-e-reenviar-recibos-de-despesas-out-of-pocket: backlog
+  epic-8: done
+  8-1-como-manager-quero-lancamentos-financeiros-manuais-payable-receivable: done
+  8-2-como-employee-quero-ver-apenas-payroll-no-finance: done
+  8-3-como-manager-quero-relatorios-financeiros-por-periodo-com-export-csv-pdf: done
+  8-4-como-manager-quero-visualizar-e-reenviar-recibos-de-despesas-out-of-pocket: done
   epic-8-retrospective: optional
-  epic-9: backlog
-  9-1-como-manager-quero-gerar-invoices-por-cliente-e-periodo: backlog
-  9-2-como-manager-quero-editar-invoice-mesmo-apos-disputa: backlog
-  9-3-como-cliente-quero-disputar-invoice-apos-vencimento-conforme-d-n: backlog
-  9-4-como-manager-quero-re-gerar-invoice-e-marcar-anterior-como-superseded: backlog
-  9-5-como-manager-quero-invoices-com-line-items-detalhados-por-task: backlog
+  epic-9: done
+  9-1-como-manager-quero-gerar-invoices-por-cliente-e-periodo: done
+  9-2-como-manager-quero-editar-invoice-mesmo-apos-disputa: done
+  9-3-como-cliente-quero-disputar-invoice-apos-vencimento-conforme-d-n: done
+  9-4-como-manager-quero-re-gerar-invoice-e-marcar-anterior-como-superseded: done
+  9-5-como-manager-quero-invoices-com-line-items-detalhados-por-task: done
   epic-9-retrospective: optional
-  epic-10: backlog
-  10-1-como-manager-quero-gerar-payroll-automatico-com-check-in-out: backlog
-  10-2-como-manager-quero-registrar-payroll-manual-com-horas-informadas: backlog
+  epic-10: done
+  10-1-como-manager-quero-gerar-payroll-automatico-com-check-in-out: done
+  10-2-como-manager-quero-registrar-payroll-manual-com-horas-informadas: done
   epic-10-retrospective: optional
-  epic-11: backlog
-  11-1-como-manager-quero-kpis-de-cashflow-e-payroll-estimado: backlog
-  11-2-como-employee-quero-visao-de-tasks-e-ganhos-estimados: backlog
+  epic-11: done
+  11-1-como-manager-quero-kpis-de-cashflow-e-payroll-estimado: done
+  11-2-como-employee-quero-visao-de-tasks-e-ganhos-estimados: done
   epic-11-retrospective: optional
-  epic-12: backlog
-  12-1-como-manager-quero-app-totalmente-traduzido-em-en-us-es-es: backlog
+  epic-12: done
+  12-1-como-manager-quero-app-totalmente-traduzido-em-en-us-es-es: done
   epic-12-retrospective: optional
