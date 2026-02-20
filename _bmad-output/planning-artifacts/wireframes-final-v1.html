@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gorda - Wireframes Finais v1</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --surface: #ffffff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #533afd;
+      --ok: #0ea56b;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top right, #e9e6ff 0%, #f5f6fb 44%);
+      color: var(--text);
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.92);
+      padding: 14px 18px;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .top p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .meta {
+      max-width: 1300px;
+      margin: 12px auto 0;
+      padding: 0 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 11px;
+      color: var(--primary);
+      background: #f1efff;
+      border: 1px solid #d8d1ff;
+      padding: 5px 8px;
+      border-radius: 999px;
+    }
+
+    .quicklinks {
+      max-width: 1300px;
+      margin: 10px auto 0;
+      padding: 0 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .quicklink {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #cdc7ff;
+      background: #f1efff;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 10px;
+    }
+
+    .wrap {
+      max-width: 1300px;
+      margin: 12px auto 28px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fcfcff;
+    }
+
+    .head h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .head p {
+      margin: 3px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .mock {
+      padding: 10px;
+      background: linear-gradient(180deg, #fafaff 0%, #ffffff 40%);
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 292px;
+      margin: 0 auto;
+      border: 1px solid #b7bfcd;
+      border-radius: 38px;
+      background: linear-gradient(150deg, #fbfcff 0%, #eceff6 42%, #dde2ed 100%);
+      padding: 10px;
+      position: relative;
+      box-shadow: 0 16px 30px rgba(17, 24, 39, 0.16), 0 2px 0 rgba(255, 255, 255, 0.8) inset;
+    }
+
+    .screen {
+      min-height: 500px;
+      border: 1px solid #d9dfeb;
+      border-radius: 30px;
+      background: #fff;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen::before {
+      content: "";
+      width: 94px;
+      height: 25px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 70% 40%, #303236 0%, #0f1013 56%);
+      border: 1px solid #202328;
+      align-self: center;
+      margin: 0 auto 4px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #858aa1;
+      font-size: 10px;
+      margin-bottom: 4px;
+      margin-top: 1px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .navhead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .navleft, .navright {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .iconbtn {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #7a8098;
+    }
+
+    .row, .box, .chip, .search, .step {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      padding: 7px;
+    }
+
+    .row .danger { color: var(--danger); font-weight: 700; }
+    .row .warn { color: var(--warn); font-weight: 700; }
+
+    .box { padding: 8px; }
+
+    .line {
+      height: 7px;
+      border-radius: 999px;
+      background: #ebedf5;
+      margin-bottom: 5px;
+    }
+
+    .line.sm { width: 55%; }
+    .line.md { width: 75%; }
+    .line.lg { width: 92%; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .step {
+      text-align: center;
+      font-size: 9px;
+      padding: 4px 0;
+      color: #798099;
+      background: #fafbff;
+    }
+
+    .step.active {
+      color: var(--primary);
+      border-color: #cbc4ff;
+      background: #f1efff;
+      font-weight: 700;
+    }
+
+    .chip {
+      font-size: 10px;
+      padding: 4px 8px;
+      color: #12754f;
+      border-color: #b6ecd7;
+      background: #effdf7;
+      width: fit-content;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 7px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      padding: 4px;
+    }
+
+    .segopt {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 5px 6px;
+      text-align: center;
+      font-size: 10px;
+      color: #7a8098;
+      font-weight: 600;
+    }
+
+    .segopt.active {
+      color: var(--primary);
+      background: #f1efff;
+      border-color: #cdc7ff;
+    }
+
+    .cta {
+      margin-top: auto;
+      order: 98;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(90deg, #6e5afc 0%, #533afd 100%);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .tabbar {
+      margin-top: 6px;
+      order: 99;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .tabicon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      border-radius: 8px;
+      color: #7a8098;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .tabicon.active {
+      color: var(--primary);
+      background: #f1efff;
+      border-color: #cdc7ff;
+    }
+
+    .tabbar.disabled {
+      border-style: dashed;
+      background: #fdfdff;
+    }
+
+    .tabbar.disabled .tabicon {
+      opacity: 0.45;
+    }
+
+    .note {
+      border-top: 1px dashed #dedff1;
+      padding-top: 6px;
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.35;
+      order: 97;
+    }
+
+    .splash-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .brand-logo {
+      width: 88px;
+      height: 88px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #6e5afc 0%, #533afd 72%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      box-shadow: 0 10px 20px rgba(83, 58, 253, 0.35);
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .footer {
+      max-width: 1300px;
+      margin: 0 auto 24px;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1120px) {
+      .wrap { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>Wireframes Finais v1 - Gorda (iPhone)</h1>
+    <p>Versão visual dos wireframes aprovados. CTA principal fixo no rodapé, acima da tab bar.</p>
+  </header>
+
+  <svg width="0" height="0" style="position:absolute;left:-9999px;top:-9999px;overflow:hidden" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></symbol>
+    <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3.5v4M17 3.5v4M3.5 10h17"/></symbol>
+    <symbol id="i-finance" viewBox="0 0 24 24"><path d="M12 3.5v17"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3S7.5 5.8 7.5 7.5 9.5 10.5 12 10.5s4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/></symbol>
+    <symbol id="i-capture" viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="17" height="13" rx="2"/><path d="M8 6.5l1.2-2h5.6l1.2 2"/><circle cx="12" cy="13" r="3.3"/></symbol>
+    <symbol id="i-clients" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10.5" r="2.5"/><path d="M3.5 19c0-3 2.8-5 5.5-5s5.5 2 5.5 5"/><path d="M13 18.5c.4-2 2-3.5 4-3.5 2.2 0 3.5 1.5 3.5 3.5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.2 14.1l1.1 1.9-2 3.5-2.2-.5a7.9 7.9 0 0 1-1.7 1l-.4 2.2H10l-.4-2.2a7.9 7.9 0 0 1-1.7-1l-2.2.5-2-3.5 1.1-1.9a8.4 8.4 0 0 1 0-2.2L3.7 10l2-3.5 2.2.5a7.9 7.9 0 0 1 1.7-1L10 3.8h4l.4 2.2a7.9 7.9 0 0 1 1.7 1l2.2-.5 2 3.5-1.1 1.9a8.4 8.4 0 0 1 0 2.2z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="5" rx="1.5"/><rect x="13" y="11" width="7" height="9" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.2-1.8V10a4.3 4.3 0 1 0-8.6 0v4.7z"/><path d="M10 18.5a2 2 0 0 0 4 0"/></symbol>
+  </svg>
+
+  <section class="meta">
+    <span class="tag">Plataforma: iPhone 17 mockup</span>
+    <span class="tag">OBJ1=D</span>
+    <span class="tag">OBJ2=A</span>
+    <span class="tag">OBJ3=A</span>
+    <span class="tag">OBJ4=A</span>
+    <span class="tag">Cor de ação: #533AFD</span>
+  </section>
+
+  <section class="quicklinks">
+    <a class="quicklink" href="./manager-agenda-page.html" target="_blank" rel="noopener noreferrer">
+      Abrir Agenda Manager (PickDate/List)
+    </a>
+  </section>
+
+  <main class="wrap">
+    <article class="card">
+      <div class="head">
+        <h2>Tela 0 - Splash</h2>
+        <p>Abertura com logo do business e carregamento inicial.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="splash-center">
+          <div class="brand-logo" aria-label="Logo do business">AG</div>
+          <div class="brand-name">AG Home Organizer</div>
+          <div class="brand-sub">Service Management</div>
+        </div>
+        <div class="note">Se você tiver o arquivo oficial da logo, substituímos o bloco \"AG\" pela imagem real.</div>
+        <div class="cta">Carregando...</div>
+        <div class="tabbar disabled">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 1 - Login + Papel</h2>
+        <p>Entrada com seleção de perfil (Manager/Employee).</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Wi-Fi</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">AG Home Organizer</p>
+        <div class="row"><span>Email</span><span>••••••</span></div>
+        <div class="row"><span>Senha</span><span>••••••</span></div>
+        <div class="row"><span>Perfil</span><strong>Manager</strong></div>
+        <div class="note">Erro inline + resumo no topo ao enviar.</div>
+        <div class="cta">Entrar</div>
+        <div class="tabbar disabled">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 2 - Manager Home (OBJ1=D)</h2>
+        <p>Split 50/50 entre pendências e resumo financeiro.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span><span class="iconbtn"><svg class="icon"><use href="#i-bell"></use></svg></span></div>
+        </div>
+        <p class="title">Fechamento Mensal - Jan/2026</p>
+        <div class="row"><span>Pendências</span><strong class="danger">4</strong></div>
+        <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+        <div class="row"><span>Recebíveis</span><strong>$18,240</strong></div>
+        <div class="row"><span>Pagáveis</span><strong>$7,910</strong></div>
+        <div class="note">Componente: FinanceSplitSummaryCard.</div>
+        <div class="cta">Revisar prévia</div>
+        <div class="tabbar">
+          <span class="tabicon active" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 3 - Fechamento (Wizard)</h2>
+        <p>Passo a passo para fluxo longo com progresso explícito.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>4G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Passo 2/4 - Pendências</p>
+        <div class="steps">
+          <div class="step">1</div><div class="step active">2</div><div class="step">3</div><div class="step">4</div>
+        </div>
+        <div class="row"><span>Sem vínculo</span><strong>3</strong></div>
+        <div class="row"><span>Conflitos de valor</span><strong class="warn">1</strong></div>
+        <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+        <div class="note">Erro crítico bloqueia avanço.</div>
+        <div class="cta">Resolver e continuar</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon active" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 3.1 - Agenda Mensal (Manager)</h2>
+        <p>Alternância entre visualização <strong>PickDate</strong> e <strong>List</strong>.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Agenda Mensal - Manager</p>
+        <div class="segmented">
+          <div class="segopt active">PickDate</div>
+          <div class="segopt">List</div>
+        </div>
+        <div class="box">
+          <div class="line lg"></div>
+          <div class="line md"></div>
+          <div class="line sm"></div>
+        </div>
+        <div class="row"><span>Dia selecionado</span><strong>15 Mar</strong></div>
+        <div class="row"><span>Serviços no dia</span><strong>6</strong></div>
+        <div class="row"><span>Modo alternativo</span><strong>List view</strong></div>
+        <div class="note">
+          PickDate = escolher data no calendário; List = visualizar serviços do período em lista contínua.
+          <br />
+          <a href="./manager-agenda-page.html" target="_blank" rel="noopener noreferrer">Abrir página dedicada da Agenda Manager</a>
+        </div>
+        <div class="cta">Abrir dia selecionado</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon active" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 4 - Employee Agenda (OBJ2=A)</h2>
+        <p>Lista direta com ação imediata.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Offline</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Agenda de hoje</p>
+        <div class="row"><span>09:00 • Smith House</span><strong>Check-in</strong></div>
+        <div class="row"><span>11:30 • Martin Apt</span><strong>Abrir</strong></div>
+        <div class="row"><span>15:00 • Noah Condo</span><strong>Abrir</strong></div>
+        <div class="row"><span>Ganho estimado</span><strong>$320</strong></div>
+        <div class="note">Componente: TaskDirectListCard.</div>
+        <div class="cta">Abrir próxima task</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon active" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 5 - Task Detalhe</h2>
+        <p>Execução da tarefa com check-out e exceção auditável.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Deep Clean - Smith House</p>
+        <div class="row"><span>Status</span><strong>Em andamento</strong></div>
+        <div class="row"><span>Início</span><strong>09:02</strong></div>
+        <div class="row"><span>Evidências</span><strong>2 anexos</strong></div>
+        <div class="note">Se não houver check-in, abrir ExceptionReasonSheet.</div>
+        <div class="cta">Check-out</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon active" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 6 - Comprovantes (OBJ3=A)</h2>
+        <p>Camera-first com fila offline e sugestões de vínculo.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Offline</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Comprovantes</p>
+        <div class="chip">● Fila offline: 6</div>
+        <div class="row"><span>Sugestão cliente</span><strong>Smith House</strong></div>
+        <div class="row"><span>Sugestão task</span><strong>Deep Clean</strong></div>
+        <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+        <div class="note">Componente: EvidenceCaptureQuickPanel.</div>
+        <div class="cta">Escanear novo</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon active" aria-label="Capture" title="Capture"><svg class="icon"><use href="#i-capture"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 7 - Emissão (OBJ4=A)</h2>
+        <p>Resumo final + emissão one-click.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Pronto para emissão</p>
+        <div class="row"><span>Invoices</span><strong>18</strong></div>
+        <div class="row"><span>Payroll</span><strong>7</strong></div>
+        <div class="row"><span>Total</span><strong>$26,150</strong></div>
+        <div class="row"><span>Canal</span><strong>WhatsApp</strong></div>
+        <div class="note">Componente: InvoiceEmitSummaryPanel.</div>
+        <div class="cta">Emitir agora</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon active" aria-label="Finance" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 8 - Clientes</h2>
+        <p>Busca no topo + filtros avançados em sheet.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Clientes</p>
+        <div class="search"><span>🔎 Buscar cliente...</span><strong>Filtros</strong></div>
+        <div class="row"><span>Smith House</span><strong>Ativo</strong></div>
+        <div class="row"><span>Martin Apt</span><strong>Ativo</strong></div>
+        <div class="row"><span>Noah Condo</span><strong>Inativo</strong></div>
+        <div class="note">Filtros em sheet: status, equipe, período, ordenação.</div>
+        <div class="cta">Aplicar filtros</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon active" aria-label="Clientes" title="Clientes"><svg class="icon"><use href="#i-clients"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+
+    <article class="card">
+      <div class="head">
+        <h2>Tela 9 - Empty State Padrão</h2>
+        <p>Mensagem curta + ação primária clara.</p>
+      </div>
+      <div class="mock"><div class="phone"><div class="screen">
+        <div class="status"><span>9:41</span><span>Offline</span></div>
+        <div class="navhead">
+          <div class="navleft"><span class="iconbtn"><svg class="icon"><use href="#i-menu"></use></svg></span></div>
+          <div class="navright"><span class="iconbtn"><svg class="icon"><use href="#i-dashboard"></use></svg></span></div>
+        </div>
+        <p class="title">Comprovantes</p>
+        <div class="box"><div class="line md"></div><div class="line sm"></div></div>
+        <div class="row"><span>Nenhum comprovante no período</span><strong>0</strong></div>
+        <div class="note">Guideline: sempre oferecer ação de saída do vazio.</div>
+        <div class="cta">Escanear primeiro comprovante</div>
+        <div class="tabbar">
+          <span class="tabicon" aria-label="Home" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon" aria-label="Agenda" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon active" aria-label="Capture" title="Capture"><svg class="icon"><use href="#i-capture"></use></svg></span>
+          <span class="tabicon" aria-label="Config" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div></div></div>
+    </article>
+  </main>
+
+  <div class="footer">
+    Fonte: <code>_bmad-output/planning-artifacts/wireframes-final-v1.md</code>
+  </div>
+</body>
+</html>

@@ -46,10 +46,10 @@
 
 ## Pendentes / Próximas entregas
 
-- ❌ Perfil da empresa (logo + dados fiscais por país) usado no cabeçalho das invoices
-- ❌ Tipos de serviço com modelo de preço por tarefa ou por hora (pricing model)
-- ❌ Check-in/out com foto obrigatória via câmera; botão de check-out só após check-in
-- ❌ Invoices com line items por task (tipo, descrição, qtd, valor unitário, total) e qty em horas quando aplicável
+- ✅ Perfil da empresa (logo + dados fiscais por país) usado no cabeçalho das invoices
+- ✅ Tipos de serviço com modelo de preço por tarefa ou por hora (pricing model)
+- ✅ Check-in/out com foto obrigatória via câmera; botão de check-out só após check-in
+- ✅ Invoices com line items por task (tipo, descrição, qtd, valor unitário, total) e qty em horas quando aplicável
 - ✅ Tela dedicada de "Invoices" (lista de FinanceEntry.kind == invoiceClient) com CRUD completo: editar título/valor/vencimento/método, marcar como contestado e reemitir/enviar novamente
 - ✅ CRUD semelhante para folhas de pagamento (FinanceEntry.kind == payrollEmployee), com edição antes da confirmação do pagamento
 - ✅ Fluxo de contestacao de faturas pelo cliente: iniciar disputa via e-mail/texto ou botao no PDF, registrar motivo e respeitar janela D+N configuravel
@@ -110,7 +110,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
   **AC**: campo numérico em Settings; disputas após o vencimento só até D+N; valor 0 significa apenas até o vencimento.
 - ✅ **Story 1.3**: Como usuário, quero manter sessão local segura.  
   **AC**: Given login válido; When sessão é criada; Then token/sessão são armazenados no Keychain; Given logout; When usuário encerra sessão; Then credenciais locais são removidas e o app retorna ao estado não autenticado.
-- ❌ **Story 1.4**: Como Manager, quero cadastrar o perfil da empresa (logo + dados fiscais por país) para usar nas invoices.  
+- ✅ **Story 1.4**: Como Manager, quero cadastrar o perfil da empresa (logo + dados fiscais por país) para usar nas invoices.  
   **AC**: um perfil por conta; campos comuns (nome/endereço/contato) + ID fiscal variável (NIF/VAT vs EIN/SSN); logo opcional.
 - ✅ **Story 1.5**: Como usuário, quero escolher meu perfil (Employee/Manager) no primeiro acesso.  
   **AC**: Given primeiro login sem perfil definido; When o usuário escolhe Employee ou Manager; Then o perfil é salvo e as telas passam a respeitar o papel escolhido no app inteiro.
@@ -142,7 +142,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
 ### EPIC 6 — Service Types
 - ✅ **Story 6.1**: Como Manager, quero CRUD de tipos de serviço com preço base.  
   **AC**: moeda global aplicada; não permitir excluir se houver tasks vinculadas.
-- ❌ **Story 6.2**: Como Manager, quero definir se o preço é por tarefa ou por hora.  
+- ✅ **Story 6.2**: Como Manager, quero definir se o preço é por tarefa ou por hora.  
   **AC**: Given criação/edição de ServiceType; When o Manager seleciona pricing model (por tarefa ou por hora); Then o preço base é interpretado conforme o modelo e exibido no catálogo com o rótulo correto.
 
 ### EPIC 7 — Schedule / Tasks
@@ -154,7 +154,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
   **AC**: status “canceled”; não entra em cálculos financeiros.
 - ✅ **Story 7.4**: Como Employee, quero registrar check‑in/out.  
   **AC**: Given task atribuída ao Employee; When registra check-in e check-out; Then os timestamps são salvos na task e ficam disponíveis para cálculo de horas no payroll automático.
-- ❌ **Story 7.5**: Como Employee, quero check‑in/out com foto obrigatória via câmera.  
+- ✅ **Story 7.5**: Como Employee, quero check‑in/out com foto obrigatória via câmera.  
   **AC**: sem upload da galeria; foto é capturada no momento; botão de check‑out só aparece após check‑in.
 - 🟡 **Story 7.6**: Como usuário, quero receber notificações de agenda e poder criar serviço por Siri.  
   **AC**: Given uma task criada/alterada/cancelada; When o evento ocorre; Then o app agenda notificação local e, quando disponível, dispara push; Given Siri Suggestions habilitado; When uma task é criada; Then o app doa atalho de criação de serviço para sugestões da Siri; Given comando de voz completo via intent dedicado; When o usuário solicitar criação de serviço por voz; Then o fluxo deve criar serviço com dados mínimos e confirmar agendamento (pendente).
@@ -178,7 +178,7 @@ Legenda: ✅ implementado · 🟡 parcial · ❌ pendente
   **AC**: disputa iniciada via e-mail/texto ou botao no PDF; permitida ate D+N; bloqueio apos prazo com mensagem clara.
 - ✅ **Story 9.4**: Como Manager, quero re‑gerar invoice e marcar anterior como “superseded”.  
   **AC**: invoice anterior permanece para histórico; nova invoice criada.
-- ❌ **Story 9.5**: Como Manager, quero invoices com line items detalhados por task.  
+- ✅ **Story 9.5**: Como Manager, quero invoices com line items detalhados por task.  
   **AC**: Given geração de invoice com tasks no período; When o documento é criado; Then cada line item exibe tipo, descrição, quantidade, valor unitário e total; Given o ServiceType é por hora; When há check-in/out válidos; Then qty usa horas trabalhadas; Given o ServiceType é por tarefa; When item é calculado; Then qty = 1.
 
 ### EPIC 10 — Payroll

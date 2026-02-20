@@ -1,0 +1,9 @@
+# BMM Workflow Status (auto-updated by create-ux-design step 14)
+generated: "2026-02-20T09:19:51Z"
+project: "gorda"
+project_type: "unknown"
+project_level: "unknown"
+field_type: "planning"
+workflow_path: "not_initialized"
+workflow_status:
+  create-ux-design: "_bmad-output/planning-artifacts/ux-design-specification.md"

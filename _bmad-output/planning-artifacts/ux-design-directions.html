@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gorda - UX Design Directions</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #533afd;
+      --ok: #0ea56b;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --radius: 16px;
+      --shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top right, #e9e6ff 0%, #f5f6fb 45%), var(--bg);
+      color: var(--text);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .compare {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .layout {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(300px, 1fr));
+      gap: 18px;
+    }
+
+    .dir {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .dir-head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f1efff;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dir-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 0 0 2px;
+      letter-spacing: -0.01em;
+    }
+
+    .dir-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button.select {
+      border-color: #cfc8ff;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .dir.selected {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+    }
+
+    .mock {
+      padding: 14px;
+      background: linear-gradient(180deg, #fafaff 0%, #ffffff 38%);
+    }
+
+    .phone {
+      width: 290px;
+      margin: 0 auto;
+      border: 1px solid #d8d9e3;
+      border-radius: 30px;
+      padding: 10px;
+      background: #f8f9fd;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .screen {
+      background: #fff;
+      border-radius: 22px;
+      min-height: 480px;
+      padding: 12px;
+      border: 1px solid #edf0f6;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen > * {
+      flex: 0 0 auto;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #8187a0;
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 0 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+
+    .chip, .card, .row, .bar, .cta, .tab {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chip.ok { border-color: #b6ecd7; color: #12754f; background: #effdf7; }
+
+    .card {
+      padding: 9px;
+      margin-bottom: 8px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .line {
+      height: 8px;
+      border-radius: 999px;
+      background: #ebedf5;
+      margin-bottom: 6px;
+    }
+
+    .line.sm { width: 55%; }
+    .line.md { width: 78%; }
+    .line.lg { width: 92%; }
+
+    .bar {
+      height: 8px;
+      overflow: hidden;
+      margin: 8px 0;
+      background: #f0f2f9;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #6e5afc 0%, #533afd 100%);
+      width: 70%;
+    }
+
+    .cta {
+      margin-top: 8px;
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(90deg, #6e5afc 0%, #533afd 100%);
+    }
+
+    .screen > .cta {
+      margin-top: auto;
+      order: 98;
+    }
+
+    .tabs {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      order: 99;
+    }
+
+    .tab {
+      font-size: 10px;
+      text-align: center;
+      padding: 6px 2px;
+      color: #7a8098;
+      background: #fafbff;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-color: #cdc7ff;
+      background: #f1efff;
+      font-weight: 700;
+    }
+
+    .notes {
+      border-top: 1px dashed #dedff1;
+      margin-top: 10px;
+      padding-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+      order: 97;
+    }
+
+    .legend {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .phone { width: 100%; max-width: 320px; }
+      .compare { text-align: left; }
+      .topbar-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Gorda • Design Direction Mockups</h1>
+        <div class="sub">8 direções para comparar layout, peso visual e fluxo de fechamento mensal (Manager) + operação de campo (Employee)</div>
+      </div>
+      <div class="compare" id="compareBox">
+        Selecionadas: <strong id="count">0</strong> / 2
+        <div id="selectedNames">Nenhuma selecionada</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="dir" data-name="D1 Command Center">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D1 • Command Center</p>
+          <p class="dir-desc">KPI-first, foco no fechamento financeiro logo na primeira dobra.</p>
+        </div>
+        <div class="actions">
+          <span class="badge">Manager</span>
+          <button class="select">Selecionar</button>
+        </div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>5G</span></div>
+          <p class="title">Fechamento • Jan/2026</p>
+          <div class="kpis">
+            <div class="card"><div class="line md"></div><div class="line sm"></div></div>
+            <div class="card"><div class="line md"></div><div class="line sm"></div></div>
+          </div>
+          <div class="chip ok">● Sync estável</div>
+          <div class="row"><span>Pendências</span><strong>4</strong></div>
+          <div class="bar"><span style="width:66%"></span></div>
+          <div class="row"><span>Prévia invoice</span><strong>$18.240</strong></div>
+          <div class="row"><span>Prévia payroll</span><strong>$7.910</strong></div>
+          <div class="cta">Validar Pendências</div>
+          <div class="tabs"><div class="tab">Agenda</div><div class="tab">Clientes</div><div class="tab active">Finance</div><div class="tab">Settings</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D2 Daily Field Flow">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D2 • Daily Field Flow</p>
+          <p class="dir-desc">Agenda e check-in/out na frente, fechamento entra como bloco secundário.</p>
+        </div>
+        <div class="actions"><span class="badge">Employee</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>Offline</span></div>
+          <p class="title">Agenda de hoje</p>
+          <div class="chip">Modo campo ativo</div>
+          <div class="card"><div class="line lg"></div><div class="line md"></div><div class="cta">Check-in</div></div>
+          <div class="card"><div class="line lg"></div><div class="line md"></div><div class="cta" style="background:#111827">Check-out</div></div>
+          <div class="row"><span>Ganho estimado hoje</span><strong>$320</strong></div>
+          <div class="notes">Offline-first explícito com confirmação local após cada ação.</div>
+          <div class="tabs"><div class="tab active">Agenda</div><div class="tab">Clientes</div><div class="tab">Finance</div><div class="tab">Settings</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D3 Card Balanced">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D3 • Card Balanced</p>
+          <p class="dir-desc">Distribuição equilibrada entre operacional diário e financeiro mensal.</p>
+        </div>
+        <div class="actions"><span class="badge">Hybrid</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>Wi-Fi</span></div>
+          <p class="title">Resumo rápido</p>
+          <div class="card"><div class="line md"></div><div class="line lg"></div><div class="legend"><span><i class="dot" style="background:#533afd"></i>Fechar mês</span></div></div>
+          <div class="card"><div class="line md"></div><div class="line lg"></div><div class="legend"><span><i class="dot" style="background:#0ea56b"></i>Agenda hoje</span></div></div>
+          <div class="card"><div class="line md"></div><div class="line sm"></div></div>
+          <div class="cta">Continuar fluxo principal</div>
+          <div class="tabs"><div class="tab active">Home</div><div class="tab">Agenda</div><div class="tab">Finance</div><div class="tab">Perfil</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D4 Minimal Ledger">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D4 • Minimal Ledger</p>
+          <p class="dir-desc">Visual ultra limpo com foco em texto e estados financeiros.</p>
+        </div>
+        <div class="actions"><span class="badge">Finance</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>LTE</span></div>
+          <p class="title">Conciliação</p>
+          <div class="row"><span>Recebíveis</span><strong>$18.240</strong></div>
+          <div class="row"><span>Pagáveis</span><strong>$7.910</strong></div>
+          <div class="row"><span>Disputas</span><strong style="color:#dc2626">2</strong></div>
+          <div class="bar"><span style="width:80%"></span></div>
+          <div class="card"><div class="line lg"></div><div class="line md"></div><div class="line sm"></div></div>
+          <div class="cta">Emitir Invoices</div>
+          <div class="notes">Direção mais sóbria para reduzir ruído cognitivo no fechamento.</div>
+          <div class="tabs"><div class="tab">Agenda</div><div class="tab">Clientes</div><div class="tab active">Finance</div><div class="tab">Settings</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D5 Role Switch">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D5 • Role Switch</p>
+          <p class="dir-desc">Switch explícito Manager/Employee no topo com reconfiguração de blocos.</p>
+        </div>
+        <div class="actions"><span class="badge">Role-first</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>4G</span></div>
+          <p class="title">Painel</p>
+          <div class="chip ok">Manager ativo</div>
+          <div class="card"><div class="line md"></div><div class="line sm"></div><div class="cta">Fechar mês</div></div>
+          <div class="chip">Trocar para Employee</div>
+          <div class="card"><div class="line md"></div><div class="line sm"></div><div class="cta" style="background:#111827">Abrir Agenda</div></div>
+          <div class="notes">Boa separação de contexto, porém adiciona um passo mental (troca de papel).</div>
+          <div class="tabs"><div class="tab active">Home</div><div class="tab">Agenda</div><div class="tab">Finance</div><div class="tab">Settings</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D6 Guided Stepper">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D6 • Guided Stepper</p>
+          <p class="dir-desc">Fluxo de fechamento em wizard de 4 passos com progresso explícito.</p>
+        </div>
+        <div class="actions"><span class="badge">Flow-first</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>5G</span></div>
+          <p class="title">Passo 2/4 • Pendências</p>
+          <div class="bar"><span style="width:50%"></span></div>
+          <div class="row"><span>Comprovantes sem vínculo</span><strong>3</strong></div>
+          <div class="row"><span>Lançamentos inconsistentes</span><strong>1</strong></div>
+          <div class="card"><div class="line lg"></div><div class="line md"></div></div>
+          <div class="cta">Resolver e continuar</div>
+          <div class="tabs"><div class="tab">1</div><div class="tab active">2</div><div class="tab">3</div><div class="tab">4</div></div>
+          <div class="notes">Direção com maior sensação de controle e conclusão.</div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D7 Morning Brief">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D7 • Morning Brief</p>
+          <p class="dir-desc">Página inicial em formato briefing: “o que precisa acontecer hoje”.</p>
+        </div>
+        <div class="actions"><span class="badge">Ops</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>4G</span></div>
+          <p class="title">Bom dia, Carlos</p>
+          <div class="card"><div class="line lg"></div><div class="line sm"></div></div>
+          <div class="card"><div class="line md"></div><div class="line sm"></div></div>
+          <div class="card"><div class="line md"></div><div class="line sm"></div></div>
+          <div class="cta">Iniciar tarefa crítica</div>
+          <div class="notes">Excelente para reduzir ansiedade, menos forte para detalhes financeiros profundos.</div>
+          <div class="tabs"><div class="tab active">Home</div><div class="tab">Agenda</div><div class="tab">Finance</div><div class="tab">Settings</div></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section class="dir" data-name="D8 Evidence Capture">
+      <div class="dir-head">
+        <div>
+          <p class="dir-title">D8 • Evidence Capture</p>
+          <p class="dir-desc">Prioriza captura de comprovantes com vínculo automático e fila offline.</p>
+        </div>
+        <div class="actions"><span class="badge">Capture</span><button class="select">Selecionar</button></div>
+      </div>
+      <div class="mock">
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>Offline</span></div>
+          <p class="title">Comprovantes</p>
+          <div class="chip">Fila offline: 6 itens</div>
+          <div class="card"><div class="line lg"></div><div class="line md"></div><div class="cta">Escanear novo</div></div>
+          <div class="row"><span>Cliente sugerido</span><strong>Smith House</strong></div>
+          <div class="row"><span>Task sugerida</span><strong>Deep Clean</strong></div>
+          <div class="bar"><span style="width:35%"></span></div>
+          <div class="cta" style="background:#111827">Salvar localmente</div>
+          <div class="tabs"><div class="tab">Agenda</div><div class="tab">Clientes</div><div class="tab">Finance</div><div class="tab active">Capture</div></div>
+        </div></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const cards = [...document.querySelectorAll('.dir')];
+    const count = document.getElementById('count');
+    const selectedNames = document.getElementById('selectedNames');
+
+    function sync() {
+      const selected = cards.filter(c => c.classList.contains('selected'));
+      count.textContent = String(selected.length);
+      selectedNames.textContent = selected.length
+        ? selected.map(c => c.dataset.name).join(' + ')
+        : 'Nenhuma selecionada';
+    }
+
+    cards.forEach(card => {
+      card.querySelector('.select').addEventListener('click', () => {
+        const selected = cards.filter(c => c.classList.contains('selected'));
+        if (!card.classList.contains('selected') && selected.length >= 2) {
+          alert('Selecione no máximo 2 direções para comparação.');
+          return;
+        }
+        card.classList.toggle('selected');
+        sync();
+      });
+    });
+
+    sync();
+  </script>
+</body>
+</html>

@@ -1842,6 +1842,17 @@ struct InvoiceDetailView: View {
     @State private var pdfPreview: DocumentPreview?
     @State private var showingReissueConfirm = false
 
+    private struct InvoiceLineItem: Identifiable {
+        let id: UUID
+        let type: String
+        let description: String
+        let date: Date
+        let pricingModel: ServiceType.PricingModel
+        let quantity: Double
+        let unitPrice: Double
+        let total: Double
+    }
+
     init(entry: FinanceEntry) {
         self.entry = entry
         _title = State(initialValue: entry.title)
@@ -1893,7 +1904,7 @@ struct InvoiceDetailView: View {
         return start...end
     }
 
-    private var lineItems: [(title: String, date: Date, amount: Double)] {
+    private var lineItems: [InvoiceLineItem] {
         let tasksForInvoice = store.tasks.filter { task in
             let matchesClient: Bool
             if let clientId = entry.clientId {
@@ -1906,17 +1917,79 @@ struct InvoiceDetailView: View {
             return matchesClient && invoicePeriod.contains(task.date)
         }
 
-        let items: [(title: String, date: Date, amount: Double)] = tasksForInvoice.compactMap { task in
+        let items: [InvoiceLineItem] = tasksForInvoice.compactMap { task in
             guard let typeId = task.serviceTypeId,
                   let serviceType = store.serviceTypes.first(where: { $0.id == typeId }),
                   serviceType.currency == entry.currency else { return nil }
-            return (task.title, task.date, serviceType.basePrice)
+            var quantity = 0.0
+            switch serviceType.pricingModel {
+            case .perTask:
+                quantity = 1
+            case .perHour:
+                guard let checkIn = task.checkInTime, let checkOut = task.checkOutTime else {
+                    return InvoiceLineItem(
+                        id: task.id,
+                        type: serviceType.name,
+                        description: task.title,
+                        date: task.date,
+                        pricingModel: serviceType.pricingModel,
+                        quantity: 0,
+                        unitPrice: serviceType.basePrice,
+                        total: 0
+                    )
+                }
+                let hours = checkOut.timeIntervalSince(checkIn) / 3600.0
+                quantity = max(0, hours)
+            }
+
+            let roundedQuantity = (quantity * 100).rounded() / 100
+            let total = roundedQuantity * serviceType.basePrice
+
+            return InvoiceLineItem(
+                id: task.id,
+                type: serviceType.name,
+                description: task.title,
+                date: task.date,
+                pricingModel: serviceType.pricingModel,
+                quantity: roundedQuantity,
+                unitPrice: serviceType.basePrice,
+                total: total
+            )
         }
 
         if items.isEmpty {
-            return [(entry.title, entry.dueDate, entry.amount)]
+            return [
+                InvoiceLineItem(
+                    id: entry.id,
+                    type: NSLocalizedString("Service", comment: ""),
+                    description: entry.title,
+                    date: entry.dueDate,
+                    pricingModel: .perTask,
+                    quantity: 1,
+                    unitPrice: entry.amount,
+                    total: entry.amount
+                )
+            ]
         }
         return items.sorted { $0.date < $1.date }
+    }
+
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        let activeCurrency = store.appPreferences.preferredCurrency
+        formatter.currencyCode = activeCurrency.code
+        return formatter.string(from: NSNumber(value: value))
+            ?? String(format: "%@ %.2f", activeCurrency.code, value)
+    }
+
+    private func quantityLabel(for item: InvoiceLineItem) -> String {
+        switch item.pricingModel {
+        case .perTask:
+            return NSLocalizedString("1 task", comment: "")
+        case .perHour:
+            return String(format: NSLocalizedString("%.2f h", comment: ""), item.quantity)
+        }
     }
 
     private var managerChannels: [Client.DeliveryChannel] {
@@ -2001,6 +2074,28 @@ struct InvoiceDetailView: View {
                     Picker("Status", selection: $status) {
                         Text(FinanceEntry.Status.pending.label).tag(FinanceEntry.Status.pending)
                         Text(FinanceEntry.Status.paid.label).tag(FinanceEntry.Status.paid)
+                    }
+                }
+
+                Section("Line items") {
+                    ForEach(lineItems) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(item.type)
+                                    .font(.subheadline.bold())
+                                Spacer()
+                                Text(formatCurrency(item.total))
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(AppTheme.primary)
+                            }
+                            Text(item.description)
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                            Text(String(format: NSLocalizedString("Qty: %@ · Unit: %@ · Total: %@", comment: ""), quantityLabel(for: item), formatCurrency(item.unitPrice), formatCurrency(item.total)))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
                     }
                 }
 
@@ -2136,7 +2231,7 @@ struct InvoiceDetailView: View {
     }
 
     private func reissueInvoice() {
-        let recomputedTotal = lineItems.reduce(0) { $0 + $1.amount }
+        let recomputedTotal = lineItems.reduce(0) { $0 + $1.total }
         let finalAmount = recomputedTotal > 0 ? recomputedTotal : entry.amount
         store.reissueInvoice(entry, amount: finalAmount, dueDate: dueDate)
     }
@@ -2160,6 +2255,21 @@ struct InvoiceDetailView: View {
         )
         if let clientName = entry.clientName {
             body.append(String(format: NSLocalizedString("\nClient: %@", comment: ""), clientName))
+        }
+        if !lineItems.isEmpty {
+            body.append(NSLocalizedString("\n\nLine items:", comment: ""))
+            for item in lineItems {
+                body.append(
+                    String(
+                        format: NSLocalizedString("\n- %@ | %@ | %@ | Unit: %@ | Total: %@", comment: ""),
+                        item.type,
+                        item.description,
+                        quantityLabel(for: item),
+                        formatCurrency(item.unitPrice),
+                        formatCurrency(item.total)
+                    )
+                )
+            }
         }
         body.append(String(format: NSLocalizedString("\nChannel: %@", comment: ""), selectedChannel.label))
         if isDisputed {
@@ -2203,6 +2313,7 @@ struct InvoiceDetailView: View {
             method?.label ?? selectedChannel.label,
             dateFormatter.string(from: dueDate)
         )
+        let companyProfile = store.appPreferences.companyProfile
         let clientName = entry.clientName ?? NSLocalizedString("Client", comment: "")
         let disputeURL = makeDisputeURL()
 
@@ -2243,6 +2354,62 @@ struct InvoiceDetailView: View {
                 y += size.height + 8
             }
 
+            if let companyProfile {
+                if let logoData = companyProfile.logoData, let logoImage = UIImage(data: logoData) {
+                    let maxLogoWidth: CGFloat = 140
+                    let maxLogoHeight: CGFloat = 64
+                    let widthRatio = maxLogoWidth / max(logoImage.size.width, 1)
+                    let heightRatio = maxLogoHeight / max(logoImage.size.height, 1)
+                    let ratio = min(widthRatio, heightRatio)
+                    let drawWidth = logoImage.size.width * ratio
+                    let drawHeight = logoImage.size.height * ratio
+                    let logoRect = CGRect(x: margin, y: y, width: drawWidth, height: drawHeight)
+                    logoImage.draw(in: logoRect)
+                    y += drawHeight + 8
+                }
+                if !companyProfile.legalName.isEmpty {
+                    draw(companyProfile.legalName, font: .boldSystemFont(ofSize: 14))
+                }
+                let companyAddress = [companyProfile.addressLine1, companyProfile.addressLine2]
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .joined(separator: ", ")
+                if !companyAddress.isEmpty {
+                    draw(companyAddress, font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                let cityLine = [companyProfile.city, companyProfile.region, companyProfile.postalCode]
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .joined(separator: ", ")
+                if !cityLine.isEmpty {
+                    draw(cityLine, font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                if !companyProfile.countryName.isEmpty {
+                    draw(companyProfile.countryName, font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                if !companyProfile.taxIdentifier.isEmpty {
+                    draw(
+                        String(
+                            format: NSLocalizedString("%@: %@", comment: ""),
+                            companyProfile.taxCountry.taxIdLabel,
+                            companyProfile.taxIdentifier
+                        ),
+                        font: .systemFont(ofSize: 11),
+                        color: .darkGray
+                    )
+                }
+                if !companyProfile.contactEmail.isEmpty {
+                    draw(String(format: NSLocalizedString("Company email: %@", comment: ""), companyProfile.contactEmail), font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                if !companyProfile.contactPhone.isEmpty {
+                    draw(String(format: NSLocalizedString("Company phone: %@", comment: ""), companyProfile.contactPhone), font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                if !companyProfile.website.isEmpty {
+                    draw(String(format: NSLocalizedString("Website: %@", comment: ""), companyProfile.website), font: .systemFont(ofSize: 11), color: .darkGray)
+                }
+                y += 8
+            }
+
             draw(NSLocalizedString("Invoice", comment: ""), font: .boldSystemFont(ofSize: 22))
             draw(String(format: NSLocalizedString("Client: %@", comment: ""), clientName), font: .systemFont(ofSize: 14))
             if let email = client?.email, !email.isEmpty {
@@ -2261,16 +2428,26 @@ struct InvoiceDetailView: View {
             draw(NSLocalizedString("Line items", comment: ""), font: .boldSystemFont(ofSize: 16))
 
             for item in lineItems {
-                let amount = numberFormatter.string(from: NSNumber(value: item.amount))
-                    ?? String(format: "%@ %.2f", activeCurrency.code, item.amount)
                 draw(
                     String(
-                        format: NSLocalizedString("- %@ (%@): %@", comment: ""),
-                        item.title,
-                        dateFormatter.string(from: item.date),
-                        amount
+                        format: NSLocalizedString("- %@ (%@)", comment: ""),
+                        item.type,
+                        dateFormatter.string(from: item.date)
                     ),
                     font: .systemFont(ofSize: 12)
+                )
+                draw(item.description, font: .systemFont(ofSize: 11), color: .darkGray)
+                draw(
+                    String(
+                        format: NSLocalizedString("Qty: %@ | Unit: %@ | Total: %@", comment: ""),
+                        quantityLabel(for: item),
+                        numberFormatter.string(from: NSNumber(value: item.unitPrice))
+                            ?? String(format: "%@ %.2f", activeCurrency.code, item.unitPrice),
+                        numberFormatter.string(from: NSNumber(value: item.total))
+                            ?? String(format: "%@ %.2f", activeCurrency.code, item.total)
+                    ),
+                    font: .systemFont(ofSize: 11),
+                    color: .darkGray
                 )
             }
 
@@ -3587,6 +3764,10 @@ struct SettingsView: View {
                         Text("0 days means disputes are only allowed until the due date.")
                             .font(.footnote)
                             .foregroundColor(.secondary)
+
+                        NavigationLink("Company profile (invoices)") {
+                            CompanyProfileSettingsView()
+                        }
                     }
                 }
 
@@ -3627,6 +3808,149 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+}
+
+struct CompanyProfileSettingsView: View {
+    @EnvironmentObject private var store: OfflineStore
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var legalName = ""
+    @State private var addressLine1 = ""
+    @State private var addressLine2 = ""
+    @State private var city = ""
+    @State private var region = ""
+    @State private var postalCode = ""
+    @State private var countryName = ""
+    @State private var contactEmail = ""
+    @State private var contactPhone = ""
+    @State private var website = ""
+    @State private var taxCountry: CompanyProfile.TaxCountry = .unitedStates
+    @State private var taxIdentifier = ""
+    @State private var logoImage: UIImage?
+    @State private var showingLogoPicker = false
+
+    private var canSave: Bool {
+        !legalName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section("Logo") {
+                    if let logoImage {
+                        Image(uiImage: logoImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, minHeight: 100, maxHeight: 140)
+                            .cornerRadius(AppTheme.cornerRadius)
+                    } else {
+                        Text("No logo selected")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    Button(logoImage == nil ? "Add logo" : "Change logo") {
+                        showingLogoPicker = true
+                    }
+                    if logoImage != nil {
+                        Button("Remove logo", role: .destructive) {
+                            logoImage = nil
+                        }
+                    }
+                }
+
+                Section("Company") {
+                    TextField("Legal name", text: $legalName)
+                    TextField("Address line 1", text: $addressLine1)
+                    TextField("Address line 2", text: $addressLine2)
+                    TextField("City", text: $city)
+                    TextField("State/Region", text: $region)
+                    TextField("Postal code", text: $postalCode)
+                    TextField("Country", text: $countryName)
+                }
+
+                Section("Contact") {
+                    TextField("Email", text: $contactEmail)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                    TextField("Phone", text: $contactPhone)
+                        .keyboardType(.phonePad)
+                    TextField("Website", text: $website)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                }
+
+                Section("Tax") {
+                    Picker("Tax country", selection: $taxCountry) {
+                        ForEach(CompanyProfile.TaxCountry.allCases) { country in
+                            Text(country.label).tag(country)
+                        }
+                    }
+                    TextField(taxCountry.taxIdLabel, text: $taxIdentifier)
+                }
+            }
+            .scrollContentBackground(.hidden)
+
+            PrimaryButton(title: "Save") {
+                save()
+            }
+            .padding()
+            .disabled(!canSave)
+        }
+        .background(AppTheme.background.ignoresSafeArea())
+        .navigationTitle("Company profile")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Close") { dismiss() }
+            }
+        }
+        .sheet(isPresented: $showingLogoPicker) {
+            ImagePickerView(
+                image: $logoImage,
+                sourceType: .photoLibrary,
+                allowPhotoLibraryFallback: true
+            )
+        }
+        .onAppear {
+            loadFromPreferences()
+        }
+    }
+
+    private func loadFromPreferences() {
+        let profile = store.appPreferences.companyProfile ?? CompanyProfile()
+        legalName = profile.legalName
+        addressLine1 = profile.addressLine1
+        addressLine2 = profile.addressLine2
+        city = profile.city
+        region = profile.region
+        postalCode = profile.postalCode
+        countryName = profile.countryName
+        contactEmail = profile.contactEmail
+        contactPhone = profile.contactPhone
+        website = profile.website
+        taxCountry = profile.taxCountry
+        taxIdentifier = profile.taxIdentifier
+        logoImage = profile.logoData.flatMap { UIImage(data: $0) }
+    }
+
+    private func save() {
+        let profile = CompanyProfile(
+            legalName: legalName.trimmingCharacters(in: .whitespacesAndNewlines),
+            addressLine1: addressLine1.trimmingCharacters(in: .whitespacesAndNewlines),
+            addressLine2: addressLine2.trimmingCharacters(in: .whitespacesAndNewlines),
+            city: city.trimmingCharacters(in: .whitespacesAndNewlines),
+            region: region.trimmingCharacters(in: .whitespacesAndNewlines),
+            postalCode: postalCode.trimmingCharacters(in: .whitespacesAndNewlines),
+            countryName: countryName.trimmingCharacters(in: .whitespacesAndNewlines),
+            contactEmail: contactEmail.trimmingCharacters(in: .whitespacesAndNewlines),
+            contactPhone: contactPhone.trimmingCharacters(in: .whitespacesAndNewlines),
+            website: website.trimmingCharacters(in: .whitespacesAndNewlines),
+            taxCountry: taxCountry,
+            taxIdentifier: taxIdentifier.trimmingCharacters(in: .whitespacesAndNewlines),
+            logoData: logoImage?.jpegData(compressionQuality: 0.8)
+        )
+        store.appPreferences.companyProfile = profile
+        dismiss()
     }
 }
 
@@ -3989,6 +4313,9 @@ private struct ServiceRow: View {
                     .font(.subheadline.bold())
                     .foregroundColor(AppTheme.primary)
             }
+            Text(serviceType.pricingModel.label)
+                .font(.caption)
+                .foregroundColor(.secondary)
             if !serviceType.description.isEmpty {
                 Text(serviceType.description)
                     .font(.footnote)
@@ -4031,6 +4358,9 @@ struct ServiceTypeDetailView: View {
                         }
                         Text(String(format: NSLocalizedString("Base price: %@ %.2f", comment: ""), serviceType.currency.code, serviceType.basePrice))
                             .font(.body)
+                        Text(String(format: NSLocalizedString("Pricing model: %@", comment: ""), serviceType.pricingModel.label))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .padding(.horizontal)
@@ -4117,7 +4447,7 @@ struct ServiceTypeForm: View {
     @State private var name: String
     @State private var description: String
     @State private var basePriceText: String
-    @State private var currency: FinanceEntry.Currency
+    @State private var pricingModel: ServiceType.PricingModel
 
     private var basePrice: Double? {
         Double(basePriceText.replacingOccurrences(of: ",", with: "."))
@@ -4134,7 +4464,7 @@ struct ServiceTypeForm: View {
         } else {
             _basePriceText = State(initialValue: "")
         }
-        _currency = State(initialValue: serviceType?.currency ?? .usd)
+        _pricingModel = State(initialValue: serviceType?.pricingModel ?? .perTask)
     }
 
     var body: some View {
@@ -4146,6 +4476,11 @@ struct ServiceTypeForm: View {
                         .lineLimit(2...4)
                     TextField("Base price", text: $basePriceText)
                         .keyboardType(.decimalPad)
+                    Picker("Pricing model", selection: $pricingModel) {
+                        ForEach(ServiceType.PricingModel.allCases) { model in
+                            Text(model.label).tag(model)
+                        }
+                    }
                     HStack {
                         Text("Currency")
                         Spacer()
@@ -4163,14 +4498,16 @@ struct ServiceTypeForm: View {
                         name: name,
                         description: description,
                         basePrice: price,
-                        currency: store.appPreferences.preferredCurrency
+                        currency: store.appPreferences.preferredCurrency,
+                        pricingModel: pricingModel
                     )
                 } else {
                     store.addServiceType(
                         name: name,
                         description: description,
                         basePrice: price,
-                        currency: store.appPreferences.preferredCurrency
+                        currency: store.appPreferences.preferredCurrency,
+                        pricingModel: pricingModel
                     )
                 }
                 dismiss()
@@ -4183,9 +4520,6 @@ struct ServiceTypeForm: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Close") { dismiss() }
             }
-        }
-        .onAppear {
-            currency = store.appPreferences.preferredCurrency
         }
     }
 }
@@ -4490,6 +4824,13 @@ struct ServiceDetailView: View {
     @State private var showTeamAlert = false
     @State private var checkInTime: Date?
     @State private var checkOutTime: Date?
+    @State private var checkInPhoto: UIImage?
+    @State private var checkOutPhoto: UIImage?
+    @State private var showingCheckInCamera = false
+    @State private var showingCheckOutCamera = false
+    @State private var showCameraUnavailableAlert = false
+    @State private var showValidationAlert = false
+    @State private var validationMessage = ""
     @State private var selectedEmployeeID: UUID?
     @State private var selectedClientID: UUID?
     @State private var selectedServiceTypeID: UUID?
@@ -4504,6 +4845,8 @@ struct ServiceDetailView: View {
         _notes = State(initialValue: task.notes)
         _checkInTime = State(initialValue: task.checkInTime)
         _checkOutTime = State(initialValue: task.checkOutTime)
+        _checkInPhoto = State(initialValue: task.checkInPhotoData.flatMap { UIImage(data: $0) })
+        _checkOutPhoto = State(initialValue: task.checkOutPhotoData.flatMap { UIImage(data: $0) })
         _selectedEmployeeID = State(initialValue: task.assignedEmployee.id)
         _selectedClientID = State(initialValue: task.clientId)
         _selectedServiceTypeID = State(initialValue: task.serviceTypeId)
@@ -4535,6 +4878,18 @@ struct ServiceDetailView: View {
             return store.serviceTypes.first { $0.id == serviceTypeId }
         }
         return nil
+    }
+
+    private var hasCheckInPhoto: Bool {
+        checkInPhoto != nil
+    }
+
+    private var hasCheckOutPhoto: Bool {
+        checkOutPhoto != nil
+    }
+
+    private var canTriggerCheckOut: Bool {
+        checkInTime != nil && hasCheckInPhoto
     }
 
     var body: some View {
@@ -4635,12 +4990,76 @@ struct ServiceDetailView: View {
                             .font(.footnote)
                             .foregroundColor(.secondary)
                     }
-                    HStack {
-                        Button("Check-in now") {
-                            checkInTime = Date()
+
+                    if let checkInPhoto {
+                        Image(uiImage: checkInPhoto)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .cornerRadius(AppTheme.cornerRadius)
+                            .overlay(alignment: .bottomLeading) {
+                                Text("Check-in photo")
+                                    .font(.caption2.bold())
+                                    .padding(6)
+                                    .background(Color.black.opacity(0.6))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(6)
+                                    .padding(8)
+                            }
+                    }
+
+                    if let checkOutPhoto {
+                        Image(uiImage: checkOutPhoto)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .cornerRadius(AppTheme.cornerRadius)
+                            .overlay(alignment: .bottomLeading) {
+                                Text("Check-out photo")
+                                    .font(.caption2.bold())
+                                    .padding(6)
+                                    .background(Color.black.opacity(0.6))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(6)
+                                    .padding(8)
+                            }
+                    }
+
+                    if checkInTime == nil {
+                        Button("Check-in now (camera)") {
+                            openCheckInCamera()
                         }
-                        Button("Check-out now") {
-                            checkOutTime = Date()
+                    } else {
+                        if !hasCheckInPhoto {
+                            Text("Capture check-in photo to continue.")
+                                .font(.footnote)
+                                .foregroundColor(.orange)
+                            Button("Capture check-in photo (camera)") {
+                                openCheckInCamera()
+                            }
+                        }
+
+                        if checkOutTime == nil {
+                            if canTriggerCheckOut {
+                                Button("Check-out now (camera)") {
+                                    openCheckOutCamera()
+                                }
+                            } else {
+                                Text("Check-out is unlocked only after check-in with photo.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if !hasCheckOutPhoto {
+                            Text("Capture check-out photo to complete evidence.")
+                                .font(.footnote)
+                                .foregroundColor(.orange)
+                            Button("Capture check-out photo (camera)") {
+                                openCheckOutCamera()
+                            }
                         }
                     }
                 }
@@ -4681,8 +5100,14 @@ struct ServiceDetailView: View {
             .scrollContentBackground(.hidden)
 
             PrimaryButton(title: "Save") {
+                guard validateBeforeSave() else {
+                    showValidationAlert = true
+                    return
+                }
                 let employee = selectedEmployee
                 let client = selectedClient
+                let checkInPhotoData = checkInPhoto?.jpegData(compressionQuality: 0.7) ?? task.checkInPhotoData
+                let checkOutPhotoData = checkOutPhoto?.jpegData(compressionQuality: 0.7) ?? task.checkOutPhotoData
                 store.updateTask(
                     task,
                     title: isManager ? title : nil,
@@ -4692,6 +5117,8 @@ struct ServiceDetailView: View {
                     notes: notes,
                     checkInTime: checkInTime,
                     checkOutTime: checkOutTime,
+                    checkInPhotoData: checkInPhotoData,
+                    checkOutPhotoData: checkOutPhotoData,
                     employee: isManager ? employee : nil,
                     client: isManager ? client : nil,
                     serviceTypeId: isManager ? selectedServiceTypeID : nil
@@ -4708,6 +5135,32 @@ struct ServiceDetailView: View {
         .alert("Notification sent to team", isPresented: $showTeamAlert) {
             Button("OK", role: .cancel) { }
         }
+        .alert("Camera unavailable", isPresented: $showCameraUnavailableAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("A device camera is required for check-in/check-out photos.")
+        }
+        .alert("Cannot save service", isPresented: $showValidationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(validationMessage)
+        }
+        .sheet(isPresented: $showingCheckInCamera) {
+            ImagePickerView(
+                image: $checkInPhoto,
+                sourceType: .camera,
+                allowPhotoLibraryFallback: false,
+                onImagePicked: handleCheckInPhotoCaptured
+            )
+        }
+        .sheet(isPresented: $showingCheckOutCamera) {
+            ImagePickerView(
+                image: $checkOutPhoto,
+                sourceType: .camera,
+                allowPhotoLibraryFallback: false,
+                onImagePicked: handleCheckOutPhotoCaptured
+            )
+        }
         .onAppear {
             if selectedEmployeeID == nil {
                 selectedEmployeeID = store.employees.first(where: { $0.id == task.assignedEmployee.id })?.id
@@ -4722,6 +5175,66 @@ struct ServiceDetailView: View {
                 selectedServiceTypeID = task.serviceTypeId ?? store.serviceTypes.first?.id
             }
         }
+    }
+
+    private func openCheckInCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showCameraUnavailableAlert = true
+            return
+        }
+        showingCheckInCamera = true
+    }
+
+    private func openCheckOutCamera() {
+        guard checkInTime != nil else {
+            validationMessage = NSLocalizedString("Check-in must be completed before check-out.", comment: "")
+            showValidationAlert = true
+            return
+        }
+        guard hasCheckInPhoto else {
+            validationMessage = NSLocalizedString("Capture check-in photo before check-out.", comment: "")
+            showValidationAlert = true
+            return
+        }
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showCameraUnavailableAlert = true
+            return
+        }
+        showingCheckOutCamera = true
+    }
+
+    private func handleCheckInPhotoCaptured() {
+        checkInTime = Date()
+        status = .inProgress
+        if let checkOutTime, let checkInTime, checkOutTime < checkInTime {
+            self.checkOutTime = nil
+            checkOutPhoto = nil
+        }
+    }
+
+    private func handleCheckOutPhotoCaptured() {
+        guard checkInTime != nil else { return }
+        checkOutTime = Date()
+    }
+
+    private func validateBeforeSave() -> Bool {
+        if let checkOutTime, checkInTime == nil {
+            validationMessage = NSLocalizedString("Check-out cannot be saved without check-in.", comment: "")
+            return false
+        }
+        if checkInTime != nil && !hasCheckInPhoto {
+            validationMessage = NSLocalizedString("Check-in photo is mandatory.", comment: "")
+            return false
+        }
+        if checkOutTime != nil && !hasCheckOutPhoto {
+            validationMessage = NSLocalizedString("Check-out photo is mandatory.", comment: "")
+            return false
+        }
+        if let checkInTime, let checkOutTime, checkOutTime < checkInTime {
+            validationMessage = NSLocalizedString("Check-out time cannot be earlier than check-in time.", comment: "")
+            return false
+        }
+        return true
     }
 }
 

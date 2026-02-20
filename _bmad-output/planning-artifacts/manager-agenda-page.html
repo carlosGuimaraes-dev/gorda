@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gorda - Agenda Manager (Calendar/List)</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --surface: #fff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #533afd;
+      --ok: #0ea56b;
+      --warn: #d97706;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #e9e6ff 0%, #f5f6fb 44%);
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 18px;
+    }
+
+    .top h1 { margin: 0; font-size: 18px; }
+    .top p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+    .container {
+      max-width: 940px;
+      margin: 18px auto 30px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+    }
+
+    .phone {
+      border: 1px solid #b7bfcd;
+      border-radius: 38px;
+      background: linear-gradient(150deg, #fbfcff 0%, #eceff6 42%, #dde2ed 100%);
+      padding: 10px;
+      box-shadow: 0 16px 30px rgba(17, 24, 39, 0.16), 0 2px 0 rgba(255, 255, 255, 0.8) inset;
+      height: fit-content;
+      position: sticky;
+      top: 84px;
+    }
+
+    .screen {
+      border: 1px solid #d9dfeb;
+      border-radius: 30px;
+      background: #fff;
+      min-height: 620px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .screen::before {
+      content: "";
+      width: 94px;
+      height: 25px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 70% 40%, #303236 0%, #0f1013 56%);
+      border: 1px solid #202328;
+      align-self: center;
+      margin: 0 auto 2px;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #858aa1;
+      margin-bottom: 2px;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .iconbtn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #7a8098;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .title { margin: 0; font-size: 15px; font-weight: 700; }
+    .subtitle { margin: 0; font-size: 11px; color: var(--muted); }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      padding: 4px;
+    }
+
+    .segbtn {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #7a8098;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 8px;
+      cursor: pointer;
+    }
+
+    .segbtn.active {
+      color: var(--primary);
+      background: #f1efff;
+      border-color: #cdc7ff;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .monthbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cal {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .dow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 9px;
+      padding: 3px 0;
+      font-weight: 700;
+    }
+
+    .day {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      position: relative;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .day.has { border-color: #cdc7ff; background: #f7f5ff; }
+    .day.selected { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; font-weight: 700; }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--primary);
+      position: absolute;
+      bottom: 4px;
+      left: calc(50% - 2.5px);
+    }
+
+    .row {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .time { font-weight: 700; color: #4b5563; }
+
+    .badge {
+      border: 1px solid #cfc8ff;
+      border-radius: 999px;
+      padding: 3px 7px;
+      font-size: 10px;
+      color: var(--primary);
+      background: #f1efff;
+      font-weight: 700;
+    }
+
+    .badge.warn {
+      border-color: #f8d8a8;
+      color: #9a5807;
+      background: #fff6e6;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px;
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+      background: #fafbff;
+    }
+
+    .kpi strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .cta {
+      margin-top: auto;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #6e5afc 0%, #533afd 100%);
+      text-align: center;
+    }
+
+    .tabbar {
+      margin-top: 6px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .tabicon {
+      min-height: 24px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      color: #7a8098;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tabicon.active {
+      color: var(--primary);
+      background: #f1efff;
+      border-color: #cdc7ff;
+    }
+
+    .info {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 12px;
+      box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .info h2 { margin: 0; font-size: 16px; }
+
+    .info ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #374151;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px dashed #dedff1;
+      padding-top: 8px;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .phone { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>Agenda do Manager</h1>
+    <p>Visualizacao mensal com alternancia entre <strong>Calendario (PickDate)</strong> e <strong>List</strong>.</p>
+  </header>
+
+  <svg width="0" height="0" style="position:absolute;left:-9999px;top:-9999px;overflow:hidden" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></symbol>
+    <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3.5v4M17 3.5v4M3.5 10h17"/></symbol>
+    <symbol id="i-finance" viewBox="0 0 24 24"><path d="M12 3.5v17"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3S7.5 5.8 7.5 7.5 9.5 10.5 12 10.5s4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.2 14.1l1.1 1.9-2 3.5-2.2-.5a7.9 7.9 0 0 1-1.7 1l-.4 2.2H10l-.4-2.2a7.9 7.9 0 0 1-1.7-1l-2.2.5-2-3.5 1.1-1.9a8.4 8.4 0 0 1 0-2.2L3.7 10l2-3.5 2.2.5a7.9 7.9 0 0 1 1.7-1L10 3.8h4l.4 2.2a7.9 7.9 0 0 1 1.7 1l2.2-.5 2 3.5-1.1 1.9a8.4 8.4 0 0 1 0 2.2z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="5" rx="1.5"/><rect x="13" y="11" width="7" height="9" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/></symbol>
+  </svg>
+
+  <main class="container">
+    <section class="phone">
+      <div class="screen">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+
+        <div class="nav">
+          <span class="iconbtn" title="Menu"><svg class="icon"><use href="#i-menu"></use></svg></span>
+          <span class="iconbtn" title="Dashboard"><svg class="icon"><use href="#i-dashboard"></use></svg></span>
+        </div>
+
+        <p class="title">Agenda Mensal - Manager</p>
+        <p class="subtitle">Mar 2026</p>
+
+        <div class="segmented">
+          <button id="btnCalendar" class="segbtn active" type="button">PickDate</button>
+          <button id="btnList" class="segbtn" type="button">List</button>
+        </div>
+
+        <div id="calendarView" class="panel">
+          <div class="monthbar">
+            <span>&lt; Mar 2026 &gt;</span>
+            <span style="color:var(--muted);font-size:10px">15 selecionado</span>
+          </div>
+          <div class="cal">
+            <div class="dow">S</div><div class="dow">T</div><div class="dow">Q</div><div class="dow">Q</div><div class="dow">S</div><div class="dow">S</div><div class="dow">D</div>
+            <div class="day">1</div><div class="day has">2<span class="dot"></span></div><div class="day">3</div><div class="day">4</div><div class="day has">5<span class="dot"></span></div><div class="day">6</div><div class="day">7</div>
+            <div class="day">8</div><div class="day">9</div><div class="day has">10<span class="dot"></span></div><div class="day">11</div><div class="day">12</div><div class="day has">13<span class="dot"></span></div><div class="day">14</div>
+            <div class="day selected has">15<span class="dot"></span></div><div class="day">16</div><div class="day">17</div><div class="day has">18<span class="dot"></span></div><div class="day">19</div><div class="day">20</div><div class="day has">21<span class="dot"></span></div>
+            <div class="day">22</div><div class="day">23</div><div class="day has">24<span class="dot"></span></div><div class="day">25</div><div class="day">26</div><div class="day">27</div><div class="day">28</div>
+            <div class="day">29</div><div class="day has">30<span class="dot"></span></div><div class="day">31</div><div class="day"></div><div class="day"></div><div class="day"></div><div class="day"></div>
+          </div>
+        </div>
+
+        <div id="listView" class="panel hidden">
+          <div class="row"><span class="time">09:00</span><span>Smith House - Deep Clean</span><span class="badge">Pendente</span></div>
+          <div class="row"><span class="time">11:30</span><span>Martin Apt - Inspection</span><span class="badge warn">Atencao</span></div>
+          <div class="row"><span class="time">15:00</span><span>Noah Condo - Move-out</span><span class="badge">Pendente</span></div>
+          <div class="row"><span class="time">17:00</span><span>Carla Villa - Garden</span><span class="badge">Concluida</span></div>
+        </div>
+
+        <div class="summary">
+          <div class="kpi">Tasks no dia<strong>6</strong></div>
+          <div class="kpi">Em risco<strong>1</strong></div>
+          <div class="kpi">Teams<strong>3</strong></div>
+        </div>
+
+        <div class="cta">Abrir dia selecionado</div>
+
+        <div class="tabbar">
+          <span class="tabicon" title="Home"><svg class="icon"><use href="#i-home"></use></svg></span>
+          <span class="tabicon active" title="Agenda"><svg class="icon"><use href="#i-agenda"></use></svg></span>
+          <span class="tabicon" title="Finance"><svg class="icon"><use href="#i-finance"></use></svg></span>
+          <span class="tabicon" title="Config"><svg class="icon"><use href="#i-settings"></use></svg></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="info">
+      <h2>Regras desta pagina</h2>
+      <ul>
+        <li>Manager pode trocar entre <strong>PickDate</strong> e <strong>List</strong>.</li>
+        <li>No modo PickDate, selecionar data destaca os servicos do dia.</li>
+        <li>No modo List, mostra a fila de servicos do periodo em lista continua.</li>
+        <li>CTA principal permanece no rodape, acima da tab bar.</li>
+      </ul>
+      <div class="hint">Pasta do arquivo: <code>_bmad-output/planning-artifacts/manager-agenda-page.html</code></div>
+    </aside>
+  </main>
+
+  <script>
+    const btnCalendar = document.getElementById('btnCalendar');
+    const btnList = document.getElementById('btnList');
+    const calendarView = document.getElementById('calendarView');
+    const listView = document.getElementById('listView');
+
+    function showCalendar() {
+      btnCalendar.classList.add('active');
+      btnList.classList.remove('active');
+      calendarView.classList.remove('hidden');
+      listView.classList.add('hidden');
+    }
+
+    function showList() {
+      btnList.classList.add('active');
+      btnCalendar.classList.remove('active');
+      listView.classList.remove('hidden');
+      calendarView.classList.add('hidden');
+    }
+
+    btnCalendar.addEventListener('click', showCalendar);
+    btnList.addEventListener('click', showList);
+  </script>
+</body>
+</html>

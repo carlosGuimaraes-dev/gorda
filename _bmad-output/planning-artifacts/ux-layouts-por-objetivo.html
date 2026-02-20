@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gorda - Layouts por Objetivo</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #533afd;
+      --ok: #0ea56b;
+      --warn: #d97706;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #e9e6ff 0%, #f5f6fb 45%);
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .top p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .objective {
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
+    }
+
+    .objective-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #fafaff 100%);
+    }
+
+    .objective-head h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .objective-head p {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pick {
+      font-size: 11px;
+      color: var(--primary);
+      border: 1px solid #d6d0ff;
+      background: #f1efff;
+      border-radius: 999px;
+      padding: 5px 8px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(250px, 1fr));
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .variant {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .variant-head {
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      background: #fcfcff;
+    }
+
+    .variant-head h3 {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .variant-head p {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .mock {
+      padding: 8px;
+      background: linear-gradient(180deg, #fafaff 0%, #ffffff 42%);
+    }
+
+    .phone {
+      max-width: 250px;
+      margin: 0 auto;
+      border: 1px solid #d8d9e3;
+      border-radius: 26px;
+      background: #f8f9fd;
+      padding: 8px;
+    }
+
+    .screen {
+      min-height: 395px;
+      border: 1px solid #edf0f6;
+      border-radius: 18px;
+      background: #fff;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen > * {
+      flex: 0 0 auto;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #858aa1;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .row, .box, .btn, .step {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .row {
+      padding: 7px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .box {
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .line {
+      height: 7px;
+      border-radius: 999px;
+      background: #ebedf5;
+      margin-bottom: 5px;
+    }
+
+    .line.sm { width: 56%; }
+    .line.md { width: 74%; }
+    .line.lg { width: 92%; }
+
+    .bar {
+      height: 7px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #f0f2f9;
+      margin: 7px 0;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: #533afd;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .step {
+      text-align: center;
+      font-size: 9px;
+      padding: 4px 0;
+      color: #798099;
+      background: #fafbff;
+    }
+
+    .step.active {
+      color: var(--primary);
+      border-color: #cbc4ff;
+      background: #f1efff;
+      font-weight: 700;
+    }
+
+    .btn {
+      margin-top: auto;
+      order: 98;
+      padding: 8px;
+      text-align: center;
+      color: #fff;
+      border-color: transparent;
+      font-size: 11px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #6e5afc 0%, #533afd 100%);
+    }
+
+    .note {
+      border-top: 1px dashed #dedff1;
+      margin-top: 7px;
+      padding-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+      order: 97;
+    }
+
+    .screen::after {
+      content: "Home   Agenda   Finance   Settings";
+      margin-top: 6px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      color: #798099;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-align: center;
+      padding: 5px 4px;
+      display: block;
+      order: 99;
+    }
+
+    .legend {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .tag {
+      font-size: 9px;
+      padding: 3px 5px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: #fff;
+      text-align: center;
+    }
+
+    @media (max-width: 1220px) {
+      .grid { grid-template-columns: repeat(2, minmax(250px, 1fr)); }
+    }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>Gorda • Comparação por Objetivo</h1>
+    <p>Mesmo objetivo, layouts diferentes. Escolha 1 layout por objetivo (letra A/B/C/D).</p>
+  </header>
+
+  <main class="container">
+
+    <section class="objective">
+      <div class="objective-head">
+        <div>
+          <h2>OBJ1 • Fechar fatura mensal + payroll (Manager)</h2>
+          <p>Prioridade: precisão, velocidade e confiança no fechamento.</p>
+        </div>
+        <span class="pick">Escolha: OBJ1 = A/B/C/D</span>
+      </div>
+      <div class="grid">
+        <article class="variant">
+          <div class="variant-head"><h3>A • KPI Top-Down</h3><p>Visão financeira primeiro, ação depois.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Fechamento • Jan</p>
+            <div class="row"><span>Recebíveis</span><strong>$18.240</strong></div>
+            <div class="row"><span>Pagáveis</span><strong>$7.910</strong></div>
+            <div class="row"><span>Pendências</span><strong style="color:var(--danger)">4</strong></div>
+            <div class="bar"><span style="width:68%"></span></div>
+            <div class="btn">Validar pendências</div>
+            <div class="note">Boa visão executiva.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>B • Wizard 4 passos</h3><p>Controle por etapas, reduz erro.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>4G</span></div>
+            <p class="title">Passo 2/4 • Pendências</p>
+            <div class="steps"><div class="step">1</div><div class="step active">2</div><div class="step">3</div><div class="step">4</div></div>
+            <div class="row"><span>Sem vínculo</span><strong>3</strong></div>
+            <div class="row"><span>Inconsistências</span><strong>1</strong></div>
+            <div class="btn">Resolver e continuar</div>
+            <div class="note">Excelente para confiabilidade.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>C • Pendências primeiro</h3><p>Ação imediata no bloqueio.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Antes de fechar</p>
+            <div class="row"><span>Itens obrigatórios</span><strong style="color:var(--danger)">4</strong></div>
+            <div class="box"><div class="line lg"></div><div class="line sm"></div></div>
+            <div class="btn">Corrigir agora</div>
+            <div class="row"><span>Prévia parcial</span><strong>$17.890</strong></div>
+            <div class="note">Minimiza risco de erro final.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>D • Split 50/50</h3><p>Pendências e números no mesmo peso.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Wi-Fi</span></div>
+            <p class="title">Fechamento mensal</p>
+            <div class="box"><div class="line md"></div><div class="row"><span>Pendências</span><strong>4</strong></div></div>
+            <div class="box"><div class="row"><span>Recebíveis</span><strong>$18.240</strong></div><div class="row"><span>Pagáveis</span><strong>$7.910</strong></div></div>
+            <div class="btn">Avançar para emissão</div>
+            <div class="note">Equilíbrio geral.</div>
+          </div></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="objective">
+      <div class="objective-head">
+        <div>
+          <h2>OBJ2 • Tasks diárias + ganhos (Employee)</h2>
+          <p>Prioridade: clareza instantânea, ação rápida em campo.</p>
+        </div>
+        <span class="pick">Escolha: OBJ2 = A/B/C/D</span>
+      </div>
+      <div class="grid">
+        <article class="variant">
+          <div class="variant-head"><h3>A • Lista direta</h3><p>Tarefas em sequência com CTA primário.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Agenda de hoje</p>
+            <div class="row"><span>09:00 • Smith House</span><strong>Check-in</strong></div>
+            <div class="row"><span>11:30 • Martin Apt</span><strong>Pendente</strong></div>
+            <div class="row"><span>15:00 • Noah Condo</span><strong>Pendente</strong></div>
+            <div class="btn">Abrir próxima task</div>
+            <div class="row"><span>Ganho estimado</span><strong>$320</strong></div>
+            <div class="note">Fluxo mais direto e rápido.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>B • Time blocks</h3><p>Separado por manhã/tarde/noite.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>4G</span></div>
+            <p class="title">Agenda por período</p>
+            <div class="box"><div class="line sm"></div><div class="line md"></div></div>
+            <div class="box"><div class="line sm"></div><div class="line md"></div></div>
+            <div class="box"><div class="line sm"></div><div class="line md"></div></div>
+            <div class="btn">Registrar andamento</div>
+            <div class="row"><span>Ganho previsto</span><strong>$320</strong></div>
+            <div class="note">Boa organização temporal, menos imediata.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>C • Próxima ação</h3><p>Um card principal, foco total.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Faça isso agora</p>
+            <div class="box"><div class="line lg"></div><div class="line md"></div><div class="btn">Check-in</div></div>
+            <div class="row"><span>Depois</span><strong>2 tasks</strong></div>
+            <div class="row"><span>Ganho hoje</span><strong>$320</strong></div>
+            <div class="note">Menor carga cognitiva no campo.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>D • Kanban mini</h3><p>Colunas: Hoje/Em andamento/Feito.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Status diário</p>
+            <div class="legend"><div class="tag">Hoje (3)</div><div class="tag">Andamento (1)</div><div class="tag">Feito (2)</div><div class="tag">Ganhos</div></div>
+            <div class="box"><div class="line lg"></div><div class="line sm"></div></div>
+            <div class="btn">Mover task</div>
+            <div class="row"><span>Estimado</span><strong>$320</strong></div>
+            <div class="note">Ótimo para visão de progresso.</div>
+          </div></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="objective">
+      <div class="objective-head">
+        <div>
+          <h2>OBJ3 • Inserir comprovantes por scan</h2>
+          <p>Prioridade: captura em poucos toques, sem perda, com fila offline.</p>
+        </div>
+        <span class="pick">Escolha: OBJ3 = A/B/C/D</span>
+      </div>
+      <div class="grid">
+        <article class="variant">
+          <div class="variant-head"><h3>A • Camera-first</h3><p>Botão escanear dominante no topo.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Comprovantes</p>
+            <div class="btn">Escanear novo</div>
+            <div class="row"><span>Fila offline</span><strong>6</strong></div>
+            <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+            <div class="row"><span>Sugestão cliente</span><strong>Smith House</strong></div>
+            <div class="note">Mais rápido para campo.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>B • Lista + scanner</h3><p>Histórico primeiro, ação secundária.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>4G</span></div>
+            <p class="title">Últimos comprovantes</p>
+            <div class="box"><div class="line lg"></div><div class="line sm"></div></div>
+            <div class="box"><div class="line lg"></div><div class="line sm"></div></div>
+            <div class="btn">Adicionar comprovante</div>
+            <div class="row"><span>Pendentes sync</span><strong>2</strong></div>
+            <div class="note">Bom para auditoria, menos ágil.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>C • Assistido por IA</h3><p>Sugestões automáticas em destaque.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Vincular comprovante</p>
+            <div class="row"><span>Cliente sugerido</span><strong>95%</strong></div>
+            <div class="row"><span>Task sugerida</span><strong>91%</strong></div>
+            <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+            <div class="btn">Confirmar e salvar</div>
+            <div class="note">Maior automação e menos toque manual.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>D • Pipeline 3 etapas</h3><p>Capturar → Revisar → Publicar.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Pipeline de evidências</p>
+            <div class="steps"><div class="step active">1</div><div class="step">2</div><div class="step">3</div><div class="step">OK</div></div>
+            <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+            <div class="btn">Continuar</div>
+            <div class="row"><span>Na fila</span><strong>6</strong></div>
+            <div class="note">Mais controle processual.</div>
+          </div></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="objective">
+      <div class="objective-head">
+        <div>
+          <h2>OBJ4 • Emitir invoices mensais com 1 clique</h2>
+          <p>Prioridade: confirmação segura, visão final, envio consistente.</p>
+        </div>
+        <span class="pick">Escolha: OBJ4 = A/B/C/D</span>
+      </div>
+      <div class="grid">
+        <article class="variant">
+          <div class="variant-head"><h3>A • Resumo + emitir</h3><p>Resumo financeiro compacto e CTA final.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Pronto para emitir</p>
+            <div class="row"><span>Invoices</span><strong>18</strong></div>
+            <div class="row"><span>Payroll</span><strong>7</strong></div>
+            <div class="row"><span>Total</span><strong>$26.150</strong></div>
+            <div class="btn">Emitir agora</div>
+            <div class="note">Mais direto possível.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>B • Checklist de envio</h3><p>Valida canal e status antes do clique.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>4G</span></div>
+            <p class="title">Checklist final</p>
+            <div class="row"><span>Canal WhatsApp</span><strong>OK</strong></div>
+            <div class="row"><span>Email fallback</span><strong>OK</strong></div>
+            <div class="row"><span>Dados fiscais</span><strong>OK</strong></div>
+            <div class="btn">Emitir com segurança</div>
+            <div class="note">Reduz risco operacional.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>C • Simulação antes</h3><p>Preview completo antes de emitir.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>Wi-Fi</span></div>
+            <p class="title">Pré-visualização</p>
+            <div class="box"><div class="line lg"></div><div class="line md"></div><div class="line sm"></div></div>
+            <div class="row"><span>Disputas abertas</span><strong>0</strong></div>
+            <div class="btn">Confirmar emissão</div>
+            <div class="note">Mais confiança para aprovar.</div>
+          </div></div></div>
+        </article>
+        <article class="variant">
+          <div class="variant-head"><h3>D • Emissão em lote</h3><p>Seleção por blocos com envio parcial.</p></div>
+          <div class="mock"><div class="phone"><div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Emitir em lote</p>
+            <div class="row"><span>Selecionados</span><strong>18/18</strong></div>
+            <div class="bar"><span style="width:100%"></span></div>
+            <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+            <div class="btn">Emitir selecionados</div>
+            <div class="note">Bom para exceções e controle granular.</div>
+          </div></div></div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

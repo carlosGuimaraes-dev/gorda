@@ -15,7 +15,7 @@ user_name:
 
 communication_language:
   prompt: "Preferred Chat Language/Style? (English, Mandarin, English Pirate, etc...)"
-  default: "English"
+  default: "portuguese"
   result: "{value}"
 
 document_output_language:

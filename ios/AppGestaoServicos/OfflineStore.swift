@@ -105,6 +105,8 @@ final class OfflineStore: ObservableObject {
         notes: String? = nil,
         checkInTime: Date? = nil,
         checkOutTime: Date? = nil,
+        checkInPhotoData: Data? = nil,
+        checkOutPhotoData: Data? = nil,
         employee: Employee? = nil,
         client: Client? = nil,
         serviceTypeId: UUID? = nil
@@ -119,6 +121,8 @@ final class OfflineStore: ObservableObject {
         tasks[index].notes = notes ?? tasks[index].notes
         tasks[index].checkInTime = checkInTime ?? tasks[index].checkInTime
         tasks[index].checkOutTime = checkOutTime ?? tasks[index].checkOutTime
+        tasks[index].checkInPhotoData = checkInPhotoData ?? tasks[index].checkInPhotoData
+        tasks[index].checkOutPhotoData = checkOutPhotoData ?? tasks[index].checkOutPhotoData
         if let employee {
             tasks[index].assignedEmployee = employee
         }
@@ -1670,6 +1674,8 @@ final class OfflineStore: ObservableObject {
         object.setValue(task.serviceTypeId, forKey: "serviceTypeId")
         object.setValue(task.checkInTime, forKey: "checkInTime")
         object.setValue(task.checkOutTime, forKey: "checkOutTime")
+        object.setValue(encryptData(task.checkInPhotoData), forKey: "checkInPhotoData")
+        object.setValue(encryptData(task.checkOutPhotoData), forKey: "checkOutPhotoData")
 
         saveContext()
     }
@@ -1850,6 +1856,8 @@ final class OfflineStore: ObservableObject {
         let serviceTypeId = object.value(forKey: "serviceTypeId") as? UUID
         let checkIn = object.value(forKey: "checkInTime") as? Date
         let checkOut = object.value(forKey: "checkOutTime") as? Date
+        let checkInPhotoData = decryptData(object.value(forKey: "checkInPhotoData") as? Data)
+        let checkOutPhotoData = decryptData(object.value(forKey: "checkOutPhotoData") as? Data)
 
         let employeeId = object.value(forKey: "employeeId") as? UUID
         let employeeName = object.value(forKey: "employeeName") as? String ?? "Unassigned"
@@ -1897,7 +1905,9 @@ final class OfflineStore: ObservableObject {
             notes: notes,
             serviceTypeId: serviceTypeId,
             checkInTime: checkIn,
-            checkOutTime: checkOut
+            checkOutTime: checkOut,
+            checkInPhotoData: checkInPhotoData,
+            checkOutPhotoData: checkOutPhotoData
         )
     }
 
@@ -2156,6 +2166,83 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+struct CompanyProfile: Codable, Hashable {
+    enum TaxCountry: String, Codable, CaseIterable, Identifiable {
+        case unitedStates
+        case spain
+        case portugal
+        case other
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .unitedStates: return NSLocalizedString("United States", comment: "")
+            case .spain: return NSLocalizedString("Spain", comment: "")
+            case .portugal: return NSLocalizedString("Portugal", comment: "")
+            case .other: return NSLocalizedString("Other", comment: "")
+            }
+        }
+
+        var taxIdLabel: String {
+            switch self {
+            case .unitedStates:
+                return NSLocalizedString("EIN / SSN", comment: "")
+            case .spain:
+                return NSLocalizedString("NIF / VAT", comment: "")
+            case .portugal:
+                return NSLocalizedString("NIF / VAT", comment: "")
+            case .other:
+                return NSLocalizedString("Tax ID", comment: "")
+            }
+        }
+    }
+
+    var legalName: String
+    var addressLine1: String
+    var addressLine2: String
+    var city: String
+    var region: String
+    var postalCode: String
+    var countryName: String
+    var contactEmail: String
+    var contactPhone: String
+    var website: String
+    var taxCountry: TaxCountry
+    var taxIdentifier: String
+    var logoData: Data?
+
+    init(
+        legalName: String = "",
+        addressLine1: String = "",
+        addressLine2: String = "",
+        city: String = "",
+        region: String = "",
+        postalCode: String = "",
+        countryName: String = "",
+        contactEmail: String = "",
+        contactPhone: String = "",
+        website: String = "",
+        taxCountry: TaxCountry = .unitedStates,
+        taxIdentifier: String = "",
+        logoData: Data? = nil
+    ) {
+        self.legalName = legalName
+        self.addressLine1 = addressLine1
+        self.addressLine2 = addressLine2
+        self.city = city
+        self.region = region
+        self.postalCode = postalCode
+        self.countryName = countryName
+        self.contactEmail = contactEmail
+        self.contactPhone = contactPhone
+        self.website = website
+        self.taxCountry = taxCountry
+        self.taxIdentifier = taxIdentifier
+        self.logoData = logoData
+    }
+}
+
 struct AppPreferences: Codable {
     var language: AppLanguage
     var preferredCurrency: FinanceEntry.Currency
@@ -2163,6 +2250,7 @@ struct AppPreferences: Codable {
     var enableWhatsApp: Bool
     var enableTextMessages: Bool
     var enableEmail: Bool
+    var companyProfile: CompanyProfile?
 
     init(
         language: AppLanguage = .enUS,
@@ -2170,7 +2258,8 @@ struct AppPreferences: Codable {
         disputeWindowDays: Int = 0,
         enableWhatsApp: Bool = true,
         enableTextMessages: Bool = true,
-        enableEmail: Bool = true
+        enableEmail: Bool = true,
+        companyProfile: CompanyProfile? = nil
     ) {
         self.language = language
         self.preferredCurrency = preferredCurrency
@@ -2178,6 +2267,7 @@ struct AppPreferences: Codable {
         self.enableWhatsApp = enableWhatsApp
         self.enableTextMessages = enableTextMessages
         self.enableEmail = enableEmail
+        self.companyProfile = companyProfile
     }
 
     enum CodingKeys: String, CodingKey {
@@ -2187,6 +2277,7 @@ struct AppPreferences: Codable {
         case enableWhatsApp
         case enableTextMessages
         case enableEmail
+        case companyProfile
     }
 
     init(from decoder: Decoder) throws {
@@ -2197,6 +2288,7 @@ struct AppPreferences: Codable {
         enableWhatsApp = try container.decodeIfPresent(Bool.self, forKey: .enableWhatsApp) ?? true
         enableTextMessages = try container.decodeIfPresent(Bool.self, forKey: .enableTextMessages) ?? true
         enableEmail = try container.decodeIfPresent(Bool.self, forKey: .enableEmail) ?? true
+        companyProfile = try container.decodeIfPresent(CompanyProfile.self, forKey: .companyProfile)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -2207,6 +2299,7 @@ struct AppPreferences: Codable {
         try container.encode(enableWhatsApp, forKey: .enableWhatsApp)
         try container.encode(enableTextMessages, forKey: .enableTextMessages)
         try container.encode(enableEmail, forKey: .enableEmail)
+        try container.encodeIfPresent(companyProfile, forKey: .companyProfile)
     }
 }
 

@@ -69,7 +69,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `description: String?`
   - `basePrice: Decimal`
   - `currency: String` (`"USD"` ou `"EUR"`)
-  - `defaultDurationMinutes: Int?`
+  - `pricingModel: String` (`"perTask"` ou `"perHour"`)
   - Relacionamentos:
     - `tasks: [ServiceTask]`
 
@@ -83,6 +83,8 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `notes: String`
   - `checkInTime: Date?`
   - `checkOutTime: Date?`
+  - `checkInPhotoData: Data?` (foto capturada via câmera no check-in)
+  - `checkOutPhotoData: Data?` (foto capturada via câmera no check-out)
   - `clientId: UUID?` (persistido para vínculos offline consistentes)
   - Observação: na persistência local, tarefas guardam `employeeId`/`clientId` e nomes denormalizados para resiliência offline.
   - Relacionamentos:
@@ -132,9 +134,24 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
     - `client: Client?`
     - `employee: Employee?`
     - `serviceTask: ServiceTask?`
-  - Observação: invoices são gerados agregando tasks por cliente dentro de um período e separados por moeda; o PDF exibe line items com `ServiceTask`/`ServiceType` desse intervalo.
+  - Observação: invoices são gerados agregando tasks por cliente dentro de um período e separados por moeda; line items exibem tipo/descrição/quantidade/unitário/total; para serviços `perHour`, quantidade usa horas de `checkInTime`/`checkOutTime`; para `perTask`, quantidade = 1.
 
 ## Offline / Sync / Notifications
+
+- **CompanyProfile** (persistido dentro de `AppPreferences`)
+  - `legalName: String`
+  - `addressLine1: String`
+  - `addressLine2: String`
+  - `city: String`
+  - `region: String`
+  - `postalCode: String`
+  - `countryName: String`
+  - `contactEmail: String`
+  - `contactPhone: String`
+  - `website: String`
+  - `taxCountry: String` (`"unitedStates"`, `"spain"`, `"portugal"`, `"other"`)
+  - `taxIdentifier: String` (ex.: NIF/VAT ou EIN/SSN)
+  - `logoData: Data?` (logo opcional para cabeçalho do PDF de invoice)
 
 - **PendingChange**
   - `id: UUID`
@@ -155,6 +172,7 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
   - `enableWhatsApp: Bool`
   - `enableTextMessages: Bool`
   - `enableEmail: Bool`
+  - `companyProfile: CompanyProfile?` (somente manager altera no Settings)
   - Observação: `preferredCurrency` é global e bloqueia a moeda usada em cadastros e lançamentos financeiros.
 
 - **ConflictLogEntry**

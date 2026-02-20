@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gorda - UX Pattern Visual Examples</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --surface: #ffffff;
+      --line: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #533afd;
+      --ok: #0ea56b;
+      --warn: #d97706;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top right, #e9e6ff 0%, #f5f6fb 45%);
+      color: var(--text);
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 18px;
+    }
+
+    .top h1 { margin: 0; font-size: 18px; }
+    .top p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: 0 10px 24px rgba(17,24,39,.08);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fcfcff;
+    }
+
+    .head h2 { margin: 0; font-size: 14px; }
+    .head p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+
+    .mock { padding: 10px; background: linear-gradient(180deg,#fafaff,#fff); }
+
+    .phone {
+      max-width: 290px;
+      margin: 0 auto;
+      border: 1px solid #d8d9e3;
+      border-radius: 28px;
+      background: #f8f9fd;
+      padding: 9px;
+    }
+
+    .screen {
+      min-height: 460px;
+      border: 1px solid #edf0f6;
+      border-radius: 20px;
+      background: #fff;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      color: #858aa1;
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+
+    .title { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+
+    .row, .box, .btn, .step, .pill, .search {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      padding: 7px;
+      margin-bottom: 6px;
+    }
+
+    .box {
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .line {
+      height: 7px;
+      border-radius: 999px;
+      background: #ebedf5;
+      margin-bottom: 5px;
+    }
+
+    .line.sm { width: 54%; }
+    .line.md { width: 74%; }
+    .line.lg { width: 92%; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+
+    .step {
+      text-align: center;
+      font-size: 9px;
+      padding: 4px 0;
+      color: #798099;
+      background: #fafbff;
+    }
+
+    .step.active {
+      color: var(--primary);
+      border-color: #cbc4ff;
+      background: #f1efff;
+      font-weight: 700;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: #12754f;
+      border-color: #b6ecd7;
+      background: #effdf7;
+      padding: 4px 8px;
+      margin-bottom: 7px;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .btn {
+      margin-top: auto;
+      order: 98;
+      text-align: center;
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(90deg,#6e5afc,#533afd);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 9px;
+    }
+
+    .tabbar {
+      margin-top: 7px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafbff;
+      color: #7a8098;
+      font-size: 9px;
+      text-align: center;
+      padding: 5px 4px;
+      order: 99;
+    }
+
+    .sheet {
+      margin-top: 8px;
+      border: 1px dashed #cfc8ff;
+      border-radius: 10px;
+      background: #f7f5ff;
+      padding: 6px;
+      font-size: 10px;
+      color: #4c3ed1;
+      order: 95;
+    }
+
+    .note {
+      border-top: 1px dashed #dedff1;
+      margin-top: 7px;
+      padding-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+      order: 97;
+    }
+
+    @media (max-width: 980px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>Exemplos visuais - UX Patterns (Passo 12)</h1>
+    <p>Padrões solicitados: wizard com progresso, empty state com CTA e busca+filtro em sheet.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <div class="head">
+        <h2>4) Wizard com Progresso (A)</h2>
+        <p>Tarefa longa em passos com avanço claro.</p>
+      </div>
+      <div class="mock">
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>4G</span></div>
+            <p class="title">Passo 2/4 • Pendências</p>
+            <div class="steps">
+              <div class="step">1</div><div class="step active">2</div><div class="step">3</div><div class="step">4</div>
+            </div>
+            <div class="row"><span>Comprovantes sem vínculo</span><strong>3</strong></div>
+            <div class="row"><span>Conflitos de valor</span><strong>1</strong></div>
+            <div class="box"><div class="line lg"></div><div class="line md"></div></div>
+            <div class="note">Sempre mostra onde o usuário está e o próximo passo.</div>
+            <div class="btn">Resolver e continuar</div>
+            <div class="tabbar">Home   Agenda   Finance   Settings</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <h2>5) Empty State com CTA (A)</h2>
+        <p>Sem dados + ação principal direta.</p>
+      </div>
+      <div class="mock">
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>Offline</span></div>
+            <p class="title">Comprovantes</p>
+            <div class="pill">● Tudo salvo localmente</div>
+            <div class="box">
+              <div class="line md"></div>
+              <div class="line sm"></div>
+            </div>
+            <div class="row"><span>Sem comprovantes neste período</span><strong>0</strong></div>
+            <div class="note">Mensagem curta + ação clara para sair do estado vazio.</div>
+            <div class="btn">Escanear primeiro comprovante</div>
+            <div class="tabbar">Home   Agenda   Finance   Capture</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head">
+        <h2>6) Busca no topo + filtro em sheet (A)</h2>
+        <p>Busca rápida e filtros avançados fora da lista.</p>
+      </div>
+      <div class="mock">
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>5G</span></div>
+            <p class="title">Clientes</p>
+            <div class="search"><span>🔎 Buscar cliente...</span><strong>Filtros</strong></div>
+            <div class="row"><span>Smith House</span><strong>Ativo</strong></div>
+            <div class="row"><span>Martin Apt</span><strong>Ativo</strong></div>
+            <div class="row"><span>Noah Condo</span><strong>Inativo</strong></div>
+            <div class="sheet">Sheet de filtros: status, equipe, período, ordenação</div>
+            <div class="note">A lista fica limpa; filtros avançados abrem sem poluir a tela.</div>
+            <div class="btn">Aplicar filtros</div>
+            <div class="tabbar">Home   Agenda   Clientes   Finance</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
