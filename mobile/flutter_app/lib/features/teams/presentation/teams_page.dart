@@ -39,7 +39,8 @@ class TeamsPage extends ConsumerWidget {
             ListTile(title: Text(strings.noEmployeesYet)),
           for (final team in teams)
             ExpansionTile(
-              title: Text('${team.name} (${membersByTeam[team.name]?.length ?? 0})'),
+              title: Text(
+                  '${team.name} (${membersByTeam[team.name]?.length ?? 0})'),
               children: [
                 ...(membersByTeam[team.name] ?? const <Employee>[]).map(
                   (employee) => _TeamEmployeeRow(
@@ -87,7 +88,9 @@ class TeamsPage extends ConsumerWidget {
                         ) ??
                         false;
                     if (!confirmDelete) return;
-                    ref.read(offlineStoreProvider.notifier).deleteTeam(team.name);
+                    ref
+                        .read(offlineStoreProvider.notifier)
+                        .deleteTeam(team.name);
                   },
                 ),
               ],
@@ -121,7 +124,8 @@ class TeamsPage extends ConsumerWidget {
     final sortedKeys = groups.keys.toList()..sort();
     final sorted = <String, List<Employee>>{};
     for (final key in sortedKeys) {
-      final members = [...groups[key]!]..sort((a, b) => a.name.compareTo(b.name));
+      final members = [...groups[key]!]
+        ..sort((a, b) => a.name.compareTo(b.name));
       sorted[key] = members;
     }
     return sorted;
@@ -182,7 +186,8 @@ Future<void> _showTeamFormDialog(
 }) async {
   final strings = AppStrings.of(Localizations.localeOf(context));
   final state = ref.read(offlineStoreProvider);
-  final allEmployees = [...state.employees]..sort((a, b) => a.name.compareTo(b.name));
+  final allEmployees = [...state.employees]
+    ..sort((a, b) => a.name.compareTo(b.name));
   final nameCtrl = TextEditingController(text: existingTeamName ?? '');
   final selectedIds = Set<String>.from(initiallySelectedIds ?? <String>{});
 
@@ -269,7 +274,7 @@ Future<void> _showTeamFormDialog(
                           memberIds: selectedIds.toList(),
                         )
                       : notifier.updateTeam(
-                          oldName: existingTeamName!,
+                          oldName: currentName,
                           newName: teamName,
                           memberIds: selectedIds.toList(),
                         );

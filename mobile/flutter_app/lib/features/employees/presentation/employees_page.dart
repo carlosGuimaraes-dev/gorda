@@ -66,14 +66,84 @@ class EmployeesPage extends ConsumerWidget {
                   Text(employee.phone!),
               ],
             ),
-            trailing: Icon(
-              hasPendingPayables
-                  ? Icons.error_outline_rounded
-                  : Icons.check_circle_outline_rounded,
-              color: hasPendingPayables ? Colors.orange : Colors.green,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  hasPendingPayables
+                      ? Icons.error_outline_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: hasPendingPayables ? Colors.orange : Colors.green,
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEmployeeFormDialog(context, ref, employee: employee);
+                      return;
+                    }
+                    if (value == 'delete') {
+                      _deleteEmployeeFromList(context, ref, employee);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(strings.editEmployee),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(strings.deleteEmployee),
+                    ),
+                  ],
+                ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _deleteEmployeeFromList(
+    BuildContext context,
+    WidgetRef ref,
+    Employee employee,
+  ) async {
+    final strings = AppStrings.of(Localizations.localeOf(context));
+    final confirmDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(strings.deleteEmployeeQuestion),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(strings.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(strings.delete),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmDelete) return;
+
+    final deleted =
+        ref.read(offlineStoreProvider.notifier).deleteEmployee(employee.id);
+    if (deleted) return;
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.cannotDeleteEmployee),
+        content: Text(strings.employeeDeleteBlocked),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(strings.close),
+          ),
+        ],
       ),
     );
   }
@@ -242,8 +312,8 @@ Future<void> _showEmployeeFormDialog(
     builder: (context) {
       return StatefulBuilder(builder: (context, setModalState) {
         return AlertDialog(
-          title:
-              Text(employee == null ? strings.newEmployee : strings.editEmployee),
+          title: Text(
+              employee == null ? strings.newEmployee : strings.editEmployee),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

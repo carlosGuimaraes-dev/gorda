@@ -139,8 +139,7 @@ class AppStrings {
   String get newTeam => _isEs ? 'Nuevo equipo' : 'New Team';
   String get removeTeam => _isEs ? 'Eliminar equipo' : 'Remove team';
   String get editTeam => _isEs ? 'Editar equipo' : 'Edit team';
-  String get deleteTeamQuestion =>
-      _isEs ? '¿Eliminar equipo?' : 'Delete team?';
+  String get deleteTeamQuestion => _isEs ? '¿Eliminar equipo?' : 'Delete team?';
   String get assignEmployees =>
       _isEs ? 'Asignar empleados' : 'Assign employees';
   String get selectAtLeastOneEmployee => _isEs
@@ -213,4 +212,9 @@ class AppStrings {
   String get deleteService => _isEs ? 'Eliminar servicio' : 'Delete service';
   String get deleteServiceQuestion =>
       _isEs ? '¿Eliminar servicio?' : 'Delete service?';
+  String get cannotDeleteService =>
+      _isEs ? 'No se puede eliminar el servicio' : 'Cannot delete service';
+  String get serviceDeleteBlocked => _isEs
+      ? 'Este tipo de servicio está vinculado a tareas existentes. Reasigna o elimina esas tareas antes de borrar.'
+      : 'This service type is linked to existing tasks. Reassign or remove those tasks before deleting.';
 }

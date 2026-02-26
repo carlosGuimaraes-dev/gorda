@@ -53,15 +53,87 @@ class ServicesPage extends ConsumerWidget {
                   ),
               ],
             ),
-            trailing: Text(
-              '${_currencyCode(serviceType.currency)} ${serviceType.basePrice.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: AppThemeTokens.primary,
-                fontWeight: FontWeight.w700,
-              ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${_currencyCode(serviceType.currency)} ${serviceType.basePrice.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: AppThemeTokens.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showServiceTypeForm(context, ref,
+                          serviceType: serviceType);
+                      return;
+                    }
+                    if (value == 'delete') {
+                      _deleteServiceTypeFromList(context, ref, serviceType);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text(strings.editService),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(strings.deleteService),
+                    ),
+                  ],
+                ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _deleteServiceTypeFromList(
+    BuildContext context,
+    WidgetRef ref,
+    ServiceType serviceType,
+  ) async {
+    final strings = AppStrings.of(Localizations.localeOf(context));
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(strings.deleteServiceQuestion),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(strings.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(strings.delete),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+
+    final deleted = ref
+        .read(offlineStoreProvider.notifier)
+        .deleteServiceType(serviceType.id);
+    if (deleted) return;
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.cannotDeleteService),
+        content: Text(strings.serviceDeleteBlocked),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(strings.close),
+          ),
+        ],
       ),
     );
   }
