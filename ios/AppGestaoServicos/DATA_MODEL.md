@@ -2,6 +2,13 @@
 
 Visão de alto nível das entidades principais, pensando em uma implementação com Core Data (SQLite por baixo).
 
+## Nota de Migração Cross-Platform (Flutter)
+
+- Foi criada uma base Flutter em `mobile/flutter_app` com espelhamento inicial das entidades de domínio:
+  - `UserSession`, `Client`, `Employee`, `ServiceTask`, `FinanceEntry`, `PendingChange`.
+- O `OfflineStore` no Flutter está em versão inicial (estado em memória + fila pendente + sync stub), alinhado ao comportamento atual de sync local-first do iOS.
+- Próxima etapa: substituir estado em memória por persistência local (SQLite/Drift) mantendo contratos de entidade e reconciliação de fila.
+
 ## User / Session
 
 - **User**

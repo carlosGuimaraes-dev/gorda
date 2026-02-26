@@ -1,12 +1,17 @@
-# App iOS (SwiftUI)
+# AG Home Organizer International
 
-Esta pasta contem os arquivos do app iOS. A documentacao principal fica no README do root:
+Repositório principal do app de gestão de serviços.
 
-- `README.md`
+## Estrutura
 
-Documentos relacionados:
-- `BACKLOG.md` (root)
-- `DATA_MODEL.md` (root)
+- `ios/AppGestaoServicos`: app iOS atual em SwiftUI (fonte de verdade em produção).
+- `mobile/flutter_app`: base inicial da migração cross-platform em Flutter (em andamento).
+- `backend`: serviços Node.js/TypeScript.
+
+## Documentação
+
+- `ios/AppGestaoServicos/BACKLOG.md`
+- `ios/AppGestaoServicos/DATA_MODEL.md`
 - `prd/ios-servicos-prd.md`
 - `docs/architecture-frontend.md`
 - `docs/architecture-backend.md`

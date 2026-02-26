@@ -6,6 +6,8 @@
 - Wireframes/UX finais em `_bmad-output/planning-artifacts` já estão implementados nas telas dedicadas prioritárias (closing wizard, receipts hub camera-first, emissão consolidada e clientes com busca/filtros em sheet).
 - Backend Node/TS com rotas principais e integrações externas de anexos R2 (URLs assinadas) + envio de invoices (WhatsApp/Email) implementadas, dependentes de credenciais válidas.
 - Integração real app iOS ↔ backend ainda pendente (sync no iOS permanece em stub local).
+- ✅ Início da migração cross-platform: módulo `mobile/flutter_app` criado com app shell, entidades espelhadas do domínio e `OfflineStore` inicial com fila pendente (stub de sync).
+- ✅ Flutter (migração): primeira tela funcional de Agenda implementada com cards, filtros por status e atualização de status ligada à fila offline (`OfflineStore`).
 
 - ✅ Login e sessão local com splash minimalista
 - ✅ Agenda diária com detalhe editável (status, horários, notas, notificações rápidas)
@@ -101,6 +103,7 @@
 - ✅ Auditoria básica de alterações (quem/quando) para tarefas e finanças.
 - ✅ Implementar no SwiftUI as telas dedicadas definidas no UX final (fechamento em passos/wizard, comprovantes camera-first, emissão consolidada e clientes com busca+filtros em sheet).
 - ✅ Finalizar backend de anexos (URLs assinadas reais) e envio externo de notificações (WhatsApp/Email) no serviço Node/TS; depende apenas de configuração de credenciais para produção.
+- Iniciar migração por paridade para Flutter (Auth/Shell/OfflineStore e módulos por fases), mantendo iOS SwiftUI como baseline até estabilidade.
 
 ## Roadmap (Later)
 
