@@ -8,6 +8,7 @@ class ServiceTask {
     required this.clientName,
     required this.address,
     this.clientId,
+    this.serviceTypeId,
     this.startTime,
     this.endTime,
     this.notes = '',
@@ -21,6 +22,7 @@ class ServiceTask {
   final TaskStatus status;
   final String assignedEmployeeId;
   final String? clientId;
+  final String? serviceTypeId;
   final String clientName;
   final String address;
   final DateTime? startTime;
@@ -36,6 +38,7 @@ class ServiceTask {
     TaskStatus? status,
     String? assignedEmployeeId,
     String? clientId,
+    String? serviceTypeId,
     String? clientName,
     String? address,
     DateTime? startTime,
@@ -51,6 +54,7 @@ class ServiceTask {
       status: status ?? this.status,
       assignedEmployeeId: assignedEmployeeId ?? this.assignedEmployeeId,
       clientId: clientId ?? this.clientId,
+      serviceTypeId: serviceTypeId ?? this.serviceTypeId,
       clientName: clientName ?? this.clientName,
       address: address ?? this.address,
       startTime: startTime ?? this.startTime,

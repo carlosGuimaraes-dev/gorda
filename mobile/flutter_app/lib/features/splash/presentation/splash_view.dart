@@ -21,7 +21,7 @@ class SplashView extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     AppThemeTokens.primary,
-                    AppThemeTokens.primary.withValues(alpha: 0.8),
+                    AppThemeTokens.primary.withOpacity(0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

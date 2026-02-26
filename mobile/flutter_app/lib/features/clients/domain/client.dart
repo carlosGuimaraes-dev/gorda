@@ -26,4 +26,33 @@ class Client {
   final String accessNotes;
   final String preferredSchedule;
   final List<DeliveryChannel> preferredDeliveryChannels;
+
+  Client copyWith({
+    String? id,
+    String? name,
+    String? contact,
+    String? address,
+    String? propertyDetails,
+    String? phone,
+    String? whatsappPhone,
+    String? email,
+    String? accessNotes,
+    String? preferredSchedule,
+    List<DeliveryChannel>? preferredDeliveryChannels,
+  }) {
+    return Client(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contact: contact ?? this.contact,
+      address: address ?? this.address,
+      propertyDetails: propertyDetails ?? this.propertyDetails,
+      phone: phone ?? this.phone,
+      whatsappPhone: whatsappPhone ?? this.whatsappPhone,
+      email: email ?? this.email,
+      accessNotes: accessNotes ?? this.accessNotes,
+      preferredSchedule: preferredSchedule ?? this.preferredSchedule,
+      preferredDeliveryChannels:
+          preferredDeliveryChannels ?? this.preferredDeliveryChannels,
+    );
+  }
 }

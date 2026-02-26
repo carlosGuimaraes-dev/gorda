@@ -32,14 +32,14 @@ ThemeData buildAppTheme() {
         fontWeight: FontWeight.w700,
       ),
     ),
-    cardTheme: CardThemeData(
+    cardTheme: CardTheme(
       color: AppThemeTokens.cardBackground,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
       ),
       elevation: 0,
-      shadowColor: Colors.black.withValues(alpha: 0.04),
+      shadowColor: Colors.black.withOpacity(0.04),
       surfaceTintColor: Colors.transparent,
     ),
     inputDecorationTheme: InputDecorationTheme(

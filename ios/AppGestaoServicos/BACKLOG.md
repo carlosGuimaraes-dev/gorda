@@ -25,8 +25,10 @@
 - ✅ Modelagem de remuneração por funcionário (valor/hora em USD/EUR e outros recebíveis)
 - ✅ Cadastro de funcionários com foto, documentos e informações de remuneração
 - ✅ Modelagem de tipos de serviço com preço em USD/EUR e vínculo automático a lançamentos financeiros por cliente/funcionário
-- ✅ Menu hamburger com atalhos para Dashboard, Schedule, Clients, Services, Employees, Finance e Settings
-- ✅ Catálogo de serviços com lista/detalhe e CRUD básico (criar, editar, apagar quando não está em uso)
+- ✅ Menu lateral (hamburger) dedicado apenas a **Catálogos**: Services, Employees e Teams
+- ✅ Catálogo de serviços com CRUD completo (criar, editar, visualizar detalhe e apagar quando não está em uso)
+- ✅ Catálogo de funcionários com CRUD completo (criar, visualizar detalhe, editar e apagar com bloqueio quando vinculado)
+- ✅ Catálogo de equipes com CRUD completo (criar, editar/renomear, atribuir/remover membros e excluir equipe)
 - ✅ Diretório de funcionários com detalhe e edição dedicada (fora do fluxo de Finance)
 - ✅ Gestão de equipes (visualizar times, atribuir/remover funcionários, criação de novos times)
 - ✅ Menu em sheet (Quick Actions) acionado pelo botão hambúrguer em todas as telas principais para evitar sobreposições

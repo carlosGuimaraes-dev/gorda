@@ -10,6 +10,12 @@ enum PendingOperation {
   addEmployee,
   updateEmployee,
   deleteEmployee,
+  addServiceType,
+  updateServiceType,
+  deleteServiceType,
+  addTeam,
+  updateTeam,
+  deleteTeam,
 }
 
 class PendingChange {

@@ -34,4 +34,34 @@ class FinanceEntry {
   final String? clientName;
   final String? employeeId;
   final String? employeeName;
+
+  FinanceEntry copyWith({
+    String? id,
+    String? title,
+    double? amount,
+    FinanceCurrency? currency,
+    FinanceEntryType? type,
+    DateTime? dueDate,
+    FinanceStatus? status,
+    FinanceKind? kind,
+    String? clientId,
+    String? clientName,
+    String? employeeId,
+    String? employeeName,
+  }) {
+    return FinanceEntry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
+      type: type ?? this.type,
+      dueDate: dueDate ?? this.dueDate,
+      status: status ?? this.status,
+      kind: kind ?? this.kind,
+      clientId: clientId ?? this.clientId,
+      clientName: clientName ?? this.clientName,
+      employeeId: employeeId ?? this.employeeId,
+      employeeName: employeeName ?? this.employeeName,
+    );
+  }
 }

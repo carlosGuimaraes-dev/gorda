@@ -9,11 +9,13 @@ import '../../auth/domain/user_session.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
 import 'agenda_calendar.dart';
+import 'service_detail_page.dart';
 
 class SchedulePage extends ConsumerStatefulWidget {
-  const SchedulePage({super.key, required this.role});
+  const SchedulePage({super.key, required this.role, this.onMenu});
 
   final UserRole role;
+  final VoidCallback? onMenu;
 
   @override
   ConsumerState<SchedulePage> createState() => _SchedulePageState();
@@ -47,8 +49,19 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     return Scaffold(
       backgroundColor: AppThemeTokens.background,
       appBar: AppBar(
+        leading: widget.onMenu == null
+            ? null
+            : IconButton(
+                onPressed: widget.onMenu,
+                icon: const Icon(Icons.menu),
+              ),
         title: Text(strings.schedule),
         actions: [
+          IconButton(
+            onPressed: () => _showNewServiceDialog(context, state),
+            icon: const Icon(Icons.add),
+            tooltip: strings.newService,
+          ),
           IconButton(
             onPressed: () => ref
                 .read(offlineStoreProvider.notifier)
@@ -63,7 +76,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: SizedBox(
-              height: 320,
+              height: 360,
               child: AgendaCalendar(
                 selectedDate: _selectedDate,
                 eventDates: eventDates,
@@ -125,6 +138,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                           employeeName: _employeeNameById(
                               state, filteredTasks[index].assignedEmployeeId),
                           role: widget.role,
+                          onTap: () => _openTask(context, filteredTasks[index]),
                         ),
                       )
                     : ListView(
@@ -153,6 +167,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                                       employeeName: _employeeNameById(
                                           state, task.assignedEmployeeId),
                                       role: widget.role,
+                                      onTap: () => _openTask(context, task),
                                     )),
                               ],
                             ),
@@ -234,15 +249,170 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     }
     return null;
   }
+
+  void _openTask(BuildContext context, ServiceTask task) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ServiceDetailPage(taskId: task.id, role: widget.role),
+      ),
+    );
+  }
+
+  Future<void> _showNewServiceDialog(
+      BuildContext context, OfflineState state) async {
+    final strings = AppStrings.of(Localizations.localeOf(context));
+    final titleCtrl = TextEditingController();
+    final clientCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    DateTime selectedDate = _selectedDate;
+    DateTime startTime =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 9, 0);
+    DateTime endTime = DateTime(
+        selectedDate.year, selectedDate.month, selectedDate.day, 10, 0);
+    String assignedEmployeeId = '';
+    if (widget.role == UserRole.manager && state.employees.isNotEmpty) {
+      assignedEmployeeId = state.employees.first.id;
+    } else {
+      assignedEmployeeId = state.session?.name ?? '';
+    }
+    if (state.employees.isNotEmpty &&
+        !state.employees.any((employee) => employee.id == assignedEmployeeId)) {
+      assignedEmployeeId = state.employees.first.id;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: Text(strings.newService),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: InputDecoration(labelText: strings.title),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: clientCtrl,
+                      decoration: InputDecoration(labelText: strings.client),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: addressCtrl,
+                      decoration: InputDecoration(labelText: strings.address),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: notesCtrl,
+                      decoration: InputDecoration(labelText: strings.notes),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${strings.date}: ${DateFormat.yMd(Localizations.localeOf(context).toLanguageTag()).format(selectedDate)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked == null) return;
+                            setModalState(() {
+                              selectedDate = DateTime(
+                                  picked.year, picked.month, picked.day);
+                              startTime = DateTime(selectedDate.year,
+                                  selectedDate.month, selectedDate.day, 9, 0);
+                              endTime = DateTime(selectedDate.year,
+                                  selectedDate.month, selectedDate.day, 10, 0);
+                            });
+                          },
+                          child: Text(strings.change),
+                        ),
+                      ],
+                    ),
+                    if (state.employees.isNotEmpty &&
+                        widget.role == UserRole.manager)
+                      DropdownButtonFormField<String>(
+                        value: assignedEmployeeId,
+                        decoration:
+                            InputDecoration(labelText: strings.employee),
+                        items: state.employees
+                            .map((employee) => DropdownMenuItem(
+                                  value: employee.id,
+                                  child: Text(employee.name),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setModalState(() => assignedEmployeeId = value);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(strings.close),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final title = titleCtrl.text.trim();
+                    final clientName = clientCtrl.text.trim();
+                    if (title.isEmpty || clientName.isEmpty) return;
+                    final address = addressCtrl.text.trim();
+                    ref.read(offlineStoreProvider.notifier).addTask(
+                          ServiceTask(
+                            id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+                            title: title,
+                            date: selectedDate,
+                            status: TaskStatus.scheduled,
+                            assignedEmployeeId: assignedEmployeeId,
+                            clientName: clientName,
+                            address: address,
+                            startTime: startTime,
+                            endTime: endTime,
+                            notes: notesCtrl.text.trim(),
+                          ),
+                        );
+                    setState(() => _selectedDate = selectedDate);
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(strings.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _TaskRow extends StatelessWidget {
   const _TaskRow(
-      {required this.task, required this.employeeName, required this.role});
+      {required this.task,
+      required this.employeeName,
+      required this.role,
+      required this.onTap});
 
   final ServiceTask task;
   final String? employeeName;
   final UserRole role;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -254,58 +424,62 @@ class _TaskRow extends StatelessWidget {
         task.startTime == null ? null : timeFormat.format(task.startTime!);
     final end = task.endTime == null ? null : timeFormat.format(task.endTime!);
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
+                _StatusBadge(status: task.status),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (start != null)
+              Text(
+                end == null ? start : '$start - $end',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppThemeTokens.secondaryText),
               ),
-              _StatusBadge(status: task.status),
-            ],
-          ),
-          const SizedBox(height: 6),
-          if (start != null)
+            Text('${strings.client}: ${task.clientName}'),
             Text(
-              end == null ? start : '$start - $end',
+              task.address,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
                   ?.copyWith(color: AppThemeTokens.secondaryText),
             ),
-          Text('${strings.client}: ${task.clientName}'),
-          Text(
-            task.address,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppThemeTokens.secondaryText),
-          ),
-          if (role == UserRole.manager && employeeName != null)
-            Text(
-              '${strings.employee}: $employeeName',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppThemeTokens.secondaryText),
-            ),
-          if (task.notes.trim().isNotEmpty)
-            Text(
-              task.notes,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppThemeTokens.secondaryText),
-            ),
-        ],
+            if (role == UserRole.manager && employeeName != null)
+              Text(
+                '${strings.employee}: $employeeName',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppThemeTokens.secondaryText),
+              ),
+            if (task.notes.trim().isNotEmpty)
+              Text(
+                task.notes,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppThemeTokens.secondaryText),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -335,7 +509,7 @@ class _StatusBadge extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
