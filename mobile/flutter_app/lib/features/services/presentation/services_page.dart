@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/design_tokens.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../finance/domain/finance_entry.dart';
@@ -23,7 +24,7 @@ class ServicesPage extends ConsumerWidget {
         title: Text(strings.services),
         actions: [
           IconButton(
-            onPressed: () => _showServiceTypeForm(context, ref),
+            onPressed: () => ServicesPage.showServiceTypeFormDialog(context, ref),
             icon: const Icon(Icons.add),
             tooltip: strings.newItem,
           ),
@@ -66,12 +67,16 @@ class ServicesPage extends ConsumerWidget {
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'edit') {
-                      _showServiceTypeForm(context, ref,
+                      ServicesPage.showServiceTypeFormDialog(context, ref,
                           serviceType: serviceType);
                       return;
                     }
                     if (value == 'delete') {
-                      _deleteServiceTypeFromList(context, ref, serviceType);
+                      ServicesPage.deleteServiceTypeFromListDialog(
+                        context,
+                        ref,
+                        serviceType,
+                      );
                     }
                   },
                   itemBuilder: (context) => [
@@ -93,7 +98,7 @@ class ServicesPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteServiceTypeFromList(
+  static Future<void> deleteServiceTypeFromListDialog(
     BuildContext context,
     WidgetRef ref,
     ServiceType serviceType,
@@ -138,21 +143,21 @@ class ServicesPage extends ConsumerWidget {
     );
   }
 
-  String _pricingModelLabel(AppStrings strings, ServicePricingModel model) {
+  static String _pricingModelLabel(AppStrings strings, ServicePricingModel model) {
     return switch (model) {
       ServicePricingModel.perTask => strings.perTask,
       ServicePricingModel.perHour => strings.perHour,
     };
   }
 
-  String _currencyCode(FinanceCurrency currency) {
+  static String _currencyCode(FinanceCurrency currency) {
     return switch (currency) {
       FinanceCurrency.usd => 'USD',
       FinanceCurrency.eur => 'EUR',
     };
   }
 
-  Future<void> _showServiceTypeForm(
+  static Future<void> showServiceTypeFormDialog(
     BuildContext context,
     WidgetRef ref, {
     ServiceType? serviceType,
@@ -173,9 +178,9 @@ class ServicesPage extends ConsumerWidget {
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
           return AlertDialog(
-            title: Text(serviceType == null
-                ? strings.newServiceType
-                : strings.editService),
+            title: Text(
+              serviceType == null ? strings.newServiceType : strings.editService,
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -190,14 +195,14 @@ class ServicesPage extends ConsumerWidget {
                     decoration: InputDecoration(labelText: strings.description),
                     maxLines: 3,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DsSpaceTokens.space2),
                   TextField(
                     controller: basePriceCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: strings.basePrice),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DsSpaceTokens.space2),
                   DropdownButtonFormField<ServicePricingModel>(
                     value: pricingModel,
                     decoration:
@@ -217,7 +222,7 @@ class ServicesPage extends ConsumerWidget {
                       setModalState(() => pricingModel = value);
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DsSpaceTokens.space2),
                   DropdownButtonFormField<FinanceCurrency>(
                     value: currency,
                     decoration: InputDecoration(labelText: strings.currency),
@@ -342,7 +347,7 @@ class ServiceTypeDetailPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.edit_outlined),
             title: Text(strings.editService),
-            onTap: () => ServicesPage()._showServiceTypeForm(
+            onTap: () => ServicesPage.showServiceTypeFormDialog(
               context,
               ref,
               serviceType: current,
@@ -350,9 +355,12 @@ class ServiceTypeDetailPage extends ConsumerWidget {
           ),
           if (canDelete)
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: DsColorTokens.statusError,
+              ),
               title: Text(strings.deleteService,
-                  style: const TextStyle(color: Colors.red)),
+                  style: const TextStyle(color: DsColorTokens.statusError)),
               onTap: () async {
                 final confirmed = await showDialog<bool>(
                       context: context,

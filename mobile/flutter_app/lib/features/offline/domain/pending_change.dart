@@ -7,6 +7,7 @@ enum PendingOperation {
   addFinanceEntry,
   updateFinanceEntry,
   markFinanceEntry,
+  deleteFinanceEntry,
   addEmployee,
   updateEmployee,
   deleteEmployee,

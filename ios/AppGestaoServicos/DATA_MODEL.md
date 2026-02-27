@@ -7,6 +7,10 @@ Visão de alto nível das entidades principais, pensando em uma implementação 
 - Foi criada uma base Flutter em `mobile/flutter_app` com espelhamento inicial das entidades de domínio:
   - `UserSession`, `Client`, `Employee`, `ServiceTask`, `FinanceEntry`, `PendingChange`.
 - O `OfflineStore` no Flutter está em versão inicial (estado em memória + fila pendente + sync stub), alinhado ao comportamento atual de sync local-first do iOS.
+- O espelhamento Flutter foi expandido para Finance avançado:
+  - `FinanceEntry` inclui campos de disputa, recibo, supersede/reissue e breakdown completo de payroll.
+  - `AppPreferences`, `NotificationPreferences`, `CompanyProfile`, `ConflictLogEntry` e `AuditLogEntry` já existem no domínio Flutter.
+  - `OfflineStore` no Flutter já suporta `update/delete` de finance, `generateInvoices`, `generatePayrolls`, `markInvoiceDisputed` e `reissueInvoice`.
 - Próxima etapa: substituir estado em memória por persistência local (SQLite/Drift) mantendo contratos de entidade e reconciliação de fila.
 
 ## User / Session

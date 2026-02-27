@@ -217,4 +217,205 @@ class AppStrings {
   String get serviceDeleteBlocked => _isEs
       ? 'Este tipo de servicio está vinculado a tareas existentes. Reasigna o elimina esas tareas antes de borrar.'
       : 'This service type is linked to existing tasks. Reassign or remove those tasks before deleting.';
+  String get pending => _isEs ? 'Pendiente' : 'Pending';
+  String get paid => _isEs ? 'Pagado' : 'Paid';
+  String get invoice => _isEs ? 'Factura' : 'Invoice';
+  String get invoiceLabel => _isEs ? 'Factura' : 'Invoice';
+  String get invoices => _isEs ? 'Facturas' : 'Invoices';
+  String get newInvoice => _isEs ? 'Nueva factura' : 'New Invoice';
+  String get dueDate => _isEs ? 'Fecha de vencimiento' : 'Due date';
+  String get none => _isEs ? 'Ninguno' : 'None';
+  String get method => _isEs ? 'Método' : 'Method';
+  String get pix => _isEs ? 'Pix' : 'Pix';
+  String get card => _isEs ? 'Tarjeta' : 'Card';
+  String get cash => _isEs ? 'Efectivo' : 'Cash';
+  String get lineItems => _isEs ? 'Líneas' : 'Line items';
+  String get qty => _isEs ? 'Cant.' : 'Qty';
+  String get unit => _isEs ? 'Unidad' : 'Unit';
+  String get total => _isEs ? 'Total' : 'Total';
+  String get disputed => _isEs ? 'En disputa' : 'Disputed';
+  String get superseded => _isEs ? 'Sustituida' : 'Superseded';
+  String get dispute => _isEs ? 'Disputa' : 'Dispute';
+  String get clientDisputed =>
+      _isEs ? 'Cliente en disputa' : 'Client disputed';
+  String get clientMessageReason =>
+      _isEs ? 'Mensaje / motivo del cliente' : 'Client message / reason';
+  String get sendInvoice => _isEs ? 'Enviar factura' : 'Send invoice';
+  String get sendReissue => _isEs ? 'Enviar / Reemitir' : 'Send / Reissue';
+  String get previewPdf => _isEs ? 'Previsualizar PDF' : 'Preview PDF';
+  String get sharePdf => _isEs ? 'Compartir PDF' : 'Share PDF';
+  String get reissueInvoice =>
+      _isEs ? 'Reemitir factura' : 'Reissue invoice';
+  String get reissueInvoiceQuestion =>
+      _isEs ? '¿Reemitir factura?' : 'Reissue invoice?';
+  String get adjustmentsBlocked => _isEs
+      ? 'Los ajustes se bloquean a menos de 1 día del vencimiento.'
+      : 'Adjustments are blocked less than 1 day before due date.';
+  String get noAvailableChannels => _isEs
+      ? 'Sin canales disponibles. Agrega teléfono o email del cliente.'
+      : 'No available channels. Add phone or email for this client.';
+  String get channel => _isEs ? 'Canal' : 'Channel';
+  String get whatsapp => _isEs ? 'WhatsApp' : 'WhatsApp';
+  String get email => _isEs ? 'Email' : 'Email';
+  String get unknown => _isEs ? 'Desconocido' : 'Unknown';
+  String get task => _isEs ? 'Tarea' : 'Task';
+  String get financeEntry =>
+      _isEs ? 'Registro financiero' : 'Finance entry';
+  String get expense => _isEs ? 'Gasto' : 'Expense';
+  String get receipt => _isEs ? 'Recibo' : 'Receipt';
+  String get shareReceipt => _isEs ? 'Compartir recibo' : 'Share receipt';
+  String get receipts => _isEs ? 'Recibos' : 'Receipts';
+  String get receiptsHub => _isEs ? 'Hub de recibos' : 'Receipts hub';
+  String get receiptQueue => _isEs ? 'Cola de recibos' : 'Receipt queue';
+  String get offlineQueue => _isEs ? 'Cola offline' : 'Offline queue';
+  String get forceSyncNow =>
+      _isEs ? 'Forzar sync ahora' : 'Force sync now';
+  String get suggestedContext =>
+      _isEs ? 'Contexto sugerido' : 'Suggested context';
+  String get noSuggestedTask =>
+      _isEs ? 'No hay tarea sugerida.' : 'No suggested task available.';
+  String get latestLocalReceipts =>
+      _isEs ? 'Últimos recibos locales' : 'Latest local receipts';
+  String get noReceiptsCapturedYet =>
+      _isEs ? 'Aún no hay recibos capturados.' : 'No receipts captured yet.';
+  String get scanNew => _isEs ? 'Escanear nuevo' : 'Scan new';
+  String get cameraUnavailableMessage => _isEs
+      ? 'La cámara no está disponible en este dispositivo.'
+      : 'Camera is unavailable on this device.';
+  String get clientOptional =>
+      _isEs ? 'Cliente (opcional)' : 'Client (optional)';
+  String get unlinked => _isEs ? 'Sin vínculo' : 'Unlinked';
+  String get saveReceipt => _isEs ? 'Guardar recibo' : 'Save receipt';
+  String get emission => _isEs ? 'Emisión' : 'Emission';
+  String get readyForEmission =>
+      _isEs ? 'Listo para emitir' : 'Ready for emission';
+  String get emitNow => _isEs ? 'Emitir ahora' : 'Emit now';
+  String get primaryLabel => _isEs ? 'Principal' : 'Primary';
+  String get fallbackLabel => _isEs ? 'Secundario' : 'Fallback';
+  String get notConfigured =>
+      _isEs ? 'No configurado' : 'Not configured';
+  String get closingFlow =>
+      _isEs ? 'Flujo de cierre' : 'Closing flow';
+  String get closingWizard =>
+      _isEs ? 'Asistente de cierre' : 'Closing wizard';
+  String get readyToEmit => _isEs ? 'Listo para emitir' : 'Ready to emit';
+  String get endOfMonth => _isEs ? 'Fin de mes' : 'End of month';
+  String get generateClientInvoices => _isEs
+      ? 'Generar facturas de clientes'
+      : 'Generate client invoices';
+  String get generatePayroll =>
+      _isEs ? 'Generar nómina' : 'Generate payroll';
+  String get invoicesAndPayroll =>
+      _isEs ? 'Facturas y nómina' : 'Invoices & Payroll';
+  String get monthlyReports =>
+      _isEs ? 'Reportes mensuales' : 'Monthly reports';
+  String get monthlyClosing =>
+      _isEs ? 'Cierre mensual' : 'Monthly closing';
+  String get closingPeriod =>
+      _isEs ? 'Período de cierre' : 'Closing period';
+  String get back => _isEs ? 'Atrás' : 'Back';
+  String get ready => _isEs ? 'Listo' : 'Ready';
+  String get review => _isEs ? 'Revisión' : 'Review';
+  String get finishClosing =>
+      _isEs ? 'Finalizar cierre' : 'Finish closing';
+  String get continueLabel => _isEs ? 'Continuar' : 'Continue';
+  String get resolvePendingIssuesFirst => _isEs
+      ? 'Resuelve pendientes primero'
+      : 'Resolve pending issues first';
+  String get resolvePendingIssuesHelp => _isEs
+      ? 'Corrige recibos sin cliente y conflictos de sync antes de avanzar.'
+      : 'Fix receipts without client link and sync conflicts before moving forward.';
+  String get receiptsWithoutClientLink =>
+      _isEs ? 'Recibos sin cliente' : 'Receipts without client link';
+  String get syncConflicts =>
+      _isEs ? 'Conflictos de sincronización' : 'Sync conflicts';
+  String get resolveTheseItems => _isEs
+      ? 'Resuelve estos ítems para desbloquear el próximo paso.'
+      : 'Resolve these items to unlock the next step.';
+  String get stepSelectPeriod =>
+      _isEs ? 'Paso 1: Seleccionar período' : 'Step 1: Select period';
+  String get stepSelectPeriodHelp => _isEs
+      ? 'Elige el mes para validar recibos, facturas y nómina pendientes.'
+      : 'Choose the month to validate pending receipts, invoices and payroll.';
+  String get stepPendingChecks =>
+      _isEs ? 'Paso 2: Chequeos pendientes' : 'Step 2: Pending checks';
+  String get stepReviewTotals =>
+      _isEs ? 'Paso 3: Revisar totales' : 'Step 3: Review totals';
+  String get stepReadyToEmit =>
+      _isEs ? 'Paso 4: Listo para emitir' : 'Step 4: Ready to emit';
+  String get stepReadyToEmitHelp => _isEs
+      ? 'Tu lote mensual está listo. Continúa con emisión de facturas y nómina.'
+      : 'Your monthly batch is ready. Continue with invoice and payroll emission.';
+  String get newPayroll => _isEs ? 'Nueva nómina' : 'New Payroll';
+  String get payrollLabel => _isEs ? 'Nómina' : 'Payroll';
+  String get fromLabel => _isEs ? 'Desde' : 'From';
+  String get toLabel => _isEs ? 'Hasta' : 'To';
+  String get daysWorked => _isEs ? 'Días trabajados' : 'Days worked';
+  String get hoursWorkedLabel =>
+      _isEs ? 'Horas trabajadas' : 'Hours worked';
+  String get basePay => _isEs ? 'Salario base' : 'Base pay';
+  String get bonus => _isEs ? 'Bono' : 'Bonus';
+  String get deductions => _isEs ? 'Deducciones' : 'Deductions';
+  String get taxes => _isEs ? 'Impuestos' : 'Taxes';
+  String get reimbursements =>
+      _isEs ? 'Reembolsos' : 'Reimbursements';
+  String get netPay => _isEs ? 'Pago neto' : 'Net pay';
+  String get confirmPayroll =>
+      _isEs ? 'Confirmar nómina' : 'Confirm payroll';
+  String get confirmPayrollHelp => _isEs
+      ? 'Este registro de nómina es manual. Confirma para continuar.'
+      : 'This payroll entry is manual. Confirm to continue.';
+  String get create => _isEs ? 'Crear' : 'Create';
+  String get editingLockedAfterPayment => _isEs
+      ? 'La edición se bloquea después de confirmar el pago.'
+      : 'Editing is locked after payment confirmation.';
+  String get reports => _isEs ? 'Reportes' : 'Reports';
+  String get customRange =>
+      _isEs ? 'Rango personalizado' : 'Custom range';
+  String get startDate =>
+      _isEs ? 'Fecha de inicio' : 'Start date';
+  String get endDate => _isEs ? 'Fecha de fin' : 'End date';
+  String get noDataForPeriod =>
+      _isEs ? 'Sin datos para este período.' : 'No data for this period.';
+  String get topClients => _isEs ? 'Top clientes' : 'Top clients';
+  String get topEmployees =>
+      _isEs ? 'Top empleados' : 'Top employees';
+  String get net => _isEs ? 'Neto' : 'Net';
+  String get export => _isEs ? 'Exportar' : 'Export';
+  String get exportCsv => _isEs ? 'Exportar CSV' : 'Export CSV';
+  String get exportPdf => _isEs ? 'Exportar PDF' : 'Export PDF';
+  String get generate => _isEs ? 'Generar' : 'Generate';
+  String get generateInvoicesTitle =>
+      _isEs ? 'Generar facturas' : 'Generate invoices';
+  String get generatePayrollTitle =>
+      _isEs ? 'Generar nómina' : 'Generate payroll';
+  String get allClients => _isEs ? 'Todos los clientes' : 'All clients';
+  String get allEmployees =>
+      _isEs ? 'Todos los empleados' : 'All employees';
+  String get noEntries =>
+      _isEs ? 'No hay registros.' : 'No entries.';
+  String get oneTask => _isEs ? '1 servicio' : '1 task';
+  String hoursQuantity(double value) =>
+      _isEs ? '${value.toStringAsFixed(2)} h' : '${value.toStringAsFixed(2)} h';
+  String calculatedDays(int days) =>
+      _isEs ? 'Días calculados: $days' : 'Calculated days: $days';
+  String disputesAllowedUntil(String dateText) => _isEs
+      ? 'Las disputas están permitidas hasta $dateText.'
+      : 'Disputes are allowed until $dateText.';
+  String get disputesAllowedUntilDueDate => _isEs
+      ? 'Las disputas están permitidas hasta la fecha de vencimiento.'
+      : 'Disputes are allowed until the due date.';
+  String disputeWindowClosedOn(String dateText) => _isEs
+      ? 'La ventana de disputa cerró el $dateText.'
+      : 'Dispute window closed on $dateText.';
+  String supersededOn(String dateText) =>
+      _isEs ? 'Sustituida el $dateText' : 'Superseded on $dateText';
+  String summaryByCurrency(String currencyCode) => _isEs
+      ? 'Resumen ($currencyCode)'
+      : 'Summary ($currencyCode)';
+  String reportLabel(bool monthly) =>
+      monthly ? (_isEs ? 'Reporte mensual' : 'Monthly report') : (_isEs ? 'Reporte' : 'Report');
+  String expenseReceiptShare(String title, String amount, String due) => _isEs
+      ? 'Recibo de gasto para $title\nMonto: $amount\nVencimiento: $due'
+      : 'Expense receipt for $title\nAmount: $amount\nDue: $due';
 }

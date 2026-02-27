@@ -1,34 +1,34 @@
-# AG Home Organizer - Flutter Base
+# AG Home Organizer - Flutter Migration
 
-This module is the initial cross-platform migration target for the iOS SwiftUI app.
+Flutter app that mirrors the SwiftUI app with strict parity-first strategy.
 
 ## Current scope
 
-- Flutter app shell with role-based tabs (`manager` and `employee`)
-- Core domain entities mirrored from Swift models:
-  - `Client`
-  - `Employee`
-  - `ServiceTask`
-  - `FinanceEntry`
-  - `UserSession`
-  - `PendingChange`
-- Offline-first starter store (`OfflineStore`) using in-memory state + pending queue contract
-- i18n starter for `en-US` and `es-ES`
+- Role-based app shell (`manager` and `employee`).
+- Offline-first store (`OfflineStore`) with pending queue + sync stub.
+- Semantic design tokens and base DS widgets in `lib/core/design/*`.
+- i18n in `en-US` and `es-ES`.
+- Finance advanced parity slice migrated:
+  - `MonthlyClosingWizardPage`
+  - `ReceiptsHubPage` + `QuickReceiptEntrySheet` (camera capture)
+  - `EmissionReadyPage`
+  - `InvoicesListPage` + `InvoiceFormPage` + `InvoiceDetailPage` (line items, dispute, reissue, PDF preview/share)
+  - `PayrollListPage` + `PayrollFormPage` + `PayrollDetailPage`
+  - `GenericFinanceDetailPage` + `ExpenseDetailPage`
+  - `ReportsPage` (period filters + CSV/PDF export)
+- Domain expansion mirrored from Swift:
+  - `FinanceEntry` advanced fields (dispute, receipt, supersede, payroll breakdown, notes)
+  - `AppPreferences`, `NotificationPreferences`, `CompanyProfile`
+  - `ConflictLogEntry`, `AuditLogEntry`
 
-## Migration strategy
+## Approved Flutter dependencies used in this phase
 
-1. Keep Swift app as source of truth while Flutter reaches parity.
-2. Migrate domain rules first (offline queue and entity invariants).
-3. Migrate modules in this order:
-   - Auth + Session
-   - Dashboard
-   - Agenda
-   - Clients
-   - Finance
-   - Settings + Employees/Teams/Services
-4. Integrate real local persistence (SQLite/Drift) before backend sync.
+- `image_picker`
+- `share_plus`
+- `pdf`
+- `printing`
 
-## Run (after Flutter SDK installation)
+## Run (on supported environment)
 
 ```bash
 cd mobile/flutter_app
@@ -36,7 +36,7 @@ flutter pub get
 flutter run
 ```
 
-## Notes
+## Validation note for this workspace
 
-- This repository currently does not have Flutter SDK installed on the machine used for this migration step.
-- Because of that, commands like `flutter pub get` and `flutter test` were not executed yet.
+- This machine is macOS 12, while current Flutter/Dart toolchain in this project requires macOS 14+.
+- Because of that, `dart format`, `dart analyze`, `flutter run` and tests could not be executed here.

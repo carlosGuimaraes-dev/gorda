@@ -1,3 +1,7 @@
+---
+trigger: Always_on
+---
+
 # Rules - Agent Behavior (MANDATORY)
 
 ## Rule: Flutter Migration Must Replicate SwiftUI 1:1

@@ -8,6 +8,10 @@
 - Integração real app iOS ↔ backend ainda pendente (sync no iOS permanece em stub local).
 - ✅ Início da migração cross-platform: módulo `mobile/flutter_app` criado com app shell, entidades espelhadas do domínio e `OfflineStore` inicial com fila pendente (stub de sync).
 - ✅ Flutter (migração): primeira tela funcional de Agenda implementada com cards, filtros por status e atualização de status ligada à fila offline (`OfflineStore`).
+- ✅ Flutter (migração): camada de design system semântico criada (`core/design/design_tokens.dart` + `design_theme.dart`) e aplicada nos novos fluxos migrados.
+- ✅ Flutter (migração): Finance avançado com paridade funcional do Swift no recorte (Closing Wizard, Receipts Hub, Emission, Invoices, Payroll, Generic/Expense Details e Reports).
+- ✅ Flutter (migração): `OfflineStore` expandido para preferências, logs de conflito/auditoria, geração de invoices/payroll, disputa e reemissão/supersede de invoices.
+- ✅ Flutter (migração): geração/preview/share de PDF em Invoice (pacotes `pdf` + `printing`) e captura de recibo por câmera (`image_picker`) com compartilhamento (`share_plus`).
 
 - ✅ Login e sessão local com splash minimalista
 - ✅ Agenda diária com detalhe editável (status, horários, notas, notificações rápidas)

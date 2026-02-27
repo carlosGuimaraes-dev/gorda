@@ -1,5 +1,9 @@
-This repository powers the iOS app **AG Home Organizer International** (a service management app for Carlos and his team).\n+
+This repository powers the iOS app **AG Home Organizer International** 
+
+(a service management app for Carlos and his team).\n+
 \n+
+
+
 Working style and constraints\n+
 - Use **SwiftUI** as the primary UI framework and keep the architecture simple (single app target, no unnecessary frameworks).\n+
 - The iOS code lives under `ios/AppGestaoServicos`. The AG Xcode project under `~/Documents/AG` uses **symlinks** to these files; always edit files in this repo, not inside `Documents/AG`.\n+
