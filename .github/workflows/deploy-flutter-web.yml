@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write # Permissão necessária para o bot do Actions subir no gh-pages
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
@@ -36,7 +40,7 @@ jobs:
         run: flutter build web --release --base-href /gorda/
         
       - name: Deploy pro GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: mobile/flutter_app/build/web

@@ -32,6 +32,12 @@ class DsColorTokens {
   static const Color statusSuccess = Color(0xFF22C55E);
   static const Color statusWarning = Color(0xFFF97316);
   static const Color statusError = Color(0xFFEF4444);
+
+  // Mesh Gradient Colors (Vibrant & Premium)
+  static const Color mesh1 = Color(0xFF6366F1); // Indigo
+  static const Color mesh2 = Color(0xFFA855F7); // Purple
+  static const Color mesh3 = Color(0xFFEC4899); // Pink
+  static const Color mesh4 = Color(0xFF3B82F6); // Blue
 }
 
 class DsSpaceTokens {
@@ -102,10 +108,11 @@ class DsShadowTokens {
 }
 
 class DsGlassTokens {
-  static const double blurSigmaSm = 5;
-  static const double blurSigmaMd = 10;
-  static const double blurSigmaLg = 20;
-  static const double opacityGlass = 0.8;
+  static const double blurSigmaSm = 4;
+  static const double blurSigmaMd = 12;
+  static const double blurSigmaLg = 24;
+  static const double opacityGlass = 0.7;
+  static const Color glassBorder = Color.fromRGBO(255, 255, 255, 0.4);
 }
 
 class DsEffects {

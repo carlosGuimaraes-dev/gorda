@@ -149,10 +149,96 @@ class DsCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: DsColorTokens.surfaceGlass,
               borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+              border: Border.all(
+                color: DsGlassTokens.glassBorder,
+                width: 0.5,
+              ),
               boxShadow: const [DsShadowTokens.shadowGlass],
             ),
             child: Padding(padding: padding, child: child),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class DsBackground extends StatelessWidget {
+  const DsBackground({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: DsMeshGradient()),
+        Positioned.fill(child: child),
+      ],
+    );
+  }
+}
+
+class DsMeshGradient extends StatelessWidget {
+  const DsMeshGradient({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: DsColorTokens.surfaceSection,
+      child: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -100,
+            child: _GradientSphere(
+              color: DsColorTokens.mesh1.withOpacity(0.3),
+              size: 400,
+            ),
+          ),
+          Positioned(
+            bottom: -150,
+            left: -100,
+            child: _GradientSphere(
+              color: DsColorTokens.mesh2.withOpacity(0.25),
+              size: 500,
+            ),
+          ),
+          Positioned(
+            top: 100,
+            left: -200,
+            child: _GradientSphere(
+              color: DsColorTokens.mesh3.withOpacity(0.2),
+              size: 450,
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            right: -150,
+            child: _GradientSphere(
+              color: DsColorTokens.mesh4.withOpacity(0.15),
+              size: 350,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GradientSphere extends StatelessWidget {
+  const _GradientSphere({required this.color, required this.size});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withOpacity(0)],
         ),
       ),
     );

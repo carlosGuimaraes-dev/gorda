@@ -31,66 +31,70 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final strings = AppStrings.of(Localizations.localeOf(context));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(DsSpaceTokens.space4),
-            child: AppCard(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   const Icon(
-                    Icons.cleaning_services_rounded,
-                    size: 64,
-                    color: AppThemeTokens.primary,
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space4),
-                  Text(
-                    'AG Home Organizer',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppThemeTokens.primaryText,
-                        ),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space8),
-                  TextField(
-                    controller: _userController,
-                    decoration: InputDecoration(
-                      labelText: strings.user,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.person_outline),
-                    ),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space4),
-                  TextField(
-                    controller: _passController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space4),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppThemeTokens.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(DsRadiusTokens.radiusMd),
-                        ),
+      extendBodyBehindAppBar: true,
+      body: DsBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(DsSpaceTokens.space6),
+              child: DsCard(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Hero(
+                      tag: 'logo',
+                      child: Icon(
+                        Icons.cleaning_services_rounded,
+                        size: 72,
+                        color: DsColorTokens.actionPrimary,
                       ),
-                      onPressed: authState.isLoading ? null : _doLogin,
-                      child: authState.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(strings.signIn, style: const TextStyle(fontSize: 16)),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: DsSpaceTokens.space4),
+                    Text(
+                      'AG Home Organizer',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: DsColorTokens.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                    ),
+                    Text(
+                      'Premium Cleaning Management',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: DsColorTokens.textSecondary,
+                          ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space8),
+                    TextField(
+                      controller: _userController,
+                      decoration: InputDecoration(
+                        labelText: strings.user,
+                        prefixIcon: const Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space4),
+                    TextField(
+                      controller: _passController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space8),
+                    DsPrimaryButton(
+                      title: strings.signIn,
+                      onPressed: authState.isLoading ? () {} : _doLogin,
+                      isDisabled: authState.isLoading,
+                    ),
+                    if (authState.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: DsSpaceTokens.space4),
+                        child: CircularProgressIndicator(),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -108,45 +112,73 @@ class RoleSelectionPage extends ConsumerWidget {
     final strings = AppStrings.of(Localizations.localeOf(context));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: const Text('Select Profile')),
-      body: Padding(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        child: Column(
-          children: [
-            const SizedBox(height: DsSpaceTokens.space8),
-            Text(
-              'Choose your role for this session:',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppThemeTokens.primaryText,
+      extendBodyBehindAppBar: true,
+      body: DsBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(DsSpaceTokens.space6),
+            child: Column(
+              children: [
+                const SizedBox(height: DsSpaceTokens.space8),
+                const Hero(
+                  tag: 'logo',
+                  child: Icon(
+                    Icons.account_circle_outlined,
+                    size: 64,
+                    color: DsColorTokens.actionPrimary,
                   ),
-              textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: DsSpaceTokens.space4),
+                Text(
+                  'Choose your role',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DsColorTokens.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: DsSpaceTokens.space12),
+                DsCard(
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(DsSpaceTokens.space4),
+                    leading: const Icon(Icons.manage_accounts,
+                        size: 40, color: DsColorTokens.actionPrimary),
+                    title: Text(strings.manager,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: DsColorTokens.textPrimary)),
+                    subtitle: Text('Manage schedules, finances, and teams.',
+                        style: TextStyle(color: DsColorTokens.textSecondary)),
+                    onTap: () {
+                      ref
+                          .read(authStateProvider.notifier)
+                          .selectRole(UserRole.manager);
+                    },
+                  ),
+                ),
+                const SizedBox(height: DsSpaceTokens.space2),
+                DsCard(
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(DsSpaceTokens.space4),
+                    leading: const Icon(Icons.person,
+                        size: 40, color: DsColorTokens.actionPrimary),
+                    title: Text(strings.employee,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: DsColorTokens.textPrimary)),
+                    subtitle: Text('View your schedule and earnings.',
+                        style: TextStyle(color: DsColorTokens.textSecondary)),
+                    onTap: () {
+                      ref
+                          .read(authStateProvider.notifier)
+                          .selectRole(UserRole.employee);
+                    },
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: DsSpaceTokens.space12),
-            AppCard(
-              padding: const EdgeInsets.all(DsSpaceTokens.space4),
-              child: ListTile(
-                leading: const Icon(Icons.manage_accounts, size: 40, color: AppThemeTokens.primary),
-                title: Text(strings.manager, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.primaryText)),
-                subtitle: Text('Manage schedules, finances, and teams.', style: TextStyle(color: AppThemeTokens.secondaryText)),
-                onTap: () {
-                  ref.read(authStateProvider.notifier).selectRole(UserRole.manager);
-                },
-              ),
-            ),
-            const SizedBox(height: DsSpaceTokens.space4),
-            AppCard(
-              padding: const EdgeInsets.all(DsSpaceTokens.space4),
-              child: ListTile(
-                leading: const Icon(Icons.person, size: 40, color: AppThemeTokens.primary),
-                title: Text(strings.employee, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.primaryText)),
-                subtitle: Text('View your schedule and earnings.', style: TextStyle(color: AppThemeTokens.secondaryText)),
-                onTap: () {
-                  ref.read(authStateProvider.notifier).selectRole(UserRole.employee);
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

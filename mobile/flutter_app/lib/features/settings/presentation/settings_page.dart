@@ -40,17 +40,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : DateFormat.yMd(locale).add_Hm().format(state.lastSync!);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: widget.onMenu == null
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
                 icon: const Icon(Icons.menu),
               ),
-        title: Text(strings.settings),
+        title: Text(
+          strings.settings,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: DsColorTokens.textPrimary,
+          ),
+        ),
       ),
-      body: ListView(
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.only(top: kToolbarHeight + 20),
         children: [
           if (session != null)
             _SettingsSection(
