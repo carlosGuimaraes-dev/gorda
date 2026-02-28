@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/design/design_theme.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_card.dart';
-import '../application/auth_controller.dart';
-import '../domain/user_session.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/user_session.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -35,26 +35,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(AppSpacing.screenPadding),
+            padding: const EdgeInsets.all(DsSpaceTokens.space4),
             child: AppCard(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                   const Icon(
                     Icons.cleaning_services_rounded,
                     size: 64,
                     color: AppThemeTokens.primary,
                   ),
-                  SizedBox(height: AppSpacing.large),
+                  const SizedBox(height: DsSpaceTokens.space4),
                   Text(
                     'AG Home Organizer',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppThemeTokens.textPrimary,
+                          color: AppThemeTokens.primaryText,
                         ),
                   ),
-                  SizedBox(height: AppSpacing.xxLarge),
+                  const SizedBox(height: DsSpaceTokens.space8),
                   TextField(
                     controller: _userController,
                     decoration: InputDecoration(
@@ -63,7 +63,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       prefixIcon: const Icon(Icons.person_outline),
                     ),
                   ),
-                  SizedBox(height: AppSpacing.medium),
+                  const SizedBox(height: DsSpaceTokens.space4),
                   TextField(
                     controller: _passController,
                     obscureText: true,
@@ -73,7 +73,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
                   ),
-                  SizedBox(height: AppSpacing.large),
+                  const SizedBox(height: DsSpaceTokens.space4),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -81,13 +81,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppThemeTokens.primary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          borderRadius: BorderRadius.circular(DsRadiusTokens.radiusMd),
                         ),
                       ),
                       onPressed: authState.isLoading ? null : _doLogin,
                       child: authState.isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(strings.login, style: const TextStyle(fontSize: 16)),
+                          : Text(strings.signIn, style: const TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -111,36 +111,36 @@ class RoleSelectionPage extends ConsumerWidget {
       backgroundColor: AppThemeTokens.background,
       appBar: AppBar(title: const Text('Select Profile')),
       body: Padding(
-        padding: EdgeInsets.all(AppSpacing.screenPadding),
+        padding: const EdgeInsets.all(DsSpaceTokens.space4),
         child: Column(
           children: [
-            SizedBox(height: AppSpacing.xLarge),
+            const SizedBox(height: DsSpaceTokens.space8),
             Text(
               'Choose your role for this session:',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppThemeTokens.textPrimary,
+                    color: AppThemeTokens.primaryText,
                   ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: AppSpacing.xxLarge),
+            const SizedBox(height: DsSpaceTokens.space12),
             AppCard(
-              padding: EdgeInsets.all(AppSpacing.medium),
+              padding: const EdgeInsets.all(DsSpaceTokens.space4),
               child: ListTile(
                 leading: const Icon(Icons.manage_accounts, size: 40, color: AppThemeTokens.primary),
-                title: Text(strings.manager, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.textPrimary)),
-                subtitle: const Text('Manage schedules, finances, and teams.', style: TextStyle(color: AppThemeTokens.textSecondary)),
+                title: Text(strings.manager, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.primaryText)),
+                subtitle: Text('Manage schedules, finances, and teams.', style: TextStyle(color: AppThemeTokens.secondaryText)),
                 onTap: () {
                   ref.read(authStateProvider.notifier).selectRole(UserRole.manager);
                 },
               ),
             ),
-            SizedBox(height: AppSpacing.medium),
+            const SizedBox(height: DsSpaceTokens.space4),
             AppCard(
-              padding: EdgeInsets.all(AppSpacing.medium),
+              padding: const EdgeInsets.all(DsSpaceTokens.space4),
               child: ListTile(
                 leading: const Icon(Icons.person, size: 40, color: AppThemeTokens.primary),
-                title: Text(strings.employee, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.textPrimary)),
-                subtitle: const Text('View your schedule and earnings.', style: TextStyle(color: AppThemeTokens.textSecondary)),
+                title: Text(strings.employee, style: const TextStyle(fontWeight: FontWeight.bold, color: AppThemeTokens.primaryText)),
+                subtitle: Text('View your schedule and earnings.', style: TextStyle(color: AppThemeTokens.secondaryText)),
                 onTap: () {
                   ref.read(authStateProvider.notifier).selectRole(UserRole.employee);
                 },
