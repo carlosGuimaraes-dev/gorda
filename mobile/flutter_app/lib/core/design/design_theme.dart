@@ -93,7 +93,7 @@ ThemeData buildDesignTheme() {
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: DsColorTokens.surfaceCard,
       margin: const EdgeInsets.symmetric(
         horizontal: DsSpaceTokens.space3,
