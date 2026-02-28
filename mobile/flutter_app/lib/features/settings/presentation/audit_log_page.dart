@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/theme/app_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/application/offline_store.dart';
 
@@ -34,18 +35,14 @@ class AuditLogPage extends ConsumerWidget {
                 style: TextStyle(color: AppThemeTokens.secondaryText),
               ),
             )
-          : ListView.builder(
+          : ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: sortedEntries.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final entry = sortedEntries[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
+                return AppCard(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppThemeTokens.cardBackground,
-                    borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

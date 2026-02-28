@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/theme/app_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/application/offline_store.dart';
 import '../../offline/domain/app_preferences.dart';
@@ -159,12 +160,8 @@ class _CompanyProfilePageState extends ConsumerState<CompanyProfilePage> {
   }
 
   Widget _buildSection(String title, List<Widget> children) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppThemeTokens.cardBackground,
-        borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

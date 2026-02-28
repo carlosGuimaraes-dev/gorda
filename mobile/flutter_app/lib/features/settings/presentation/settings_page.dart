@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/theme/app_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/presentation/employees_page.dart';
@@ -298,19 +299,8 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppThemeTokens.cardBackground,
-        borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
