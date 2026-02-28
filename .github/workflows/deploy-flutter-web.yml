@@ -1,0 +1,44 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Dispara ao comitar na main
+    paths:
+      - 'mobile/flutter_app/**' # Só roda se os arquivos do flutter mudarem
+  workflow_dispatch: # Permite disparar manualmente via botão no GitHub
+
+permissions:
+  contents: write # Permissão necessária para o bot do Actions subir no gh-pages
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile/flutter_app
+
+    steps:
+      - name: Checar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.19.0' # Versão estável pra evitar quebras silenciosas
+
+      - name: Instalar Dependências
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release --base-href /gorda/
+        
+      - name: Deploy pro GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: mobile/flutter_app/build/web
+          publish_branch: gh-pages
+          commit_message: "Deploy Flutter Web automatizado via Actions"
