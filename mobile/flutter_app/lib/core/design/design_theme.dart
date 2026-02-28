@@ -118,6 +118,8 @@ ThemeData buildDesignTheme() {
   );
 }
 
+import 'dart:ui';
+
 class DsCard extends StatelessWidget {
   const DsCard({
     super.key,
@@ -135,17 +137,29 @@ class DsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: DsColorTokens.surfaceCard,
+    return Padding(
+      padding: margin,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
-        boxShadow: const [DsShadowTokens.shadowCard],
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: DsGlassTokens.blurSigmaMd,
+            sigmaY: DsGlassTokens.blurSigmaMd,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: DsColorTokens.surfaceGlass,
+              borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+              boxShadow: const [DsShadowTokens.shadowGlass],
+            ),
+            child: Padding(padding: padding, child: child),
+          ),
+        ),
       ),
-      child: Padding(padding: padding, child: child),
     );
   }
 }
+
 
 class DsPrimaryButton extends StatelessWidget {
   const DsPrimaryButton({
