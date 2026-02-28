@@ -767,7 +767,7 @@ class OfflineStore extends Notifier<OfflineState> {
       startDate: from,
       endDate: to,
       dueDate: dueDate,
-      clientId: clientId.isEmpty ? null : clientId,
+      clientId: (clientId?.isEmpty ?? true) ? null : clientId,
     );
   }
 
@@ -923,7 +923,7 @@ class OfflineStore extends Notifier<OfflineState> {
       startDate: from,
       endDate: to,
       dueDate: dueDate,
-      employeeId: employeeId.isEmpty ? null : employeeId,
+      employeeId: (employeeId?.isEmpty ?? true) ? null : employeeId,
     );
   }
 

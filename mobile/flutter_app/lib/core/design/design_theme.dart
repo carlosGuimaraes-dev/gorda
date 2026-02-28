@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'design_tokens.dart';
@@ -117,8 +118,6 @@ ThemeData buildDesignTheme() {
     ),
   );
 }
-
-import 'dart:ui';
 
 class DsCard extends StatelessWidget {
   const DsCard({
