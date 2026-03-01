@@ -70,8 +70,9 @@ class FinancePage extends ConsumerWidget {
             ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: DsSpaceTokens.space16),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: DsSpaceTokens.space16),
         children: [
           if (isManager) ...[
             DsSectionContainer(
@@ -175,8 +176,9 @@ class FinancePage extends ConsumerWidget {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   static List<FinanceEntry> _payrollForCurrentEmployee(OfflineState state) {
     final session = state.session;
@@ -546,6 +548,7 @@ class _MonthlyClosingWizardPageState
           ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: stepIndex == stepTitles.length - 1
             ? strings.finishClosing
@@ -781,130 +784,132 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
       ),
       body: DsBackground(
         child: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.receiptQueue,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.offlineQueue,
-                  value: '$pendingSyncCount',
-                  valueColor: pendingSyncCount == 0
-                      ? DsColorTokens.statusSuccess
-                      : DsColorTokens.statusWarning,
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextButton.icon(
-                  onPressed: () {
-                    ref.read(offlineStoreProvider.notifier).syncPendingChangesStub();
-                  },
-                  icon: const Icon(Icons.sync),
-                  label: Text(strings.forceSyncNow),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.suggestedContext,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                if (firstTask == null)
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    strings.noSuggestedTask,
-                    style: const TextStyle(color: DsColorTokens.textSecondary),
-                  )
-                else ...[
-                  Text('${strings.task}: ${firstTask.title}'),
-                  const SizedBox(height: DsSpaceTokens.space1),
-                  Text(
-                    '${strings.client}: ${suggestedClient?.name ?? firstTask.clientName}',
-                    style: const TextStyle(color: DsColorTokens.textSecondary),
+                    strings.receiptQueue,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.offlineQueue,
+                    value: '$pendingSyncCount',
+                    valueColor: pendingSyncCount == 0
+                        ? DsColorTokens.statusSuccess
+                        : DsColorTokens.statusWarning,
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextButton.icon(
+                    onPressed: () {
+                      ref.read(offlineStoreProvider.notifier).syncPendingChangesStub();
+                    },
+                    icon: const Icon(Icons.sync),
+                    label: Text(strings.forceSyncNow),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.latestLocalReceipts,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                if (latestReceipts.isEmpty)
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    strings.noReceiptsCapturedYet,
-                    style: const TextStyle(color: DsColorTokens.textSecondary),
-                  )
-                else
-                  ...latestReceipts.take(5).map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: DsSpaceTokens.space2,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry.title,
-                                      style: const TextStyle(
-                                        fontSize: DsTypeTokens.textSm,
-                                        fontWeight: DsTypeTokens.fontSemibold,
+                    strings.suggestedContext,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  if (firstTask == null)
+                    Text(
+                      strings.noSuggestedTask,
+                      style: const TextStyle(color: DsColorTokens.textSecondary),
+                    )
+                  else ...[
+                    Text('${strings.task}: ${firstTask.title}'),
+                    const SizedBox(height: DsSpaceTokens.space1),
+                    Text(
+                      '${strings.client}: ${suggestedClient?.name ?? firstTask.clientName}',
+                      style: const TextStyle(color: DsColorTokens.textSecondary),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.latestLocalReceipts,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  if (latestReceipts.isEmpty)
+                    Text(
+                      strings.noReceiptsCapturedYet,
+                      style: const TextStyle(color: DsColorTokens.textSecondary),
+                    )
+                  else
+                    ...latestReceipts.take(5).map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: DsSpaceTokens.space2,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.title,
+                                        style: const TextStyle(
+                                          fontSize: DsTypeTokens.textSm,
+                                          fontWeight: DsTypeTokens.fontSemibold,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      _formatDate(context, entry.dueDate),
-                                      style: const TextStyle(
-                                        fontSize: DsTypeTokens.textXs,
-                                        color: DsColorTokens.textSecondary,
+                                      Text(
+                                        _formatDate(context, entry.dueDate),
+                                        style: const TextStyle(
+                                          fontSize: DsTypeTokens.textXs,
+                                          color: DsColorTokens.textSecondary,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                _formatCurrency(entry.amount, entry.currency),
-                                style: const TextStyle(
-                                  fontWeight: DsTypeTokens.fontSemibold,
-                                  color: DsColorTokens.statusError,
+                                Text(
+                                  _formatCurrency(entry.amount, entry.currency),
+                                  style: const TextStyle(
+                                    fontWeight: DsTypeTokens.fontSemibold,
+                                    color: DsColorTokens.statusError,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.scanNew,
@@ -1158,74 +1163,75 @@ class EmissionReadyPage extends ConsumerWidget {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.readyForEmission,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.readyForEmission,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.invoices,
-                  value: '${pendingInvoices.length}',
-                ),
-                _SummaryRow(
-                  label: strings.payroll,
-                  value: '${pendingPayrolls.length}',
-                ),
-                const Divider(),
-                _SummaryRow(
-                  label: strings.receivables,
-                  value: _formatCurrency(
-                    pendingInvoicesTotal,
-                    state.appPreferences.preferredCurrency,
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.invoices,
+                    value: '${pendingInvoices.length}',
                   ),
-                  valueColor: DsColorTokens.statusSuccess,
-                ),
-                _SummaryRow(
-                  label: strings.payables,
-                  value: _formatCurrency(
-                    pendingPayrollTotal,
-                    state.appPreferences.preferredCurrency,
+                  _SummaryRow(
+                    label: strings.payroll,
+                    value: '${pendingPayrolls.length}',
                   ),
-                  valueColor: DsColorTokens.statusError,
-                ),
-              ],
+                  const Divider(),
+                  _SummaryRow(
+                    label: strings.receivables,
+                    value: _formatCurrency(
+                      pendingInvoicesTotal,
+                      state.appPreferences.preferredCurrency,
+                    ),
+                    valueColor: DsColorTokens.statusSuccess,
+                  ),
+                  _SummaryRow(
+                    label: strings.payables,
+                    value: _formatCurrency(
+                      pendingPayrollTotal,
+                      state.appPreferences.preferredCurrency,
+                    ),
+                    valueColor: DsColorTokens.statusError,
+                  ),
+                ],
+              ),
             ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.deliveryChannels,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.deliveryChannels,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Text(
-                  '${strings.primaryLabel}: '
-                  '${enabledChannels.isEmpty ? strings.notConfigured : enabledChannels.first}',
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                Text(
-                  '${strings.fallbackLabel}: '
-                  '${enabledChannels.length > 1 ? enabledChannels[1] : strings.notConfigured}',
-                  style: const TextStyle(color: DsColorTokens.textSecondary),
-                ),
-              ],
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Text(
+                    '${strings.primaryLabel}: '
+                    '${enabledChannels.isEmpty ? strings.notConfigured : enabledChannels.first}',
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space1),
+                  Text(
+                    '${strings.fallbackLabel}: '
+                    '${enabledChannels.length > 1 ? enabledChannels[1] : strings.notConfigured}',
+                    style: const TextStyle(color: DsColorTokens.textSecondary),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.emitNow,
@@ -1304,93 +1310,96 @@ class InvoicesListPage extends ConsumerWidget {
               children: [
                 if (index == 0) const SizedBox(height: kToolbarHeight + 10),
                 DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => InvoiceDetailPage(entry: entry),
-                  ),
-                );
-              },
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => InvoiceDetailPage(entry: entry),
+                        ),
+                      );
+                    },
+                    child: Row(
                       children: [
-                        Text(
-                          entry.title,
-                          style: const TextStyle(
-                            fontWeight: DsTypeTokens.fontSemibold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.title,
+                                style: const TextStyle(
+                                  fontWeight: DsTypeTokens.fontSemibold,
+                                ),
+                              ),
+                              const SizedBox(height: DsSpaceTokens.space1),
+                              Text(
+                                '${entry.clientName ?? strings.unknown} · '
+                                '${_formatDate(context, entry.dueDate)}',
+                                style: const TextStyle(
+                                  fontSize: DsTypeTokens.textXs,
+                                  color: DsColorTokens.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: DsSpaceTokens.space1),
+                              Wrap(
+                                spacing: DsSpaceTokens.space1,
+                                children: [
+                                  DsStatusPill(
+                                    label: _statusLabel(strings, entry.status),
+                                    color: _statusColor(entry.status),
+                                  ),
+                                  if (entry.isDisputed)
+                                    DsStatusPill(
+                                      label: strings.disputed,
+                                      color: DsColorTokens.statusError,
+                                    ),
+                                  if (entry.supersededById != null)
+                                    DsStatusPill(
+                                      label: strings.superseded,
+                                      color: DsColorTokens.textMuted,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: DsSpaceTokens.space1),
-                        Text(
-                          '${entry.clientName ?? strings.unknown} · '
-                          '${_formatDate(context, entry.dueDate)}',
-                          style: const TextStyle(
-                            fontSize: DsTypeTokens.textXs,
-                            color: DsColorTokens.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: DsSpaceTokens.space1),
-                        Wrap(
-                          spacing: DsSpaceTokens.space1,
+                        const SizedBox(width: DsSpaceTokens.space2),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            DsStatusPill(
-                              label: _statusLabel(strings, entry.status),
-                              color: _statusColor(entry.status),
+                            Text(
+                              _formatCurrency(entry.amount, entry.currency),
+                              style: const TextStyle(
+                                fontWeight: DsTypeTokens.fontSemibold,
+                              ),
                             ),
-                            if (entry.isDisputed)
-                              DsStatusPill(
-                                label: strings.disputed,
-                                color: DsColorTokens.statusError,
-                              ),
-                            if (entry.supersededById != null)
-                              DsStatusPill(
-                                label: strings.superseded,
-                                color: DsColorTokens.textMuted,
-                              ),
+                            const SizedBox(height: DsSpaceTokens.space1),
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  ref
+                                      .read(offlineStoreProvider.notifier)
+                                      .deleteFinanceEntry(entry.id);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Text(strings.delete),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: DsSpaceTokens.space2),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _formatCurrency(entry.amount, entry.currency),
-                        style: const TextStyle(
-                          fontWeight: DsTypeTokens.fontSemibold,
-                        ),
-                      ),
-                      const SizedBox(height: DsSpaceTokens.space1),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'delete') {
-                            ref
-                                .read(offlineStoreProvider.notifier)
-                                .deleteFinanceEntry(entry.id);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Text(strings.delete),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -1457,100 +1466,101 @@ class _InvoiceFormPageState extends ConsumerState<InvoiceFormPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(labelText: strings.title),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<String>(
-                  value: _selectedClientId,
-                  decoration: InputDecoration(labelText: strings.client),
-                  items: clients
-                      .map(
-                        (client) => DropdownMenuItem<String>(
-                          value: client.id,
-                          child: Text(client.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    final client = clients.firstWhere(
-                      (item) => item.id == value,
-                      orElse: () => const Client(id: '', name: ''),
-                    );
-                    setState(() {
-                      _selectedClientId = value;
-                      if (_titleController.text.trim().isEmpty ||
-                          _titleController.text.startsWith('${strings.invoiceLabel} -')) {
-                        _titleController.text = '${strings.invoiceLabel} - ${client.name}';
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _amountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.amount),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.currency),
-                    const Spacer(),
-                    Text(_currencyCode(state.appPreferences.preferredCurrency)),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.dueDate),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () async {
-                        final selected = await showDatePicker(
-                          context: context,
-                          initialDate: _dueDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (selected == null) return;
-                        setState(() => _dueDate = selected);
-                      },
-                      child: Text(_formatDate(context, _dueDate)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(labelText: strings.title),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<String>(
+                    value: _selectedClientId,
+                    decoration: InputDecoration(labelText: strings.client),
+                    items: clients
+                        .map(
+                          (client) => DropdownMenuItem<String>(
+                            value: client.id,
+                            child: Text(client.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      final client = clients.firstWhere(
+                        (item) => item.id == value,
+                        orElse: () => const Client(id: '', name: ''),
+                      );
+                      setState(() {
+                        _selectedClientId = value;
+                        if (_titleController.text.trim().isEmpty ||
+                            _titleController.text.startsWith('${strings.invoiceLabel} -')) {
+                          _titleController.text = '${strings.invoiceLabel} - ${client.name}';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.amount),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.currency),
+                      const Spacer(),
+                      Text(_currencyCode(state.appPreferences.preferredCurrency)),
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.dueDate),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () async {
+                          final selected = await showDatePicker(
+                            context: context,
+                            initialDate: _dueDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (selected == null) return;
+                          setState(() => _dueDate = selected);
+                        },
+                        child: Text(_formatDate(context, _dueDate)),
                       ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
@@ -1698,359 +1708,360 @@ class _InvoiceDetailPageState extends ConsumerState<InvoiceDetailPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  enabled: canAdjustInvoice,
-                  decoration: InputDecoration(labelText: strings.title),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _amountController,
-                  enabled: canAdjustInvoice,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.amount),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.currency),
-                    const Spacer(),
-                    Text(_currencyCode(state.appPreferences.preferredCurrency)),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.dueDate),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: canAdjustInvoice
-                          ? () async {
-                              final selected = await showDatePicker(
-                                context: context,
-                                initialDate: _dueDate,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2100),
-                              );
-                              if (selected == null) return;
-                              setState(() => _dueDate = selected);
-                            }
-                          : null,
-                      child: Text(_formatDate(context, _dueDate)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    enabled: canAdjustInvoice,
+                    decoration: InputDecoration(labelText: strings.title),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _amountController,
+                    enabled: canAdjustInvoice,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.amount),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.currency),
+                      const Spacer(),
+                      Text(_currencyCode(state.appPreferences.preferredCurrency)),
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.dueDate),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: canAdjustInvoice
+                            ? () async {
+                                final selected = await showDatePicker(
+                                  context: context,
+                                  initialDate: _dueDate,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (selected == null) return;
+                                setState(() => _dueDate = selected);
+                              }
+                            : null,
+                        child: Text(_formatDate(context, _dueDate)),
                       ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinanceStatus>(
-                  value: _status,
-                  decoration: InputDecoration(labelText: strings.status),
-                  items: FinanceStatus.values
-                      .map(
-                        (status) => DropdownMenuItem<FinanceStatus>(
-                          value: status,
-                          child: Text(_statusLabel(strings, status)),
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _status = value);
-                  },
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.lineItems,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
                   ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                ...lineItems.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: DsSpaceTokens.space2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.serviceTypeName,
-                                style: const TextStyle(
-                                  fontWeight: DsTypeTokens.fontSemibold,
-                                ),
-                              ),
-                            ),
-                            Text(_formatCurrency(item.total, entry.currency)),
-                          ],
-                        ),
-                        const SizedBox(height: DsSpaceTokens.space1),
-                        Text(
-                          item.description,
-                          style: const TextStyle(
-                            fontSize: DsTypeTokens.textSm,
-                            color: DsColorTokens.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: DsSpaceTokens.space1),
-                        Text(
-                          '${strings.qty}: '
-                          '${_quantityLabel(strings, item.pricingModel, item.quantity)} · '
-                          '${strings.unit}: ${_formatCurrency(item.unitPrice, entry.currency)} · '
-                          '${strings.total}: ${_formatCurrency(item.total, entry.currency)}',
-                          style: const TextStyle(
-                            fontSize: DsTypeTokens.textXs,
-                            color: DsColorTokens.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Divider(),
-                _SummaryRow(
-                  label: strings.total,
-                  value: _formatCurrency(lineItemTotal, entry.currency),
-                  valueColor: DsColorTokens.actionPrimary,
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.dispute,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(strings.clientDisputed),
-                  value: _isDisputed,
-                  onChanged: (!disputeWindowOpen && !_isDisputed)
-                      ? null
-                      : (value) => setState(() => _isDisputed = value),
-                ),
-                TextField(
-                  controller: _disputeReasonController,
-                  enabled: _isDisputed,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration:
-                      InputDecoration(labelText: strings.clientMessageReason),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Text(
-                  disputeWindowOpen
-                      ? _disputeWindowOpenText(strings, disputeDeadline,
-                          state.appPreferences.disputeWindowDays)
-                      : strings.disputeWindowClosedOn(_formatDate(context, disputeDeadline)),
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textXs,
-                    color: DsColorTokens.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.sendInvoice,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                if (isSuperseded)
-                  Text(
-                    strings.supersededOn(
-                      entry.supersededAt == null
-                          ? strings.unknown
-                          : _formatDateTime(context, entry.supersededAt!),
-                    ),
-                    style: const TextStyle(
-                      color: DsColorTokens.textSecondary,
-                      fontSize: DsTypeTokens.textSm,
-                    ),
-                  ),
-                if (availableChannels.isEmpty)
-                  Text(
-                    strings.noAvailableChannels,
-                    style: const TextStyle(
-                      color: DsColorTokens.textSecondary,
-                    ),
-                  )
-                else ...[
-                  DropdownButtonFormField<DeliveryChannel>(
-                    value: _selectedChannel,
-                    decoration: InputDecoration(labelText: strings.channel),
-                    items: availableChannels
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinanceStatus>(
+                    value: _status,
+                    decoration: InputDecoration(labelText: strings.status),
+                    items: FinanceStatus.values
                         .map(
-                          (channel) => DropdownMenuItem<DeliveryChannel>(
-                            value: channel,
-                            child: Text(_deliveryChannelLabel(strings, channel)),
+                          (status) => DropdownMenuItem<FinanceStatus>(
+                            value: status,
+                            child: Text(_statusLabel(strings, status)),
                           ),
                         )
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() => _selectedChannel = value);
+                      setState(() => _status = value);
                     },
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space2),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      _shareInvoiceText(
-                        strings: strings,
-                        entry: entry,
-                        lineItems: lineItems,
-                        clientName: hasClient ? client.name : null,
-                      );
-                    },
-                    icon: const Icon(Icons.share_outlined),
-                    label: Text(strings.sendReissue),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space1),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final data = await _buildInvoicePdf(
-                        strings: strings,
-                        state: state,
-                        entry: entry,
-                        lineItems: lineItems,
-                        dueDate: _dueDate,
-                        amount: amount ?? entry.amount,
-                        disputeReason: _disputeReasonController.text.trim(),
-                        isDisputed: _isDisputed,
-                        client: hasClient ? client : null,
-                      );
-                      if (!mounted) return;
-                      await Printing.layoutPdf(onLayout: (_) async => data);
-                    },
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(strings.previewPdf),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space1),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final data = await _buildInvoicePdf(
-                        strings: strings,
-                        state: state,
-                        entry: entry,
-                        lineItems: lineItems,
-                        dueDate: _dueDate,
-                        amount: amount ?? entry.amount,
-                        disputeReason: _disputeReasonController.text.trim(),
-                        isDisputed: _isDisputed,
-                        client: hasClient ? client : null,
-                      );
-                      if (!mounted) return;
-                      await Printing.sharePdf(
-                        bytes: data,
-                        filename:
-                            '${entry.title.replaceAll(' ', '-').toLowerCase()}.pdf',
-                      );
-                    },
-                    icon: const Icon(Icons.upload_file_outlined),
-                    label: Text(strings.sharePdf),
                   ),
                 ],
-                if (!canAdjustInvoice)
-                  Padding(
-                    padding: const EdgeInsets.only(top: DsSpaceTokens.space2),
-                    child: Text(
-                      strings.adjustmentsBlocked,
-                      style: const TextStyle(
-                        fontSize: DsTypeTokens.textXs,
-                        color: DsColorTokens.textSecondary,
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.lineItems,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  ...lineItems.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: DsSpaceTokens.space2),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.serviceTypeName,
+                                  style: const TextStyle(
+                                    fontWeight: DsTypeTokens.fontSemibold,
+                                  ),
+                                ),
+                              ),
+                              Text(_formatCurrency(item.total, entry.currency)),
+                            ],
+                          ),
+                          const SizedBox(height: DsSpaceTokens.space1),
+                          Text(
+                            item.description,
+                            style: const TextStyle(
+                              fontSize: DsTypeTokens.textSm,
+                              color: DsColorTokens.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: DsSpaceTokens.space1),
+                          Text(
+                            '${strings.qty}: '
+                            '${_quantityLabel(strings, item.pricingModel, item.quantity)} · '
+                            '${strings.unit}: ${_formatCurrency(item.unitPrice, entry.currency)} · '
+                            '${strings.total}: ${_formatCurrency(item.total, entry.currency)}',
+                            style: const TextStyle(
+                              fontSize: DsTypeTokens.textXs,
+                              color: DsColorTokens.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-              ],
+                  const Divider(),
+                  _SummaryRow(
+                    label: strings.total,
+                    value: _formatCurrency(lineItemTotal, entry.currency),
+                    valueColor: DsColorTokens.actionPrimary,
+                  ),
+                ],
+              ),
             ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: OutlinedButton.icon(
-              onPressed: isSuperseded
-                  ? null
-                  : () async {
-                      final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text(strings.reissueInvoiceQuestion),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: Text(strings.cancel),
-                                ),
-                                FilledButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  child: Text(strings.reissueInvoice),
-                                ),
-                              ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.dispute,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.clientDisputed),
+                    value: _isDisputed,
+                    onChanged: (!disputeWindowOpen && !_isDisputed)
+                        ? null
+                        : (value) => setState(() => _isDisputed = value),
+                  ),
+                  TextField(
+                    controller: _disputeReasonController,
+                    enabled: _isDisputed,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration:
+                        InputDecoration(labelText: strings.clientMessageReason),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Text(
+                    disputeWindowOpen
+                        ? _disputeWindowOpenText(strings, disputeDeadline,
+                            state.appPreferences.disputeWindowDays)
+                        : strings.disputeWindowClosedOn(_formatDate(context, disputeDeadline)),
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textXs,
+                      color: DsColorTokens.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.sendInvoice,
+                    style: const TextStyle(
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  if (isSuperseded)
+                    Text(
+                      strings.supersededOn(
+                        entry.supersededAt == null
+                            ? strings.unknown
+                            : _formatDateTime(context, entry.supersededAt!),
+                      ),
+                      style: const TextStyle(
+                        color: DsColorTokens.textSecondary,
+                        fontSize: DsTypeTokens.textSm,
+                      ),
+                    ),
+                  if (availableChannels.isEmpty)
+                    Text(
+                      strings.noAvailableChannels,
+                      style: const TextStyle(
+                        color: DsColorTokens.textSecondary,
+                      ),
+                    )
+                  else ...[
+                    DropdownButtonFormField<DeliveryChannel>(
+                      value: _selectedChannel,
+                      decoration: InputDecoration(labelText: strings.channel),
+                      items: availableChannels
+                          .map(
+                            (channel) => DropdownMenuItem<DeliveryChannel>(
+                              value: channel,
+                              child: Text(_deliveryChannelLabel(strings, channel)),
                             ),
-                          ) ??
-                          false;
-
-                      if (!confirmed) return;
-
-                      store.reissueInvoice(
-                        entryId: entry.id,
-                        amount: lineItemTotal > 0 ? lineItemTotal : entry.amount,
-                        dueDate: _dueDate,
-                      );
-                    },
-              icon: const Icon(Icons.refresh_outlined),
-              label: Text(strings.reissueInvoice),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _selectedChannel = value);
+                      },
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space2),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        _shareInvoiceText(
+                          strings: strings,
+                          entry: entry,
+                          lineItems: lineItems,
+                          clientName: hasClient ? client.name : null,
+                        );
+                      },
+                      icon: const Icon(Icons.share_outlined),
+                      label: Text(strings.sendReissue),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space1),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final data = await _buildInvoicePdf(
+                          strings: strings,
+                          state: state,
+                          entry: entry,
+                          lineItems: lineItems,
+                          dueDate: _dueDate,
+                          amount: amount ?? entry.amount,
+                          disputeReason: _disputeReasonController.text.trim(),
+                          isDisputed: _isDisputed,
+                          client: hasClient ? client : null,
+                        );
+                        if (!mounted) return;
+                        await Printing.layoutPdf(onLayout: (_) async => data);
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: Text(strings.previewPdf),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space1),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final data = await _buildInvoicePdf(
+                          strings: strings,
+                          state: state,
+                          entry: entry,
+                          lineItems: lineItems,
+                          dueDate: _dueDate,
+                          amount: amount ?? entry.amount,
+                          disputeReason: _disputeReasonController.text.trim(),
+                          isDisputed: _isDisputed,
+                          client: hasClient ? client : null,
+                        );
+                        if (!mounted) return;
+                        await Printing.sharePdf(
+                          bytes: data,
+                          filename:
+                              '${entry.title.replaceAll(' ', '-').toLowerCase()}.pdf',
+                        );
+                      },
+                      icon: const Icon(Icons.upload_file_outlined),
+                      label: Text(strings.sharePdf),
+                    ),
+                  ],
+                  if (!canAdjustInvoice)
+                    Padding(
+                      padding: const EdgeInsets.only(top: DsSpaceTokens.space2),
+                      child: Text(
+                        strings.adjustmentsBlocked,
+                        style: const TextStyle(
+                          fontSize: DsTypeTokens.textXs,
+                          color: DsColorTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: OutlinedButton.icon(
+                onPressed: isSuperseded
+                    ? null
+                    : () async {
+                        final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(strings.reissueInvoiceQuestion),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: Text(strings.cancel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    child: Text(strings.reissueInvoice),
+                                  ),
+                                ],
+                              ),
+                            ) ??
+                            false;
+
+                        if (!confirmed) return;
+
+                        store.reissueInvoice(
+                          entryId: entry.id,
+                          amount: lineItemTotal > 0 ? lineItemTotal : entry.amount,
+                          dueDate: _dueDate,
+                        );
+                      },
+                icon: const Icon(Icons.refresh_outlined),
+                label: Text(strings.reissueInvoice),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
@@ -2256,73 +2267,75 @@ class PayrollListPage extends ConsumerWidget {
               children: [
                 if (index == 0) const SizedBox(height: kToolbarHeight + 10),
                 DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PayrollDetailPage(entry: entry),
-                  ),
-                );
-              },
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PayrollDetailPage(entry: entry),
+                        ),
+                      );
+                    },
+                    child: Row(
                       children: [
-                        Text(
-                          entry.title,
-                          style: const TextStyle(
-                            fontWeight: DsTypeTokens.fontSemibold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.title,
+                                style: const TextStyle(
+                                  fontWeight: DsTypeTokens.fontSemibold,
+                                ),
+                              ),
+                              const SizedBox(height: DsSpaceTokens.space1),
+                              if (entry.employeeName != null)
+                                Text(
+                                  entry.employeeName!,
+                                  style: const TextStyle(
+                                    fontSize: DsTypeTokens.textXs,
+                                    color: DsColorTokens.textSecondary,
+                                  ),
+                                ),
+                              Text(
+                                _formatDate(context, entry.dueDate),
+                                style: const TextStyle(
+                                  fontSize: DsTypeTokens.textXs,
+                                  color: DsColorTokens.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: DsSpaceTokens.space1),
-                        if (entry.employeeName != null)
-                          Text(
-                            entry.employeeName!,
-                            style: const TextStyle(
-                              fontSize: DsTypeTokens.textXs,
-                              color: DsColorTokens.textSecondary,
+                        const SizedBox(width: DsSpaceTokens.space2),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatCurrency(entry.amount, entry.currency),
+                              style: const TextStyle(
+                                fontWeight: DsTypeTokens.fontSemibold,
+                              ),
                             ),
-                          ),
-                        Text(
-                          _formatDate(context, entry.dueDate),
-                          style: const TextStyle(
-                            fontSize: DsTypeTokens.textXs,
-                            color: DsColorTokens.textSecondary,
-                          ),
+                            const SizedBox(height: DsSpaceTokens.space1),
+                            DsStatusPill(
+                              label: _statusLabel(strings, entry.status),
+                              color: _statusColor(entry.status),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: DsSpaceTokens.space2),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _formatCurrency(entry.amount, entry.currency),
-                        style: const TextStyle(
-                          fontWeight: DsTypeTokens.fontSemibold,
-                        ),
-                      ),
-                      const SizedBox(height: DsSpaceTokens.space1),
-                      DsStatusPill(
-                        label: _statusLabel(strings, entry.status),
-                        color: _statusColor(entry.status),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class PayrollFormPage extends ConsumerStatefulWidget {
@@ -2420,199 +2433,200 @@ class _PayrollFormPageState extends ConsumerState<PayrollFormPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(labelText: strings.title),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<String>(
-                  value: _selectedEmployeeId,
-                  decoration: InputDecoration(labelText: strings.employee),
-                  items: employees
-                      .map(
-                        (employee) => DropdownMenuItem<String>(
-                          value: employee.id,
-                          child: Text(employee.name),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(labelText: strings.title),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<String>(
+                    value: _selectedEmployeeId,
+                    decoration: InputDecoration(labelText: strings.employee),
+                    items: employees
+                        .map(
+                          (employee) => DropdownMenuItem<String>(
+                            value: employee.id,
+                            child: Text(employee.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      final employee = employees.firstWhere(
+                        (item) => item.id == value,
+                        orElse: () => const Employee(id: '', name: ''),
+                      );
+                      setState(() {
+                        _selectedEmployeeId = value;
+                        if (_titleController.text.trim().isEmpty ||
+                            _titleController.text.startsWith('${strings.payrollLabel} -')) {
+                          _titleController.text = '${strings.payrollLabel} - ${employee.name}';
+                        }
+                        if (_hourlyRateController.text.trim().isEmpty &&
+                            (employee.hourlyRate ?? 0) > 0) {
+                          _hourlyRateController.text =
+                              (employee.hourlyRate ?? 0).toStringAsFixed(2);
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.currency),
+                      const Spacer(),
+                      Text(_currencyCode(state.appPreferences.preferredCurrency)),
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.dueDate,
+                    value: _dueDate,
+                    onChange: (date) => setState(() => _dueDate = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    final employee = employees.firstWhere(
-                      (item) => item.id == value,
-                      orElse: () => const Employee(id: '', name: ''),
-                    );
-                    setState(() {
-                      _selectedEmployeeId = value;
-                      if (_titleController.text.trim().isEmpty ||
-                          _titleController.text.startsWith('${strings.payrollLabel} -')) {
-                        _titleController.text = '${strings.payrollLabel} - ${employee.name}';
-                      }
-                      if (_hourlyRateController.text.trim().isEmpty &&
-                          (employee.hourlyRate ?? 0) > 0) {
-                        _hourlyRateController.text =
-                            (employee.hourlyRate ?? 0).toStringAsFixed(2);
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.currency),
-                    const Spacer(),
-                    Text(_currencyCode(state.appPreferences.preferredCurrency)),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.dueDate,
-                  value: _dueDate,
-                  onChange: (date) => setState(() => _dueDate = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
+                  ),
+                ],
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  _DateFieldRow(
+                    label: strings.fromLabel,
+                    value: _periodStart,
+                    onChange: (date) => setState(() => _periodStart = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.toLabel,
+                    value: _periodEnd,
+                    onChange: (date) => setState(() => _periodEnd = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _daysWorkedController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: strings.daysWorked),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space1),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      strings.calculatedDays(computedDays),
+                      style: const TextStyle(
+                        fontSize: DsTypeTokens.textXs,
+                        color: DsColorTokens.textSecondary,
                       ),
                     ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                _DateFieldRow(
-                  label: strings.fromLabel,
-                  value: _periodStart,
-                  onChange: (date) => setState(() => _periodStart = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.toLabel,
-                  value: _periodEnd,
-                  onChange: (date) => setState(() => _periodEnd = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _daysWorkedController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: strings.daysWorked),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    strings.calculatedDays(computedDays),
-                    style: const TextStyle(
-                      fontSize: DsTypeTokens.textXs,
-                      color: DsColorTokens.textSecondary,
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _hoursWorkedController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.hoursWorkedLabel),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _hourlyRateController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.hourlyRate),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.basePay,
+                    value: _formatCurrency(
+                      basePay,
+                      state.appPreferences.preferredCurrency,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _hoursWorkedController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.hoursWorkedLabel),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _hourlyRateController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.hourlyRate),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.basePay,
-                  value: _formatCurrency(
-                    basePay,
-                    state.appPreferences.preferredCurrency,
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _bonusController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.bonus),
+                    onChanged: (_) => setState(() {}),
                   ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _bonusController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.bonus),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _deductionsController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.deductions),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _taxesController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.taxes),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _reimbursementsController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.reimbursements),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.netPay,
-                  value: _formatCurrency(
-                    netPay,
-                    state.appPreferences.preferredCurrency,
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _deductionsController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.deductions),
+                    onChanged: (_) => setState(() {}),
                   ),
-                  valueColor: DsColorTokens.actionPrimary,
-                ),
-              ],
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _taxesController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.taxes),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _reimbursementsController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.reimbursements),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.netPay,
+                    value: _formatCurrency(
+                      netPay,
+                      state.appPreferences.preferredCurrency,
+                    ),
+                    valueColor: DsColorTokens.actionPrimary,
+                  ),
+                ],
+              ),
             ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: TextField(
-              controller: _notesController,
-              minLines: 3,
-              maxLines: 5,
-              decoration: InputDecoration(labelText: strings.notes),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: TextField(
+                controller: _notesController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: InputDecoration(labelText: strings.notes),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
@@ -2672,9 +2686,8 @@ class _PayrollFormPageState extends ConsumerState<PayrollFormPage> {
           Navigator.of(context).pop();
         },
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class PayrollDetailPage extends ConsumerStatefulWidget {
@@ -2809,219 +2822,219 @@ class _PayrollDetailPageState extends ConsumerState<PayrollDetailPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                if (entry.employeeName != null)
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  if (entry.employeeName != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${strings.employee}: ${entry.employeeName!}',
+                        style: const TextStyle(
+                          color: DsColorTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _titleController,
+                    enabled: canEditFields,
+                    decoration: InputDecoration(labelText: strings.title),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Row(
+                    children: [
+                      Text(strings.currency),
+                      const Spacer(),
+                      Text(_currencyCode(state.appPreferences.preferredCurrency)),
+                    ],
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.dueDate,
+                    value: _dueDate,
+                    enabled: canEditFields,
+                    onChange: (date) => setState(() => _dueDate = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinanceStatus>(
+                    value: _status,
+                    decoration: InputDecoration(labelText: strings.status),
+                    items: FinanceStatus.values
+                        .map(
+                          (status) => DropdownMenuItem<FinanceStatus>(
+                            value: status,
+                            child: Text(_statusLabel(strings, status)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _status = value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  _DateFieldRow(
+                    label: strings.fromLabel,
+                    value: _periodStart,
+                    enabled: canEditFields,
+                    onChange: (date) => setState(() => _periodStart = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.toLabel,
+                    value: _periodEnd,
+                    enabled: canEditFields,
+                    onChange: (date) => setState(() => _periodEnd = date),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _daysWorkedController,
+                    enabled: canEditFields,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: strings.daysWorked),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space1),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '${strings.employee}: ${entry.employeeName!}',
+                      strings.calculatedDays(computedDays),
                       style: const TextStyle(
+                        fontSize: DsTypeTokens.textXs,
                         color: DsColorTokens.textSecondary,
                       ),
                     ),
                   ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _titleController,
-                  enabled: canEditFields,
-                  decoration: InputDecoration(labelText: strings.title),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Row(
-                  children: [
-                    Text(strings.currency),
-                    const Spacer(),
-                    Text(_currencyCode(state.appPreferences.preferredCurrency)),
-                  ],
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.dueDate,
-                  value: _dueDate,
-                  enabled: canEditFields,
-                  onChange: (date) => setState(() => _dueDate = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinanceStatus>(
-                  value: _status,
-                  decoration: InputDecoration(labelText: strings.status),
-                  items: FinanceStatus.values
-                      .map(
-                        (status) => DropdownMenuItem<FinanceStatus>(
-                          value: status,
-                          child: Text(_statusLabel(strings, status)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _status = value);
-                  },
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                _DateFieldRow(
-                  label: strings.fromLabel,
-                  value: _periodStart,
-                  enabled: canEditFields,
-                  onChange: (date) => setState(() => _periodStart = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.toLabel,
-                  value: _periodEnd,
-                  enabled: canEditFields,
-                  onChange: (date) => setState(() => _periodEnd = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _daysWorkedController,
-                  enabled: canEditFields,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: strings.daysWorked),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    strings.calculatedDays(computedDays),
-                    style: const TextStyle(
-                      fontSize: DsTypeTokens.textXs,
-                      color: DsColorTokens.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _hoursWorkedController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.hoursWorkedLabel),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _hourlyRateController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.hourlyRate),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.basePay,
-                  value: _formatCurrency(
-                    basePay,
-                    state.appPreferences.preferredCurrency,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _bonusController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.bonus),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _deductionsController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.deductions),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _taxesController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.taxes),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _reimbursementsController,
-                  enabled: canEditFields,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.reimbursements),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _SummaryRow(
-                  label: strings.netPay,
-                  value: _formatCurrency(
-                    netPay,
-                    state.appPreferences.preferredCurrency,
-                  ),
-                  valueColor: DsColorTokens.actionPrimary,
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: TextField(
-              controller: _notesController,
-              enabled: canEditFields,
-              minLines: 3,
-              maxLines: 5,
-              decoration: InputDecoration(labelText: strings.notes),
-            ),
-          ),
-          if (!canEditFields)
-            DsCard(
-              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-              child: Text(
-                strings.editingLockedAfterPayment,
-                style: const TextStyle(
-                  color: DsColorTokens.textSecondary,
-                ),
+                ],
               ),
             ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _hoursWorkedController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.hoursWorkedLabel),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _hourlyRateController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.hourlyRate),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.basePay,
+                    value: _formatCurrency(
+                      basePay,
+                      state.appPreferences.preferredCurrency,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _bonusController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.bonus),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _deductionsController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.deductions),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _taxesController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.taxes),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _reimbursementsController,
+                    enabled: canEditFields,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.reimbursements),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _SummaryRow(
+                    label: strings.netPay,
+                    value: _formatCurrency(
+                      netPay,
+                      state.appPreferences.preferredCurrency,
+                    ),
+                    valueColor: DsColorTokens.actionPrimary,
+                  ),
+                ],
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: TextField(
+                controller: _notesController,
+                enabled: canEditFields,
+                minLines: 3,
+                maxLines: 5,
+                decoration: InputDecoration(labelText: strings.notes),
+              ),
+            ),
+            if (!canEditFields)
+              DsCard(
+                margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                child: Text(
+                  strings.editingLockedAfterPayment,
+                  style: const TextStyle(
+                    color: DsColorTokens.textSecondary,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         isDisabled: !canSave,
@@ -3107,87 +3120,87 @@ class _GenericFinanceDetailPageState
           children: [
             const SizedBox(height: kToolbarHeight + 10),
             DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.title,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                Text(
-                  _formatDate(context, entry.dueDate),
-                  style: const TextStyle(
-                    color: DsColorTokens.textSecondary,
-                  ),
-                ),
-                if (entry.clientName != null)
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    '${strings.client}: ${entry.clientName!}',
+                    entry.title,
                     style: const TextStyle(
-                      fontSize: DsTypeTokens.textSm,
+                      fontSize: DsTypeTokens.textBase,
+                      fontWeight: DsTypeTokens.fontSemibold,
+                    ),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space1),
+                  Text(
+                    _formatDate(context, entry.dueDate),
+                    style: const TextStyle(
                       color: DsColorTokens.textSecondary,
                     ),
                   ),
-                if (entry.employeeName != null)
-                  Text(
-                    '${strings.employee}: ${entry.employeeName!}',
-                    style: const TextStyle(
-                      fontSize: DsTypeTokens.textSm,
-                      color: DsColorTokens.textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                DropdownButtonFormField<FinanceStatus>(
-                  value: _status,
-                  decoration: InputDecoration(labelText: strings.status),
-                  items: FinanceStatus.values
-                      .map(
-                        (status) => DropdownMenuItem<FinanceStatus>(
-                          value: status,
-                          child: Text(_statusLabel(strings, status)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _status = value);
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
+                  if (entry.clientName != null)
+                    Text(
+                      '${strings.client}: ${entry.clientName!}',
+                      style: const TextStyle(
+                        fontSize: DsTypeTokens.textSm,
+                        color: DsColorTokens.textSecondary,
                       ),
                     ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-              ],
+                  if (entry.employeeName != null)
+                    Text(
+                      '${strings.employee}: ${entry.employeeName!}',
+                      style: const TextStyle(
+                        fontSize: DsTypeTokens.textSm,
+                        color: DsColorTokens.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  DropdownButtonFormField<FinanceStatus>(
+                    value: _status,
+                    decoration: InputDecoration(labelText: strings.status),
+                    items: FinanceStatus.values
+                        .map(
+                          (status) => DropdownMenuItem<FinanceStatus>(
+                            value: status,
+                            child: Text(_statusLabel(strings, status)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _status = value);
+                    },
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         onPressed: () {
@@ -3258,129 +3271,129 @@ class _ExpenseDetailPageState extends ConsumerState<ExpenseDetailPage> {
           children: [
             const SizedBox(height: kToolbarHeight + 10),
             DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.title,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                Text(
-                  _formatDate(context, entry.dueDate),
-                  style: const TextStyle(color: DsColorTokens.textSecondary),
-                ),
-                const SizedBox(height: DsSpaceTokens.space1),
-                if ((entry.clientName ?? '').isNotEmpty)
-                  Text(
-                    '${strings.client}: ${entry.clientName!}',
-                    style: const TextStyle(color: DsColorTokens.textSecondary),
-                  ),
-                Text(
-                  '${strings.amount}: ${_formatCurrency(entry.amount, entry.currency)}',
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                DropdownButtonFormField<FinanceStatus>(
-                  value: _status,
-                  decoration: InputDecoration(labelText: strings.status),
-                  items: FinanceStatus.values
-                      .map(
-                        (status) => DropdownMenuItem<FinanceStatus>(
-                          value: status,
-                          child: Text(_statusLabel(strings, status)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _status = value);
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinancePaymentMethod?>(
-                  value: _method,
-                  decoration: InputDecoration(labelText: strings.method),
-                  items: [
-                    DropdownMenuItem<FinancePaymentMethod?>(
-                      value: null,
-                      child: Text(strings.none),
-                    ),
-                    ...FinancePaymentMethod.values.map(
-                      (method) => DropdownMenuItem<FinancePaymentMethod?>(
-                        value: method,
-                        child: Text(_methodLabel(strings, method)),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _method = value),
-                ),
-              ],
-            ),
-          ),
-          if (receiptBytes != null)
-            DsCard(
               margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    strings.receipt,
+                    entry.title,
                     style: const TextStyle(
                       fontSize: DsTypeTokens.textBase,
                       fontWeight: DsTypeTokens.fontSemibold,
                     ),
                   ),
-                  const SizedBox(height: DsSpaceTokens.space2),
-                  InkWell(
-                    onTap: () {
-                      showDialog<void>(
-                        context: context,
-                        builder: (context) => Dialog(
-                          child: InteractiveViewer(
-                            child: Image.memory(receiptBytes),
-                          ),
-                        ),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(DsRadiusTokens.radiusLg),
-                      child: Image.memory(receiptBytes, fit: BoxFit.cover),
-                    ),
+                  const SizedBox(height: DsSpaceTokens.space1),
+                  Text(
+                    _formatDate(context, entry.dueDate),
+                    style: const TextStyle(color: DsColorTokens.textSecondary),
                   ),
-                  const SizedBox(height: DsSpaceTokens.space2),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      final text = strings.expenseReceiptShare(
-                        entry.title,
-                        _formatCurrency(entry.amount, entry.currency),
-                        _formatDate(context, entry.dueDate),
-                      );
-                      final file = XFile.fromData(
-                        receiptBytes,
-                        name: 'receipt-${entry.id}.jpg',
-                        mimeType: 'image/jpeg',
-                      );
-                      Share.shareXFiles([file], text: text);
-                    },
-                    icon: const Icon(Icons.share_outlined),
-                    label: Text(strings.shareReceipt),
+                  const SizedBox(height: DsSpaceTokens.space1),
+                  if ((entry.clientName ?? '').isNotEmpty)
+                    Text(
+                      '${strings.client}: ${entry.clientName!}',
+                      style: const TextStyle(color: DsColorTokens.textSecondary),
+                    ),
+                  Text(
+                    '${strings.amount}: ${_formatCurrency(entry.amount, entry.currency)}',
                   ),
                 ],
               ),
             ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  DropdownButtonFormField<FinanceStatus>(
+                    value: _status,
+                    decoration: InputDecoration(labelText: strings.status),
+                    items: FinanceStatus.values
+                        .map(
+                          (status) => DropdownMenuItem<FinanceStatus>(
+                            value: status,
+                            child: Text(_statusLabel(strings, status)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _status = value);
+                    },
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinancePaymentMethod?>(
+                    value: _method,
+                    decoration: InputDecoration(labelText: strings.method),
+                    items: [
+                      DropdownMenuItem<FinancePaymentMethod?>(
+                        value: null,
+                        child: Text(strings.none),
+                      ),
+                      ...FinancePaymentMethod.values.map(
+                        (method) => DropdownMenuItem<FinancePaymentMethod?>(
+                          value: method,
+                          child: Text(_methodLabel(strings, method)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _method = value),
+                  ),
+                ],
+              ),
+            ),
+            if (receiptBytes != null)
+              DsCard(
+                margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.receipt,
+                      style: const TextStyle(
+                        fontSize: DsTypeTokens.textBase,
+                        fontWeight: DsTypeTokens.fontSemibold,
+                      ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space2),
+                    InkWell(
+                      onTap: () {
+                        showDialog<void>(
+                          context: context,
+                          builder: (context) => Dialog(
+                            child: InteractiveViewer(
+                              child: Image.memory(receiptBytes),
+                            ),
+                          ),
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(DsRadiusTokens.radiusLg),
+                        child: Image.memory(receiptBytes, fit: BoxFit.cover),
+                      ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space2),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        final text = strings.expenseReceiptShare(
+                          entry.title,
+                          _formatCurrency(entry.amount, entry.currency),
+                          _formatDate(context, entry.dueDate),
+                        );
+                        final file = XFile.fromData(
+                          receiptBytes,
+                          name: 'receipt-${entry.id}.jpg',
+                          mimeType: 'image/jpeg',
+                        );
+                        Share.shareXFiles([file], text: text);
+                      },
+                      icon: const Icon(Icons.share_outlined),
+                      label: Text(strings.shareReceipt),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         onPressed: () {
@@ -3453,253 +3466,253 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.period,
-                  style: const TextStyle(
-                    fontSize: DsTypeTokens.textBase,
-                    fontWeight: DsTypeTokens.fontSemibold,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                SegmentedButton<_ReportScope>(
-                  segments: [
-                    ButtonSegment<_ReportScope>(
-                      value: _ReportScope.month,
-                      label: Text(strings.month),
-                    ),
-                    ButtonSegment<_ReportScope>(
-                      value: _ReportScope.week,
-                      label: Text(strings.week),
-                    ),
-                    ButtonSegment<_ReportScope>(
-                      value: _ReportScope.custom,
-                      label: Text(strings.customRange),
-                    ),
-                  ],
-                  selected: {_scope},
-                  onSelectionChanged: (value) {
-                    setState(() => _scope = value.first);
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                if (_scope == _ReportScope.month)
-                  _DateFieldRow(
-                    label: strings.month,
-                    value: _selectedMonth,
-                    onChange: (date) => setState(() => _selectedMonth = date),
-                  )
-                else if (_scope == _ReportScope.week)
-                  _DateFieldRow(
-                    label: strings.week,
-                    value: _selectedWeek,
-                    onChange: (date) => setState(() => _selectedWeek = date),
-                  )
-                else ...[
-                  _DateFieldRow(
-                    label: strings.startDate,
-                    value: _customStart,
-                    onChange: (date) => setState(() => _customStart = date),
-                  ),
-                  const SizedBox(height: DsSpaceTokens.space2),
-                  _DateFieldRow(
-                    label: strings.endDate,
-                    value: _customEnd,
-                    onChange: (date) => setState(() => _customEnd = date),
-                  ),
-                ],
-                const SizedBox(height: DsSpaceTokens.space2),
-                Text(
-                  _periodLabel(context, strings, range),
-                  style: const TextStyle(color: DsColorTokens.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          if (entriesInRange.isEmpty)
-            DsCard(
-              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-              child: Text(
-                strings.noDataForPeriod,
-                style: const TextStyle(color: DsColorTokens.textSecondary),
-              ),
-            )
-          else ...[
-            ...currencies.map(
-              (currency) {
-                final receivables = receivablesInRange
-                    .where((entry) => entry.currency == currency)
-                    .toList();
-                final payables = payablesInRange
-                    .where((entry) => entry.currency == currency)
-                    .toList();
-
-                final totalReceivables =
-                    receivables.fold<double>(0, (sum, e) => sum + e.amount);
-                final totalPayables =
-                    payables.fold<double>(0, (sum, e) => sum + e.amount);
-                final net = totalReceivables - totalPayables;
-
-                final clientItems = _summaryItems(
-                  entries: receivables,
-                  keyFor: (entry) => entry.clientName ?? strings.unknown,
-                );
-                final employeeItems = _summaryItems(
-                  entries: payables,
-                  keyFor: (entry) => entry.employeeName ?? strings.unknown,
-                );
-
-                return Column(
-                  children: [
-                    DsCard(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: DsSpaceTokens.space2,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.summaryByCurrency(_currencyCode(currency)),
-                            style: const TextStyle(
-                              fontSize: DsTypeTokens.textBase,
-                              fontWeight: DsTypeTokens.fontSemibold,
-                            ),
-                          ),
-                          const SizedBox(height: DsSpaceTokens.space2),
-                          _SummaryRow(
-                            label: strings.receivables,
-                            value: _formatCurrency(totalReceivables, currency),
-                            valueColor: DsColorTokens.statusSuccess,
-                          ),
-                          _SummaryRow(
-                            label: strings.payables,
-                            value: _formatCurrency(totalPayables, currency),
-                            valueColor: DsColorTokens.statusError,
-                          ),
-                          const Divider(),
-                          _SummaryRow(
-                            label: strings.net,
-                            value: _formatCurrency(net, currency),
-                            valueColor: net >= 0
-                                ? DsColorTokens.statusSuccess
-                                : DsColorTokens.statusError,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (clientItems.isNotEmpty)
-                      DsCard(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: DsSpaceTokens.space2,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              strings.topClients,
-                              style: const TextStyle(
-                                fontSize: DsTypeTokens.textBase,
-                                fontWeight: DsTypeTokens.fontSemibold,
-                              ),
-                            ),
-                            const SizedBox(height: DsSpaceTokens.space2),
-                            ...clientItems.take(5).map(
-                                  (item) => _SummaryRow(
-                                    label: item.name,
-                                    value: _formatCurrency(item.total, currency),
-                                  ),
-                                ),
-                          ],
-                        ),
-                      ),
-                    if (employeeItems.isNotEmpty)
-                      DsCard(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: DsSpaceTokens.space2,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              strings.topEmployees,
-                              style: const TextStyle(
-                                fontSize: DsTypeTokens.textBase,
-                                fontWeight: DsTypeTokens.fontSemibold,
-                              ),
-                            ),
-                            const SizedBox(height: DsSpaceTokens.space2),
-                            ...employeeItems.take(5).map(
-                                  (item) => _SummaryRow(
-                                    label: item.name,
-                                    value: _formatCurrency(item.total, currency),
-                                  ),
-                                ),
-                          ],
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
             DsCard(
               margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    strings.export,
+                    strings.period,
                     style: const TextStyle(
                       fontSize: DsTypeTokens.textBase,
                       fontWeight: DsTypeTokens.fontSemibold,
                     ),
                   ),
                   const SizedBox(height: DsSpaceTokens.space2),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      _exportCsv(
-                        strings: strings,
-                        range: range,
-                        currencies: currencies,
-                        receivablesInRange: receivablesInRange,
-                        payablesInRange: payablesInRange,
-                      );
+                  SegmentedButton<_ReportScope>(
+                    segments: [
+                      ButtonSegment<_ReportScope>(
+                        value: _ReportScope.month,
+                        label: Text(strings.month),
+                      ),
+                      ButtonSegment<_ReportScope>(
+                        value: _ReportScope.week,
+                        label: Text(strings.week),
+                      ),
+                      ButtonSegment<_ReportScope>(
+                        value: _ReportScope.custom,
+                        label: Text(strings.customRange),
+                      ),
+                    ],
+                    selected: {_scope},
+                    onSelectionChanged: (value) {
+                      setState(() => _scope = value.first);
                     },
-                    icon: const Icon(Icons.upload_file_outlined),
-                    label: Text(strings.exportCsv),
                   ),
-                  const SizedBox(height: DsSpaceTokens.space1),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final bytes = await _buildReportPdf(
-                        strings: strings,
-                        range: range,
-                        currencies: currencies,
-                        receivablesInRange: receivablesInRange,
-                        payablesInRange: payablesInRange,
-                      );
-                      if (!mounted) return;
-                      await Printing.sharePdf(
-                        bytes: bytes,
-                        filename:
-                            'report-${DateFormat('yyyy-MM-dd').format(range.start)}-${DateFormat('yyyy-MM-dd').format(range.end)}.pdf',
-                      );
-                    },
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(strings.exportPdf),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  if (_scope == _ReportScope.month)
+                    _DateFieldRow(
+                      label: strings.month,
+                      value: _selectedMonth,
+                      onChange: (date) => setState(() => _selectedMonth = date),
+                    )
+                  else if (_scope == _ReportScope.week)
+                    _DateFieldRow(
+                      label: strings.week,
+                      value: _selectedWeek,
+                      onChange: (date) => setState(() => _selectedWeek = date),
+                    )
+                  else ...[
+                    _DateFieldRow(
+                      label: strings.startDate,
+                      value: _customStart,
+                      onChange: (date) => setState(() => _customStart = date),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space2),
+                    _DateFieldRow(
+                      label: strings.endDate,
+                      value: _customEnd,
+                      onChange: (date) => setState(() => _customEnd = date),
+                    ),
+                  ],
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  Text(
+                    _periodLabel(context, strings, range),
+                    style: const TextStyle(color: DsColorTokens.textSecondary),
                   ),
                 ],
               ),
             ),
+            if (entriesInRange.isEmpty)
+              DsCard(
+                margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                child: Text(
+                  strings.noDataForPeriod,
+                  style: const TextStyle(color: DsColorTokens.textSecondary),
+                ),
+              )
+            else ...[
+              ...currencies.map(
+                (currency) {
+                  final receivables = receivablesInRange
+                      .where((entry) => entry.currency == currency)
+                      .toList();
+                  final payables = payablesInRange
+                      .where((entry) => entry.currency == currency)
+                      .toList();
+
+                  final totalReceivables =
+                      receivables.fold<double>(0, (sum, e) => sum + e.amount);
+                  final totalPayables =
+                      payables.fold<double>(0, (sum, e) => sum + e.amount);
+                  final net = totalReceivables - totalPayables;
+
+                  final clientItems = _summaryItems(
+                    entries: receivables,
+                    keyFor: (entry) => entry.clientName ?? strings.unknown,
+                  );
+                  final employeeItems = _summaryItems(
+                    entries: payables,
+                    keyFor: (entry) => entry.employeeName ?? strings.unknown,
+                  );
+
+                  return Column(
+                    children: [
+                      DsCard(
+                        margin: const EdgeInsets.symmetric(
+                          vertical: DsSpaceTokens.space2,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.summaryByCurrency(_currencyCode(currency)),
+                              style: const TextStyle(
+                                fontSize: DsTypeTokens.textBase,
+                                fontWeight: DsTypeTokens.fontSemibold,
+                              ),
+                            ),
+                            const SizedBox(height: DsSpaceTokens.space2),
+                            _SummaryRow(
+                              label: strings.receivables,
+                              value: _formatCurrency(totalReceivables, currency),
+                              valueColor: DsColorTokens.statusSuccess,
+                            ),
+                            _SummaryRow(
+                              label: strings.payables,
+                              value: _formatCurrency(totalPayables, currency),
+                              valueColor: DsColorTokens.statusError,
+                            ),
+                            const Divider(),
+                            _SummaryRow(
+                              label: strings.net,
+                              value: _formatCurrency(net, currency),
+                              valueColor: net >= 0
+                                  ? DsColorTokens.statusSuccess
+                                  : DsColorTokens.statusError,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (clientItems.isNotEmpty)
+                        DsCard(
+                          margin: const EdgeInsets.symmetric(
+                            vertical: DsSpaceTokens.space2,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                strings.topClients,
+                                style: const TextStyle(
+                                  fontSize: DsTypeTokens.textBase,
+                                  fontWeight: DsTypeTokens.fontSemibold,
+                                ),
+                              ),
+                              const SizedBox(height: DsSpaceTokens.space2),
+                              ...clientItems.take(5).map(
+                                    (item) => _SummaryRow(
+                                      label: item.name,
+                                      value: _formatCurrency(item.total, currency),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                        ),
+                      if (employeeItems.isNotEmpty)
+                        DsCard(
+                          margin: const EdgeInsets.symmetric(
+                            vertical: DsSpaceTokens.space2,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                strings.topEmployees,
+                                style: const TextStyle(
+                                  fontSize: DsTypeTokens.textBase,
+                                  fontWeight: DsTypeTokens.fontSemibold,
+                                ),
+                              ),
+                              const SizedBox(height: DsSpaceTokens.space2),
+                              ...employeeItems.take(5).map(
+                                    (item) => _SummaryRow(
+                                      label: item.name,
+                                      value: _formatCurrency(item.total, currency),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              DsCard(
+                margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.export,
+                      style: const TextStyle(
+                        fontSize: DsTypeTokens.textBase,
+                        fontWeight: DsTypeTokens.fontSemibold,
+                      ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space2),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        _exportCsv(
+                          strings: strings,
+                          range: range,
+                          currencies: currencies,
+                          receivablesInRange: receivablesInRange,
+                          payablesInRange: payablesInRange,
+                        );
+                      },
+                      icon: const Icon(Icons.upload_file_outlined),
+                      label: Text(strings.exportCsv),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space1),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final bytes = await _buildReportPdf(
+                          strings: strings,
+                          range: range,
+                          currencies: currencies,
+                          receivablesInRange: receivablesInRange,
+                          payablesInRange: payablesInRange,
+                        );
+                        if (!mounted) return;
+                        await Printing.sharePdf(
+                          bytes: bytes,
+                          filename:
+                              'report-${DateFormat('yyyy-MM-dd').format(range.start)}-${DateFormat('yyyy-MM-dd').format(range.end)}.pdf',
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: Text(strings.exportPdf),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   _DateRange _reportRange() {
     if (_scope == _ReportScope.month) {
@@ -3922,58 +3935,59 @@ class _InvoiceGeneratorPageState extends ConsumerState<InvoiceGeneratorPage> {
     return Scaffold(
       backgroundColor: AppThemeTokens.background,
       appBar: AppBar(title: Text(strings.generateInvoicesTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                _DateFieldRow(
-                  label: strings.fromLabel,
-                  value: _startDate,
-                  onChange: (date) => setState(() => _startDate = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.toLabel,
-                  value: _endDate,
-                  onChange: (date) => setState(() => _endDate = date),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: _DateFieldRow(
-              label: strings.dueDate,
-              value: _dueDate,
-              onChange: (date) => setState(() => _dueDate = date),
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: DropdownButtonFormField<String>(
-              value: _selectedClientId,
-              decoration: InputDecoration(labelText: strings.client),
-              items: [
-                DropdownMenuItem<String>(
-                  value: '',
-                  child: Text(strings.allClients),
-                ),
-                ...clients.map(
-                  (client) => DropdownMenuItem<String>(
-                    value: client.id,
-                    child: Text(client.name),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  _DateFieldRow(
+                    label: strings.fromLabel,
+                    value: _startDate,
+                    onChange: (date) => setState(() => _startDate = date),
                   ),
-                ),
-              ],
-              onChanged: (value) => setState(() => _selectedClientId = value ?? ''),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.toLabel,
+                    value: _endDate,
+                    onChange: (date) => setState(() => _endDate = date),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: _DateFieldRow(
+                label: strings.dueDate,
+                value: _dueDate,
+                onChange: (date) => setState(() => _dueDate = date),
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: DropdownButtonFormField<String>(
+                value: _selectedClientId,
+                decoration: InputDecoration(labelText: strings.client),
+                items: [
+                  DropdownMenuItem<String>(
+                    value: '',
+                    child: Text(strings.allClients),
+                  ),
+                  ...clients.map(
+                    (client) => DropdownMenuItem<String>(
+                      value: client.id,
+                      child: Text(client.name),
+                    ),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _selectedClientId = value ?? ''),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.generate,
         onPressed: () {
@@ -4026,56 +4040,56 @@ class _PayrollGeneratorPageState extends ConsumerState<PayrollGeneratorPage> {
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                _DateFieldRow(
-                  label: strings.fromLabel,
-                  value: _startDate,
-                  onChange: (date) => setState(() => _startDate = date),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.toLabel,
-                  value: _endDate,
-                  onChange: (date) => setState(() => _endDate = date),
-                ),
-              ],
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: _DateFieldRow(
-              label: strings.dueDate,
-              value: _dueDate,
-              onChange: (date) => setState(() => _dueDate = date),
-            ),
-          ),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: DropdownButtonFormField<String>(
-              value: _selectedEmployeeId,
-              decoration: InputDecoration(labelText: strings.employee),
-              items: [
-                DropdownMenuItem<String>(
-                  value: '',
-                  child: Text(strings.allEmployees),
-                ),
-                ...employees.map(
-                  (employee) => DropdownMenuItem<String>(
-                    value: employee.id,
-                    child: Text(employee.name),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  _DateFieldRow(
+                    label: strings.fromLabel,
+                    value: _startDate,
+                    onChange: (date) => setState(() => _startDate = date),
                   ),
-                ),
-              ],
-              onChanged: (value) =>
-                  setState(() => _selectedEmployeeId = value ?? ''),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.toLabel,
+                    value: _endDate,
+                    onChange: (date) => setState(() => _endDate = date),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: _DateFieldRow(
+                label: strings.dueDate,
+                value: _dueDate,
+                onChange: (date) => setState(() => _dueDate = date),
+              ),
+            ),
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: DropdownButtonFormField<String>(
+                value: _selectedEmployeeId,
+                decoration: InputDecoration(labelText: strings.employee),
+                items: [
+                  DropdownMenuItem<String>(
+                    value: '',
+                    child: Text(strings.allEmployees),
+                  ),
+                  ...employees.map(
+                    (employee) => DropdownMenuItem<String>(
+                      value: employee.id,
+                      child: Text(employee.name),
+                    ),
+                  ),
+                ],
+                onChanged: (value) =>
+                    setState(() => _selectedEmployeeId = value ?? ''),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.generate,
         onPressed: () {
@@ -4140,54 +4154,54 @@ class _GenericFinanceFormPageState extends ConsumerState<GenericFinanceFormPage>
           padding: const EdgeInsets.all(DsSpaceTokens.space4),
           children: [
             const SizedBox(height: kToolbarHeight + 10),
-          DsCard(
-            margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(labelText: strings.title),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                TextField(
-                  controller: _amountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.amount),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DropdownButtonFormField<FinanceEntryType>(
-                  value: _type,
-                  decoration: InputDecoration(labelText: strings.type),
-                  items: [
-                    DropdownMenuItem<FinanceEntryType>(
-                      value: FinanceEntryType.receivable,
-                      child: Text(strings.receivable),
-                    ),
-                    DropdownMenuItem<FinanceEntryType>(
-                      value: FinanceEntryType.payable,
-                      child: Text(strings.payable),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _type = value);
-                  },
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                _DateFieldRow(
-                  label: strings.dueDate,
-                  value: _dueDate,
-                  onChange: (date) => setState(() => _dueDate = date),
-                ),
-              ],
+            DsCard(
+              margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(labelText: strings.title),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  TextField(
+                    controller: _amountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: strings.amount),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  DropdownButtonFormField<FinanceEntryType>(
+                    value: _type,
+                    decoration: InputDecoration(labelText: strings.type),
+                    items: [
+                      DropdownMenuItem<FinanceEntryType>(
+                        value: FinanceEntryType.receivable,
+                        child: Text(strings.receivable),
+                      ),
+                      DropdownMenuItem<FinanceEntryType>(
+                        value: FinanceEntryType.payable,
+                        child: Text(strings.payable),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _type = value);
+                    },
+                  ),
+                  const SizedBox(height: DsSpaceTokens.space2),
+                  _DateFieldRow(
+                    label: strings.dueDate,
+                    value: _dueDate,
+                    onChange: (date) => setState(() => _dueDate = date),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         isDisabled: !canSave,
