@@ -10,6 +10,8 @@ import '../../finance/domain/finance_entry.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
 import 'client_detail_page.dart';
+import '../../../core/design/design_theme.dart';
+import '../../../core/design/design_tokens.dart';
 
 enum ClientStatusFilter { all, active, inactive }
 
@@ -43,15 +45,21 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
     final clients = _filteredClients(state);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: widget.onMenu == null
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
                 icon: const Icon(Icons.menu),
               ),
-        title: Text(strings.clients),
+        title: Text(
+          strings.clients,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () => _showFiltersSheet(context, teams),
@@ -434,31 +442,20 @@ class _ClientCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-      child: Container(
+      borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+      child: DsCard(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppThemeTokens.cardBackground,
-          borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: AppThemeTokens.primary.withOpacity(0.15),
+              backgroundColor: DsColorTokens.brandPrimary.withOpacity(0.15),
               child: Text(
                 _initials(client.name),
                 style: const TextStyle(
-                  color: AppThemeTokens.primary,
+                  color: DsColorTokens.brandPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -473,28 +470,15 @@ class _ClientCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           client.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: DsColorTokens.textPrimary,
+                              ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(6),
-                          color: (active ? Colors.green : Colors.grey)
-                              .withOpacity(0.15),
-                        ),
-                        child: Text(
-                          active ? strings.active : strings.inactive,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: active ? Colors.green : Colors.grey.shade700,
-                          ),
-                        ),
+                      DsStatusPill(
+                        label: active ? strings.active : strings.inactive,
+                        color: active ? Colors.green : Colors.grey,
                       ),
                     ],
                   ),
@@ -503,14 +487,13 @@ class _ClientCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.phone,
-                            size: 13, color: AppThemeTokens.primary),
+                            size: 13, color: DsColorTokens.brandPrimary),
                         const SizedBox(width: 4),
                         Text(
                           client.phone,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppThemeTokens.secondaryText,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: DsColorTokens.textSecondary,
+                              ),
                         ),
                       ],
                     ),
@@ -518,14 +501,13 @@ class _ClientCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.message,
-                            size: 13, color: AppThemeTokens.primary),
+                            size: 13, color: DsColorTokens.brandPrimary),
                         const SizedBox(width: 4),
                         Text(
                           client.whatsappPhone,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppThemeTokens.secondaryText,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: DsColorTokens.textSecondary,
+                              ),
                         ),
                       ],
                     ),
@@ -535,13 +517,14 @@ class _ClientCard extends StatelessWidget {
                       child: Text(
                         client.address,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppThemeTokens.secondaryText,
+                              color: DsColorTokens.textSecondary,
                             ),
                       ),
                     ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Icon(
               hasPendingReceivables
                   ? Icons.error_outline_rounded

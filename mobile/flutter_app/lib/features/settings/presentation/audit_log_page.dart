@@ -17,9 +17,12 @@ class AuditLogPage extends ConsumerWidget {
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Audit log'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Audit log',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           if (sortedEntries.isNotEmpty)
             TextButton(
@@ -28,7 +31,8 @@ class AuditLogPage extends ConsumerWidget {
             ),
         ],
       ),
-      body: sortedEntries.isEmpty
+      body: DsBackground(
+        child: sortedEntries.isEmpty
           ? const Center(
               child: Text(
                 'No audit entries yet.',
@@ -41,7 +45,7 @@ class AuditLogPage extends ConsumerWidget {
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final entry = sortedEntries[index];
-                return AppCard(
+                return DsCard(
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +55,7 @@ class AuditLogPage extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: DsColorTokens.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -58,21 +63,21 @@ class AuditLogPage extends ConsumerWidget {
                         'Actor: ${entry.actor}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                       ),
                       Text(
                         'Action: ${entry.action}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                       ),
                       Text(
                         DateFormat.yMMMd().add_Hms().format(entry.timestamp),
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                       ),
                     ],
@@ -80,6 +85,7 @@ class AuditLogPage extends ConsumerWidget {
                 );
               },
             ),
+      ),
     );
   }
 

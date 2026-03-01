@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../finance/domain/finance_entry.dart';
 import '../../offline/application/offline_store.dart';
 import '../domain/service_type.dart';
+import '../../../core/design/design_theme.dart';
 
 class ServicesPage extends ConsumerWidget {
   const ServicesPage({super.key});
@@ -19,9 +19,16 @@ class ServicesPage extends ConsumerWidget {
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(strings.services),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.services,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () => ServicesPage.showServiceTypeFormDialog(context, ref),
@@ -30,70 +37,89 @@ class ServicesPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: serviceTypes.length,
-        itemBuilder: (context, index) {
-          final serviceType = serviceTypes[index];
-          return ListTile(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    ServiceTypeDetailPage(serviceTypeId: serviceType.id),
-              ),
-            ),
-            title: Text(serviceType.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: DsBackground(
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: serviceTypes.length,
+          itemBuilder: (context, index) {
+            final serviceType = serviceTypes[index];
+            return Column(
               children: [
-                Text(_pricingModelLabel(strings, serviceType.pricingModel)),
-                if (serviceType.description.trim().isNotEmpty)
-                  Text(
-                    serviceType.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${_currencyCode(serviceType.currency)} ${serviceType.basePrice.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: AppThemeTokens.primary,
-                    fontWeight: FontWeight.w700,
+                if (index == 0) const SizedBox(height: kToolbarHeight + 10),
+                DsCard(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ServiceTypeDetailPage(serviceTypeId: serviceType.id),
+                      ),
+                    ),
+                    title: Text(serviceType.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: DsColorTokens.textPrimary)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_pricingModelLabel(strings, serviceType.pricingModel),
+                            style: const TextStyle(
+                                color: DsColorTokens.textSecondary)),
+                        if (serviceType.description.trim().isNotEmpty)
+                          Text(
+                            serviceType.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: DsColorTokens.textSecondary),
+                          ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_currencyCode(serviceType.currency)} ${serviceType.basePrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: DsColorTokens.brandPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              ServicesPage.showServiceTypeFormDialog(context, ref,
+                                  serviceType: serviceType);
+                              return;
+                            }
+                            if (value == 'delete') {
+                              ServicesPage.deleteServiceTypeFromListDialog(
+                                context,
+                                ref,
+                                serviceType,
+                              );
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(strings.editService),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(strings.deleteService),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      ServicesPage.showServiceTypeFormDialog(context, ref,
-                          serviceType: serviceType);
-                      return;
-                    }
-                    if (value == 'delete') {
-                      ServicesPage.deleteServiceTypeFromListDialog(
-                        context,
-                        ref,
-                        serviceType,
-                      );
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text(strings.editService),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(strings.deleteService),
-                    ),
-                  ],
-                ),
               ],
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -306,8 +332,15 @@ class ServiceTypeDetailPage extends ConsumerWidget {
     }
     if (serviceType == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(strings.services)),
-        body: Center(child: Text(strings.serviceNotFound)),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(strings.services),
+        ),
+        body: DsBackground(
+          child: Center(child: Text(strings.serviceNotFound)),
+        ),
       );
     }
     final current = serviceType;
@@ -316,77 +349,124 @@ class ServiceTypeDetailPage extends ConsumerWidget {
     final canDelete = linkedTasks == 0;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.service)),
-      body: ListView(
-        children: [
-          ListTile(
-            title: Text(
-              current.name,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            subtitle: current.description.trim().isEmpty
-                ? null
-                : Text(current.description),
-          ),
-          ListTile(
-            title: Text(
-              '${strings.basePrice}: ${current.currency == FinanceCurrency.eur ? 'EUR' : 'USD'} ${current.basePrice.toStringAsFixed(2)}',
-            ),
-          ),
-          ListTile(
-            title: Text(
-              '${strings.pricingModel}: ${current.pricingModel == ServicePricingModel.perTask ? strings.perTask : strings.perHour}',
-            ),
-          ),
-          if (linkedTasks > 0)
-            ListTile(
-              title: Text('${strings.usage}: $linkedTasks'),
-              subtitle: Text(strings.reassignBeforeDelete),
-            ),
-          ListTile(
-            leading: const Icon(Icons.edit_outlined),
-            title: Text(strings.editService),
-            onTap: () => ServicesPage.showServiceTypeFormDialog(
-              context,
-              ref,
-              serviceType: current,
-            ),
-          ),
-          if (canDelete)
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: DsColorTokens.statusError,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.service,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text(
+                      current.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: DsColorTokens.textPrimary),
+                    ),
+                    subtitle: current.description.trim().isEmpty
+                        ? null
+                        : Text(current.description,
+                            style: const TextStyle(
+                                color: DsColorTokens.textSecondary)),
+                  ),
+                  ListTile(
+                    title: Text(
+                      '${strings.basePrice}: ${current.currency == FinanceCurrency.eur ? 'EUR' : 'USD'} ${current.basePrice.toStringAsFixed(2)}',
+                      style: const TextStyle(color: DsColorTokens.textPrimary),
+                    ),
+                  ),
+                  ListTile(
+                    title: Text(
+                      '${strings.pricingModel}: ${current.pricingModel == ServicePricingModel.perTask ? strings.perTask : strings.perHour}',
+                      style: const TextStyle(color: DsColorTokens.textPrimary),
+                    ),
+                  ),
+                  if (linkedTasks > 0)
+                    ListTile(
+                      title: Text('${strings.usage}: $linkedTasks',
+                          style:
+                              const TextStyle(color: DsColorTokens.textPrimary)),
+                      subtitle: Text(strings.reassignBeforeDelete,
+                          style: const TextStyle(
+                              color: DsColorTokens.textSecondary)),
+                    ),
+                ],
               ),
-              title: Text(strings.deleteService,
-                  style: const TextStyle(color: DsColorTokens.statusError)),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(strings.deleteServiceQuestion),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: Text(strings.cancel),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: Text(strings.delete),
-                          ),
-                        ],
-                      ),
-                    ) ??
-                    false;
-                if (!confirmed) return;
-                final deleted = ref
-                    .read(offlineStoreProvider.notifier)
-                    .deleteServiceType(current.id);
-                if (deleted && context.mounted) Navigator.of(context).pop();
-              },
             ),
-        ],
+            const SizedBox(height: 16),
+            DsCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.edit_outlined,
+                        color: DsColorTokens.brandPrimary),
+                    title: Text(strings.editService,
+                        style: const TextStyle(
+                            color: DsColorTokens.brandPrimary,
+                            fontWeight: FontWeight.bold)),
+                    onTap: () => ServicesPage.showServiceTypeFormDialog(
+                      context,
+                      ref,
+                      serviceType: current,
+                    ),
+                  ),
+                  if (canDelete)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.delete_outline,
+                        color: DsColorTokens.statusError,
+                      ),
+                      title: Text(strings.deleteService,
+                          style: const TextStyle(
+                              color: DsColorTokens.statusError,
+                              fontWeight: FontWeight.bold)),
+                      onTap: () async {
+                        final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(strings.deleteServiceQuestion),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: Text(strings.cancel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: Text(strings.delete),
+                                  ),
+                                ],
+                              ),
+                            ) ??
+                            false;
+                        if (!confirmed) return;
+                        final deleted = ref
+                            .read(offlineStoreProvider.notifier)
+                            .deleteServiceType(current.id);
+                        if (deleted && context.mounted)
+                          Navigator.of(context).pop();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,8 @@ import '../../employees/domain/employee.dart';
 import '../../finance/domain/finance_entry.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
+import '../../../core/design/design_theme.dart';
+import '../../../core/design/design_tokens.dart';
 
 enum DashboardScope { day, week, month }
 
@@ -32,15 +34,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final role = state.session?.role;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: widget.onMenu == null
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
                 icon: const Icon(Icons.menu),
               ),
-        title: Text(strings.dashboard),
+        title: Text(
+          strings.dashboard,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
@@ -126,23 +134,26 @@ class _EmployeeDashboard extends ConsumerWidget {
     final currencyFmt = NumberFormat.currency(name: currency, decimalDigits: 2);
 
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       children: [
-        AppCard(
+        DsCard(
           child: Text(
             '${strings.hello}, ${session.name}',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: DsColorTokens.textPrimary,
+                ),
           ),
         ),
-        AppCard(
+        DsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.workload,
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DsColorTokens.textPrimary,
+                      )),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -166,7 +177,10 @@ class _EmployeeDashboard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.todayLabel,
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DsColorTokens.textPrimary,
+                      )),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -196,18 +210,21 @@ class _EmployeeDashboard extends ConsumerWidget {
               child: Text(
                 strings.noServicesInPeriod,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppThemeTokens.secondaryText,
+                      color: DsColorTokens.textSecondary,
                     ),
               ),
             ),
           )
         else
-          AppCard(
+          DsCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(strings.nextServices,
-                    style: Theme.of(context).textTheme.titleMedium),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: DsColorTokens.textPrimary,
+                        )),
                 const SizedBox(height: 8),
                 ...employeeTasks
                     .take(5)
@@ -251,14 +268,17 @@ class _ManagerDashboard extends ConsumerWidget {
     final teamSummary = _buildTeamSummary(state, tasksForScope);
 
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       children: [
-        AppCard(
+        DsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.operations,
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DsColorTokens.textPrimary,
+                      )),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -281,12 +301,15 @@ class _ManagerDashboard extends ConsumerWidget {
           ),
         ),
         if (teamSummary.isNotEmpty)
-          AppCard(
+          DsCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(strings.byTeam,
-                    style: Theme.of(context).textTheme.titleMedium),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: DsColorTokens.textPrimary,
+                        )),
                 const SizedBox(height: 8),
                 ...teamSummary.map((summary) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -306,12 +329,15 @@ class _ManagerDashboard extends ConsumerWidget {
               ],
             ),
           ),
-        AppCard(
+        DsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.finance,
-                  style: Theme.of(context).textTheme.titleMedium),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: DsColorTokens.textPrimary,
+                      )),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -338,7 +364,7 @@ class _ManagerDashboard extends ConsumerWidget {
                   Text(
                     strings.netCashPending,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                   ),
                   const Spacer(),
@@ -381,15 +407,16 @@ class _MetricStat extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppThemeTokens.secondaryText,
+                color: DsColorTokens.textSecondary,
               ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: valueColor,
+                fontWeight: FontWeight.w900,
+                color: valueColor ?? DsColorTokens.textPrimary,
+                letterSpacing: -0.5,
               ),
         ),
       ],
@@ -428,7 +455,7 @@ class _DashboardTaskRow extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 4),
-          _TaskStatusPill(status: task.status),
+          DsStatusPill(label: _labelForStatus(strings, task.status), color: _colorForStatus(task.status)),
           const Divider(height: 20),
         ],
       ),
@@ -436,42 +463,22 @@ class _DashboardTaskRow extends StatelessWidget {
   }
 }
 
-class _TaskStatusPill extends StatelessWidget {
-  const _TaskStatusPill({required this.status});
+String _labelForStatus(AppStrings strings, TaskStatus status) {
+  return switch (status) {
+    TaskStatus.scheduled => strings.scheduled,
+    TaskStatus.inProgress => strings.inProgress,
+    TaskStatus.completed => strings.completed,
+    TaskStatus.canceled => strings.canceled,
+  };
+}
 
-  final TaskStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = AppStrings.of(Localizations.localeOf(context));
-    final color = switch (status) {
-      TaskStatus.scheduled => Colors.blue,
-      TaskStatus.inProgress => Colors.orange,
-      TaskStatus.completed => Colors.green,
-      TaskStatus.canceled => Colors.red,
-    };
-    final label = switch (status) {
-      TaskStatus.scheduled => strings.scheduled,
-      TaskStatus.inProgress => strings.inProgress,
-      TaskStatus.completed => strings.completed,
-      TaskStatus.canceled => strings.canceled,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+Color _colorForStatus(TaskStatus status) {
+  return switch (status) {
+    TaskStatus.scheduled => Colors.blue,
+    TaskStatus.inProgress => Colors.orange,
+    TaskStatus.completed => Colors.green,
+    TaskStatus.canceled => Colors.red,
+  };
 }
 
 bool _matchesScope(DateTime date, DashboardScope scope) {

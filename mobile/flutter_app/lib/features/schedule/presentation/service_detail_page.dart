@@ -8,6 +8,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
+import '../../../core/design/design_theme.dart';
+import '../../../core/design/design_tokens.dart';
 
 class ServiceDetailPage extends ConsumerWidget {
   const ServiceDetailPage({
@@ -34,9 +36,15 @@ class ServiceDetailPage extends ConsumerWidget {
     }
     if (task == null) {
       return Scaffold(
-        backgroundColor: AppThemeTokens.background,
-        appBar: AppBar(title: Text(strings.schedule)),
-        body: Center(child: Text(strings.taskNotFound)),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(strings.schedule),
+        ),
+        body: DsBackground(
+          child: Center(child: Text(strings.taskNotFound)),
+        ),
       );
     }
     final currentTask = task;
@@ -55,78 +63,95 @@ class ServiceDetailPage extends ConsumerWidget {
         : DateFormat.yMd(locale).add_Hm().format(currentTask.checkOutTime!);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(currentTask.title)),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _field(context, strings.client, currentTask.clientName),
-                _field(context, strings.address, currentTask.address),
-                _field(context, strings.date,
-                    DateFormat.yMMMMd(locale).format(currentTask.date)),
-                _field(context, strings.start, startLabel),
-                _field(context, strings.end, endLabel),
-                _field(context, strings.status,
-                    _statusLabel(strings, currentTask.status)),
-                if (currentTask.notes.trim().isNotEmpty)
-                  _field(context, strings.notes, currentTask.notes),
-              ],
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          currentTask.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _field(context, strings.client, currentTask.clientName),
+                  _field(context, strings.address, currentTask.address),
+                  _field(context, strings.date,
+                      DateFormat.yMMMMd(locale).format(currentTask.date)),
+                  _field(context, strings.start, startLabel),
+                  _field(context, strings.end, endLabel),
+                  _field(context, strings.status,
+                      _statusLabel(strings, currentTask.status)),
+                  if (currentTask.notes.trim().isNotEmpty)
+                    _field(context, strings.notes, currentTask.notes),
+                ],
+              ),
             ),
-          ),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.execution,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                _field(context, strings.checkIn, checkInLabel),
-                _field(context, strings.checkOut, checkOutLabel),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilledButton(
-                      onPressed: () {
-                        ref
-                            .read(offlineStoreProvider.notifier)
-                            .markTaskCheckIn(currentTask.id, DateTime.now());
-                      },
-                      child: Text(strings.checkIn),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        ref
-                            .read(offlineStoreProvider.notifier)
-                            .markTaskCheckOut(currentTask.id, DateTime.now());
-                      },
-                      child: Text(strings.checkOut),
-                    ),
-                    if (role == UserRole.manager)
-                      OutlinedButton(
+            const SizedBox(height: 16),
+            DsCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.execution,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: DsColorTokens.textPrimary,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  _field(context, strings.checkIn, checkInLabel),
+                  _field(context, strings.checkOut, checkOutLabel),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      DsPrimaryButton(
                         onPressed: () {
                           ref
                               .read(offlineStoreProvider.notifier)
-                              .advanceTaskStatus(currentTask.id);
+                              .markTaskCheckIn(currentTask.id, DateTime.now());
                         },
-                        child: Text(strings.advanceStatus),
+                        title: strings.checkIn,
                       ),
-                  ],
-                ),
-              ],
+                      DsSecondaryButton(
+                        onPressed: () {
+                          ref
+                              .read(offlineStoreProvider.notifier)
+                              .markTaskCheckOut(currentTask.id, DateTime.now());
+                        },
+                        title: strings.checkOut,
+                      ),
+                      if (role == UserRole.manager)
+                        OutlinedButton(
+                          onPressed: () {
+                            ref
+                                .read(offlineStoreProvider.notifier)
+                                .advanceTaskStatus(currentTask.id);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: DsColorTokens.brandPrimary),
+                            foregroundColor: DsColorTokens.brandPrimary,
+                          ),
+                          child: Text(strings.advanceStatus),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -140,7 +165,7 @@ class ServiceDetailPage extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppThemeTokens.secondaryText,
+                  color: DsColorTokens.textSecondary,
                 ),
           ),
           const SizedBox(height: 2),
@@ -148,6 +173,7 @@ class ServiceDetailPage extends ConsumerWidget {
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: DsColorTokens.textPrimary,
                 ),
           ),
         ],

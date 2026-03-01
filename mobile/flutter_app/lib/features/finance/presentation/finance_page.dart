@@ -43,12 +43,18 @@ class FinancePage extends ConsumerWidget {
     final employeePayrollEntries = _payrollForCurrentEmployee(state);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: onMenu == null
             ? null
             : IconButton(onPressed: onMenu, icon: const Icon(Icons.menu)),
-        title: Text(strings.finance),
+        title: Text(
+          strings.finance,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           if (isManager)
             IconButton(
@@ -216,9 +222,15 @@ class _FinanceNavigationTile extends StatelessWidget {
         horizontal: DsSpaceTokens.space1,
       ),
       dense: true,
-      leading: Icon(icon, color: DsColorTokens.actionPrimary),
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right),
+      leading: Icon(icon, color: DsColorTokens.brandPrimary),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: DsColorTokens.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: DsColorTokens.textMuted),
       onTap: onTap,
     );
   }
@@ -242,8 +254,14 @@ class _FinanceActionTile extends StatelessWidget {
         horizontal: DsSpaceTokens.space1,
       ),
       dense: true,
-      leading: Icon(icon, color: DsColorTokens.actionPrimary),
-      title: Text(title),
+      leading: Icon(icon, color: DsColorTokens.brandPrimary),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: DsColorTokens.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       onTap: onTap,
     );
   }
@@ -405,9 +423,16 @@ class _MonthlyClosingWizardPageState
     final stepTitles = _stepTitles(strings);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(strings.monthlyClosing),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.monthlyClosing,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           if (stepIndex > 0)
             TextButton(
@@ -416,7 +441,8 @@ class _MonthlyClosingWizardPageState
             ),
         ],
       ),
-      body: ListView(
+      body: DsBackground(
+        child: ListView(
         padding: const EdgeInsets.all(DsSpaceTokens.space4),
         children: [
           DsCard(
@@ -742,9 +768,19 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
       ..sort((a, b) => b.dueDate.compareTo(a.dueDate));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.receipts)),
-      body: ListView(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.receipts,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
         padding: const EdgeInsets.all(DsSpaceTokens.space4),
         children: [
           DsCard(
@@ -1106,11 +1142,22 @@ class EmissionReadyPage extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.emission)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.emission,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -1226,9 +1273,16 @@ class InvoicesListPage extends ConsumerWidget {
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(strings.invoices),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.invoices,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () {
@@ -1240,12 +1294,16 @@ class InvoicesListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        itemCount: invoices.length,
-        itemBuilder: (context, index) {
-          final entry = invoices[index];
-          return DsCard(
+      body: DsBackground(
+        child: ListView.builder(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          itemCount: invoices.length,
+          itemBuilder: (context, index) {
+            final entry = invoices[index];
+            return Column(
+              children: [
+                if (index == 0) const SizedBox(height: kToolbarHeight + 10),
+                DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: InkWell(
               borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
@@ -1383,11 +1441,22 @@ class _InvoiceFormPageState extends ConsumerState<InvoiceFormPage> {
         parsedAmount > 0;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.newInvoice)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.newInvoice,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -1613,11 +1682,22 @@ class _InvoiceDetailPageState extends ConsumerState<InvoiceDetailPage> {
         (!_isDisputed || _disputeReasonController.text.trim().isNotEmpty);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.invoice)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.invoice,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -2145,9 +2225,16 @@ class PayrollListPage extends ConsumerWidget {
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(strings.payroll),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.payroll,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () {
@@ -2159,12 +2246,16 @@ class PayrollListPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        itemCount: payrolls.length,
-        itemBuilder: (context, index) {
-          final entry = payrolls[index];
-          return DsCard(
+      body: DsBackground(
+        child: ListView.builder(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          itemCount: payrolls.length,
+          itemBuilder: (context, index) {
+            final entry = payrolls[index];
+            return Column(
+              children: [
+                if (index == 0) const SizedBox(height: kToolbarHeight + 10),
+                DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: InkWell(
               borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
@@ -2229,8 +2320,9 @@ class PayrollListPage extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class PayrollFormPage extends ConsumerStatefulWidget {
@@ -2312,11 +2404,22 @@ class _PayrollFormPageState extends ConsumerState<PayrollFormPage> {
         _titleController.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.newPayroll)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.newPayroll,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -2569,8 +2672,9 @@ class _PayrollFormPageState extends ConsumerState<PayrollFormPage> {
           Navigator.of(context).pop();
         },
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class PayrollDetailPage extends ConsumerStatefulWidget {
@@ -2689,11 +2793,22 @@ class _PayrollDetailPageState extends ConsumerState<PayrollDetailPage> {
     final canSave = isManager && netPay > 0 && _titleController.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.payroll)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.payroll,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -2906,6 +3021,7 @@ class _PayrollDetailPageState extends ConsumerState<PayrollDetailPage> {
             ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         isDisabled: !canSave,
@@ -2974,12 +3090,23 @@ class _GenericFinanceDetailPageState
     );
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.financeEntry)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
-          DsCard(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.financeEntry,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3060,6 +3187,7 @@ class _GenericFinanceDetailPageState
           ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         onPressed: () {
@@ -3113,12 +3241,23 @@ class _ExpenseDetailPageState extends ConsumerState<ExpenseDetailPage> {
         : Uint8List.fromList(entry.receiptData!);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.expense)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
-          DsCard(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.expense,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3241,6 +3380,7 @@ class _ExpenseDetailPageState extends ConsumerState<ExpenseDetailPage> {
             ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         onPressed: () {
@@ -3297,11 +3437,22 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         .toList();
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.reports)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.reports,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -3546,8 +3697,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   _DateRange _reportRange() {
     if (_scope == _ReportScope.month) {
@@ -3821,6 +3973,7 @@ class _InvoiceGeneratorPageState extends ConsumerState<InvoiceGeneratorPage> {
           ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.generate,
         onPressed: () {
@@ -3857,11 +4010,22 @@ class _PayrollGeneratorPageState extends ConsumerState<PayrollGeneratorPage> {
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.generatePayrollTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.generatePayrollTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -3911,6 +4075,7 @@ class _PayrollGeneratorPageState extends ConsumerState<PayrollGeneratorPage> {
           ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.generate,
         onPressed: () {
@@ -3959,11 +4124,22 @@ class _GenericFinanceFormPageState extends ConsumerState<GenericFinanceFormPage>
         _titleController.text.trim().isNotEmpty && amount != null && amount > 0;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      appBar: AppBar(title: Text(strings.newFinanceEntry)),
-      body: ListView(
-        padding: const EdgeInsets.all(DsSpaceTokens.space4),
-        children: [
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          strings.newFinanceEntry,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.all(DsSpaceTokens.space4),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
           DsCard(
             margin: const EdgeInsets.symmetric(vertical: DsSpaceTokens.space2),
             child: Column(
@@ -4011,6 +4187,7 @@ class _GenericFinanceFormPageState extends ConsumerState<GenericFinanceFormPage>
           ),
         ],
       ),
+    ),
       bottomNavigationBar: DsPrimaryBottomCta(
         title: strings.save,
         isDisabled: !canSave,

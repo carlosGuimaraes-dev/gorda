@@ -6,9 +6,10 @@ import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../clients/domain/client.dart';
-import '../../offline/application/offline_store.dart';
 import '../../schedule/presentation/service_detail_page.dart';
 import '../../services/domain/service_task.dart';
+import '../../../core/design/design_theme.dart';
+import '../../../core/design/design_tokens.dart';
 
 class ClientDetailPage extends ConsumerWidget {
   const ClientDetailPage({super.key, required this.clientId});
@@ -31,8 +32,15 @@ class ClientDetailPage extends ConsumerWidget {
     }
     if (client == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(strings.clients)),
-        body: Center(child: Text(strings.clientNotFound)),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(strings.clients),
+        ),
+        body: DsBackground(
+          child: Center(child: Text(strings.clientNotFound)),
+        ),
       );
     }
     final current = client;
@@ -44,9 +52,16 @@ class ClientDetailPage extends ConsumerWidget {
           (a, b) => (b.startTime ?? b.date).compareTo(a.startTime ?? a.date));
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(current.name),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          current.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           if (isManager)
             IconButton(
@@ -62,57 +77,124 @@ class ClientDetailPage extends ConsumerWidget {
             ),
         ],
       ),
-      body: ListView(
-        children: [
-          ListTile(
-            title: Text(current.name,
-                style: const TextStyle(fontWeight: FontWeight.w700)),
-          ),
-          if (current.phone.isNotEmpty)
-            ListTile(title: Text('${strings.phone}: ${current.phone}')),
-          if (current.whatsappPhone.isNotEmpty)
-            ListTile(title: Text('WhatsApp: ${current.whatsappPhone}')),
-          if (current.email.isNotEmpty)
-            ListTile(title: Text('Email: ${current.email}')),
-          if (current.address.isNotEmpty)
-            ListTile(title: Text('${strings.address}: ${current.address}')),
-          if (current.propertyDetails.isNotEmpty)
-            ListTile(
-                title: Text('${strings.property}: ${current.propertyDetails}')),
-          if (current.preferredSchedule.isNotEmpty)
-            ListTile(
-                title: Text(
-                    '${strings.preferredSchedule}: ${current.preferredSchedule}')),
-          if (current.accessNotes.isNotEmpty)
-            ListTile(
-                title: Text('${strings.accessNotes}: ${current.accessNotes}')),
-          const Divider(),
-          ListTile(
-            title: Text(
-              strings.serviceHistory,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            DsCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(current.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: DsColorTokens.textPrimary)),
+                  const SizedBox(height: 12),
+                  if (current.phone.isNotEmpty)
+                    _detailItem(strings.phone, current.phone),
+                  if (current.whatsappPhone.isNotEmpty)
+                    _detailItem('WhatsApp', current.whatsappPhone),
+                  if (current.email.isNotEmpty)
+                    _detailItem('Email', current.email),
+                  if (current.address.isNotEmpty)
+                    _detailItem(strings.address, current.address),
+                  if (current.propertyDetails.isNotEmpty)
+                    _detailItem(strings.property, current.propertyDetails),
+                  if (current.preferredSchedule.isNotEmpty)
+                    _detailItem(
+                        strings.preferredSchedule, current.preferredSchedule),
+                  if (current.accessNotes.isNotEmpty)
+                    _detailItem(strings.accessNotes, current.accessNotes),
+                ],
+              ),
             ),
-          ),
-          if (tasks.isEmpty)
-            ListTile(title: Text(strings.noServicesRegisteredYet))
-          else
-            ...tasks.map((task) => ListTile(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ServiceDetailPage(
-                        taskId: task.id,
-                        role: state.session?.role ?? UserRole.manager,
-                      ),
+            const SizedBox(height: 16),
+            DsCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      strings.serviceHistory,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: DsColorTokens.textPrimary),
                     ),
                   ),
-                  title: Text(task.title),
-                  subtitle: Text(_taskSubtitle(locale, task)),
-                  trailing: _StatusDot(status: task.status),
-                )),
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: Text(strings.createService),
-            onTap: () => _showCreateService(context, ref, current, state),
+                  if (tasks.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(strings.noServicesRegisteredYet,
+                          style: const TextStyle(
+                              color: DsColorTokens.textSecondary)),
+                    )
+                  else
+                    ...tasks.map((task) => ListTile(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ServiceDetailPage(
+                                taskId: task.id,
+                                role: state.session?.role ?? UserRole.manager,
+                              ),
+                            ),
+                          ),
+                          title: Text(task.title,
+                              style: const TextStyle(
+                                  color: DsColorTokens.textPrimary,
+                                  fontWeight: FontWeight.w600)),
+                          subtitle: Text(_taskSubtitle(locale, task),
+                              style: const TextStyle(
+                                  color: DsColorTokens.textSecondary)),
+                          trailing: _StatusDot(status: task.status),
+                        )),
+                  ListTile(
+                    leading: const Icon(Icons.add_circle_outline,
+                        color: DsColorTokens.brandPrimary),
+                    title: Text(strings.createService,
+                        style: const TextStyle(
+                            color: DsColorTokens.brandPrimary,
+                            fontWeight: FontWeight.bold)),
+                    onTap: () =>
+                        _showCreateService(context, ref, current, state),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                color: DsColorTokens.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: DsColorTokens.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

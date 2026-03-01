@@ -11,6 +11,8 @@ import '../schedule/presentation/schedule_page.dart';
 import '../services/presentation/services_page.dart';
 import '../settings/presentation/settings_page.dart';
 import '../teams/presentation/teams_page.dart';
+import '../../core/design/design_theme.dart';
+import '../../core/design/design_tokens.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.role});
@@ -96,43 +98,62 @@ class _HomeShellState extends State<HomeShell> {
         widget.role == UserRole.manager ? managerPages : employeePages;
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
-      body: pages[index],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
-        destinations: widget.role == UserRole.manager
-            ? [
-                NavigationDestination(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: strings.dashboard),
-                NavigationDestination(
-                    icon: const Icon(Icons.calendar_month_outlined),
-                    label: strings.schedule),
-                NavigationDestination(
-                    icon: const Icon(Icons.people_outline),
-                    label: strings.clients),
-                NavigationDestination(
-                    icon: const Icon(Icons.payments_outlined),
-                    label: strings.finance),
-                NavigationDestination(
-                    icon: const Icon(Icons.settings_outlined),
-                    label: strings.settings),
-              ]
-            : [
-                NavigationDestination(
-                    icon: const Icon(Icons.dashboard_outlined),
-                    label: strings.dashboard),
-                NavigationDestination(
-                    icon: const Icon(Icons.calendar_month_outlined),
-                    label: strings.schedule),
-                NavigationDestination(
-                    icon: const Icon(Icons.payments_outlined),
-                    label: strings.finance),
-                NavigationDestination(
-                    icon: const Icon(Icons.settings_outlined),
-                    label: strings.settings),
-              ],
+      extendBody: true,
+      body: DsBackground(
+        child: pages[index],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: DsGlassTokens.glassBorder,
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: DsEffects.blur(DsGlassTokens.blurSigmaMd),
+            child: NavigationBar(
+              backgroundColor: DsColorTokens.surfaceGlass.withOpacity(0.6),
+              elevation: 0,
+              selectedIndex: index,
+              onDestinationSelected: (value) => setState(() => index = value),
+              destinations: widget.role == UserRole.manager
+                  ? [
+                      NavigationDestination(
+                          icon: const Icon(Icons.dashboard_outlined),
+                          label: strings.dashboard),
+                      NavigationDestination(
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          label: strings.schedule),
+                      NavigationDestination(
+                          icon: const Icon(Icons.people_outline),
+                          label: strings.clients),
+                      NavigationDestination(
+                          icon: const Icon(Icons.payments_outlined),
+                          label: strings.finance),
+                      NavigationDestination(
+                          icon: const Icon(Icons.settings_outlined),
+                          label: strings.settings),
+                    ]
+                  : [
+                      NavigationDestination(
+                          icon: const Icon(Icons.dashboard_outlined),
+                          label: strings.dashboard),
+                      NavigationDestination(
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          label: strings.schedule),
+                      NavigationDestination(
+                          icon: const Icon(Icons.payments_outlined),
+                          label: strings.finance),
+                      NavigationDestination(
+                          icon: const Icon(Icons.settings_outlined),
+                          label: strings.settings),
+                    ],
+            ),
+          ),
+        ),
       ),
     );
   }

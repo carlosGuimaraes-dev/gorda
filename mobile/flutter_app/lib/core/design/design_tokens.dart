@@ -8,6 +8,8 @@ class DsColorTokens {
   static const Color textMuted = Color(0xFF9CA3AF);
   static const Color textOnDark = Color(0xFFFFFFFF);
   static const Color textOnBrand = Color(0xFFFFFFFF);
+  static const Color textGlass = Color(0xFFFFFFFF);
+  static const Color textGlassSecondary = Color.fromRGBO(255, 255, 255, 0.7);
 
   static const Color surfacePage = Color(0xFFFFFFFF);
   static const Color surfaceSection = Color(0xFFF9FAFB);

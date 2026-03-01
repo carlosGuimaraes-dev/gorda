@@ -98,16 +98,20 @@ class _CompanyProfilePageState extends ConsumerState<CompanyProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Company profile'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Company profile',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         leading: IconButton(
-          icon: const Text('Close'),
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 80),
+      body: DsBackground(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, kToolbarHeight + 10, 16, 120),
         children: [
           _buildSection('Logo', [
             if (_logoImage == null)
@@ -144,24 +148,19 @@ class _CompanyProfilePageState extends ConsumerState<CompanyProfilePage> {
           ]),
         ],
       ),
-      bottomSheet: Container(
-        color: AppThemeTokens.background,
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: FilledButton(
-            onPressed: _canSave ? _save : null,
-            child: const Text('Save'),
-          ),
-        ),
+      ),
+      bottomSheet: DsPrimaryBottomCta(
+        title: 'Save',
+        onPressed: _canSave ? _save : () {},
+        isDisabled: !_canSave,
       ),
     );
   }
 
   Widget _buildSection(String title, List<Widget> children) {
-    return AppCard(
+    return DsCard(
       padding: EdgeInsets.zero,
+      margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -169,7 +168,10 @@ class _CompanyProfilePageState extends ConsumerState<CompanyProfilePage> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold, color: DsColorTokens.textPrimary),
             ),
           ),
           ...children,

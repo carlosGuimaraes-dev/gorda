@@ -10,6 +10,8 @@ import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
 import 'agenda_calendar.dart';
 import 'service_detail_page.dart';
+import '../../../core/design/design_theme.dart';
+import '../../../core/design/design_tokens.dart';
 
 class SchedulePage extends ConsumerStatefulWidget {
   const SchedulePage({super.key, required this.role, this.onMenu});
@@ -47,15 +49,21 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     final groupedByDay = _groupByDay(filteredTasks);
 
     return Scaffold(
-      backgroundColor: AppThemeTokens.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: widget.onMenu == null
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
                 icon: const Icon(Icons.menu),
               ),
-        title: Text(strings.schedule),
+        title: Text(
+          strings.schedule,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () => _showNewServiceDialog(context, state),
@@ -158,8 +166,10 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                                             Localizations.localeOf(context)
                                                 .toLanguageTag())
                                         .format(day),
-                                    style:
-                                        Theme.of(context).textTheme.titleSmall,
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                          color: DsColorTokens.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 ),
                                 ...tasks.map((task) => _TaskRow(
@@ -426,8 +436,8 @@ class _TaskRow extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppThemeTokens.cornerRadius),
-      child: AppCard(
+      borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
+      child: DsCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -507,21 +517,7 @@ class _StatusBadge extends StatelessWidget {
       TaskStatus.canceled => strings.canceled,
     };
 
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-      ),
-    );
+    return DsStatusPill(label: label, color: color);
   }
 }
 
