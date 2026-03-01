@@ -224,7 +224,7 @@ class _FinanceNavigationTile extends StatelessWidget {
         horizontal: DsSpaceTokens.space1,
       ),
       dense: true,
-      leading: Icon(icon, color: DsColorTokens.brandPrimary),
+      leading: Icon(icon, color: DsColorTokens.actionPrimary),
       title: Text(
         title,
         style: const TextStyle(
@@ -256,7 +256,7 @@ class _FinanceActionTile extends StatelessWidget {
         horizontal: DsSpaceTokens.space1,
       ),
       dense: true,
-      leading: Icon(icon, color: DsColorTokens.brandPrimary),
+      leading: Icon(icon, color: DsColorTokens.actionPrimary),
       title: Text(
         title,
         style: const TextStyle(

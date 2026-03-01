@@ -63,11 +63,11 @@ class EmployeesPage extends ConsumerWidget {
                       ),
                     ),
                     leading: CircleAvatar(
-                      backgroundColor: DsColorTokens.brandPrimary.withOpacity(0.15),
+                      backgroundColor: DsColorTokens.actionPrimary.withOpacity(0.15),
                       child: Text(
                         _initials(employee.name),
                         style: const TextStyle(
-                          color: DsColorTokens.brandPrimary,
+                          color: DsColorTokens.actionPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -254,10 +254,10 @@ class EmployeeDetailPage extends ConsumerWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.edit_outlined,
-                        color: DsColorTokens.brandPrimary),
+                        color: DsColorTokens.actionPrimary),
                     title: Text(strings.editEmployee,
                         style: const TextStyle(
-                            color: DsColorTokens.brandPrimary,
+                            color: DsColorTokens.actionPrimary,
                             fontWeight: FontWeight.bold)),
                     onTap: () => _showEmployeeFormDialog(
                       context,

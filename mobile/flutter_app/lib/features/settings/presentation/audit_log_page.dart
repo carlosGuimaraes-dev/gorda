@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/design/design_tokens.dart';
+import '../../../core/design/design_theme.dart';
 import '../../../core/theme/app_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../offline/application/offline_store.dart';

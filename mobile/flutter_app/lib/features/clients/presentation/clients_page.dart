@@ -451,11 +451,11 @@ class _ClientCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: DsColorTokens.brandPrimary.withOpacity(0.15),
+              backgroundColor: DsColorTokens.actionPrimary.withOpacity(0.15),
               child: Text(
                 _initials(client.name),
                 style: const TextStyle(
-                  color: DsColorTokens.brandPrimary,
+                  color: DsColorTokens.actionPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -487,7 +487,7 @@ class _ClientCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.phone,
-                            size: 13, color: DsColorTokens.brandPrimary),
+                            size: 13, color: DsColorTokens.actionPrimary),
                         const SizedBox(width: 4),
                         Text(
                           client.phone,
@@ -501,7 +501,7 @@ class _ClientCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.message,
-                            size: 13, color: DsColorTokens.brandPrimary),
+                            size: 13, color: DsColorTokens.actionPrimary),
                         const SizedBox(width: 4),
                         Text(
                           client.whatsappPhone,

@@ -8,6 +8,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/presentation/employees_page.dart';
 import '../../offline/application/offline_store.dart';
+import '../../../core/design/design_tokens.dart';
+import '../../../core/design/design_theme.dart';
 import 'audit_log_page.dart';
 import 'company_profile_page.dart';
 
@@ -297,6 +299,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ],
             ),
         ],
+      ),
       ),
     );
   }

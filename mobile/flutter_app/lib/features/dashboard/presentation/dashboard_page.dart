@@ -431,6 +431,7 @@ class _DashboardTaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(Localizations.localeOf(context));
     final locale = Localizations.localeOf(context).toLanguageTag();
     final dateLabel = DateFormat.yMd(locale).format(task.date);
     final timeLabel = task.startTime == null

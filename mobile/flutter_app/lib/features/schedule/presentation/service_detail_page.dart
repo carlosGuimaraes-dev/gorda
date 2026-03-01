@@ -124,13 +124,13 @@ class ServiceDetailPage extends ConsumerWidget {
                         },
                         title: strings.checkIn,
                       ),
-                      DsSecondaryButton(
+                      OutlinedButton(
                         onPressed: () {
                           ref
                               .read(offlineStoreProvider.notifier)
                               .markTaskCheckOut(currentTask.id, DateTime.now());
                         },
-                        title: strings.checkOut,
+                        child: Text(strings.checkOut),
                       ),
                       if (role == UserRole.manager)
                         OutlinedButton(
@@ -140,8 +140,8 @@ class ServiceDetailPage extends ConsumerWidget {
                                 .advanceTaskStatus(currentTask.id);
                           },
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: DsColorTokens.brandPrimary),
-                            foregroundColor: DsColorTokens.brandPrimary,
+                            side: const BorderSide(color: DsColorTokens.actionPrimary),
+                            foregroundColor: DsColorTokens.actionPrimary,
                           ),
                           child: Text(strings.advanceStatus),
                         ),

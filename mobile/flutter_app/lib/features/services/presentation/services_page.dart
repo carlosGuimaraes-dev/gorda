@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../offline/application/offline_store.dart';
 import '../domain/service_type.dart';
 import '../../../core/design/design_theme.dart';
+import '../../finance/domain/finance_entry.dart';
 
 class ServicesPage extends ConsumerWidget {
   const ServicesPage({super.key});
@@ -82,7 +83,7 @@ class ServicesPage extends ConsumerWidget {
                         Text(
                           '${_currencyCode(serviceType.currency)} ${serviceType.basePrice.toStringAsFixed(2)}',
                           style: const TextStyle(
-                            color: DsColorTokens.brandPrimary,
+                            color: DsColorTokens.actionPrimary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -413,10 +414,10 @@ class ServiceTypeDetailPage extends ConsumerWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.edit_outlined,
-                        color: DsColorTokens.brandPrimary),
+                        color: DsColorTokens.actionPrimary),
                     title: Text(strings.editService,
                         style: const TextStyle(
-                            color: DsColorTokens.brandPrimary,
+                            color: DsColorTokens.actionPrimary,
                             fontWeight: FontWeight.bold)),
                     onTap: () => ServicesPage.showServiceTypeFormDialog(
                       context,

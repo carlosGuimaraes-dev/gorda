@@ -10,6 +10,7 @@ import '../../schedule/presentation/service_detail_page.dart';
 import '../../services/domain/service_task.dart';
 import '../../../core/design/design_theme.dart';
 import '../../../core/design/design_tokens.dart';
+import '../../offline/application/offline_store.dart';
 
 class ClientDetailPage extends ConsumerWidget {
   const ClientDetailPage({super.key, required this.clientId});
@@ -154,10 +155,10 @@ class ClientDetailPage extends ConsumerWidget {
                         )),
                   ListTile(
                     leading: const Icon(Icons.add_circle_outline,
-                        color: DsColorTokens.brandPrimary),
+                        color: DsColorTokens.actionPrimary),
                     title: Text(strings.createService,
                         style: const TextStyle(
-                            color: DsColorTokens.brandPrimary,
+                            color: DsColorTokens.actionPrimary,
                             fontWeight: FontWeight.bold)),
                     onTap: () =>
                         _showCreateService(context, ref, current, state),
