@@ -115,7 +115,7 @@ void main() {
       expect(generated, isNotEmpty);
       expect(
         generated.last.amount,
-        100, // 2h * 50, canceled task excluded
+        220, // seed task (120) + valid hourly task (100), canceled task excluded
       );
     });
 

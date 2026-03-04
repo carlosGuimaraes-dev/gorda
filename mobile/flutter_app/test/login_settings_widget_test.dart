@@ -40,7 +40,7 @@ void main() {
         .notificationPreferences
         .enableClientNotifications;
 
-    await tester.tap(find.text('Notifications for clients'));
+    await tester.tap(find.byType(SwitchListTile).first);
     await tester.pumpAndSettle();
 
     final after = container

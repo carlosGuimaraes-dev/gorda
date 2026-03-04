@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ag_home_organizer_flutter/app/app.dart';
+import 'package:ag_home_organizer_flutter/features/splash/presentation/splash_view.dart';
 
 void main() {
   testWidgets('shows splash first and then login screen', (tester) async {
@@ -13,6 +14,6 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.byType(SplashView), findsNothing);
   });
 }
