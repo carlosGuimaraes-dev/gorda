@@ -19,6 +19,7 @@ class AppStrings {
       ? 'Inicia sesión para gestionar tus servicios'
       : 'Sign in to manage your services';
   String get user => _isEs ? 'Usuario' : 'User';
+  String get password => _isEs ? 'Contraseña' : 'Password';
   String get signIn => _isEs ? 'Iniciar sesión' : 'Sign in';
   String get dashboard => _isEs ? 'Panel' : 'Dashboard';
   String get schedule => _isEs ? 'Agenda' : 'Schedule';
@@ -118,6 +119,10 @@ class AppStrings {
       _isEs ? 'cambios pendientes en la cola' : 'pending changes in the queue';
   String get appPreferences =>
       _isEs ? 'Preferencias de la app' : 'App preferences';
+  String get conflicts => _isEs ? 'Conflictos' : 'Conflicts';
+  String get noConflictsRecorded =>
+      _isEs ? 'No hay conflictos registrados.' : 'No conflicts recorded.';
+  String get auditLog => _isEs ? 'Registro de auditoría' : 'Audit log';
   String get language => _isEs ? 'Idioma' : 'Language';
   String get notifications => _isEs ? 'Notificaciones' : 'Notifications';
   String get notificationsForClients =>
@@ -128,6 +133,18 @@ class AppStrings {
       _isEs ? 'Notificaciones push' : 'Push notifications';
   String get siriSuggestions =>
       _isEs ? 'Sugerencias de Siri' : 'Siri suggestions';
+  String get disputeWindowOneDay => _isEs
+      ? 'Ventana de disputa: 1 día después del vencimiento'
+      : 'Dispute window: 1 day after due date';
+  String disputeWindowManyDays(int days) => _isEs
+      ? 'Ventana de disputa: $days días después del vencimiento'
+      : 'Dispute window: $days days after due date';
+  String get disputeWindowHint => _isEs
+      ? '0 días significa que las disputas solo se permiten hasta la fecha de vencimiento.'
+      : '0 days means disputes are only allowed until the due date.';
+  String get companyProfileInvoices => _isEs
+      ? 'Perfil de la empresa (facturas)'
+      : 'Company profile (invoices)';
   String get deliveryChannels =>
       _isEs ? 'Canales de entrega' : 'Delivery channels';
   String get textMessage => _isEs ? 'Mensaje de texto' : 'Text Message';

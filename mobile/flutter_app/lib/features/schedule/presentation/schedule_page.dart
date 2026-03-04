@@ -73,7 +73,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
           IconButton(
             onPressed: () => ref
                 .read(offlineStoreProvider.notifier)
-                .syncPendingChangesStub(),
+                .syncPendingChanges(),
             icon: const Icon(Icons.sync),
             tooltip: strings.forceSync,
           ),

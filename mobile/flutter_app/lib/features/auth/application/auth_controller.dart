@@ -23,7 +23,11 @@ class AuthController extends StateNotifier<AsyncValue<UserSession?>> {
     }
   }
 
-  Future<void> login(String username, String password) async {
+  Future<void> login(
+    String username,
+    String password, {
+    required UserRole role,
+  }) async {
     state = const AsyncValue.loading();
     try {
       // Mock login validation for MVP
@@ -32,7 +36,7 @@ class AuthController extends StateNotifier<AsyncValue<UserSession?>> {
       final session = UserSession(
         token: 'mock_jwt_token_12345',
         name: username.isNotEmpty ? username : 'User',
-        role: UserRole.employee,
+        role: role,
       );
       
       await _repository.saveSession(session);

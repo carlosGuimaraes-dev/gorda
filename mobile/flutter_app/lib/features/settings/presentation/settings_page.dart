@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_card.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/presentation/employees_page.dart';
+import '../../finance/domain/finance_entry.dart';
 import '../../offline/application/offline_store.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/design/design_theme.dart';
@@ -23,14 +25,6 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _notifyClients = true;
-  bool _notifyTeam = true;
-  bool _pushEnabled = false;
-  bool _siriSuggestions = false;
-  bool _enableWhatsApp = true;
-  bool _enableSms = true;
-  bool _enableEmail = true;
-
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(Localizations.localeOf(context));
@@ -78,7 +72,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     strings.signOut,
                     style: const TextStyle(color: Colors.red),
                   ),
-                  onTap: () => ref.read(offlineStoreProvider.notifier).logout(),
+                  onTap: () async {
+                    await ref.read(authStateProvider.notifier).logout();
+                    ref.read(offlineStoreProvider.notifier).logout();
+                  },
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
               ],
@@ -90,7 +87,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: Text(strings.forceSync),
                 onTap: () => ref
                     .read(offlineStoreProvider.notifier)
-                    .syncPendingChangesStub(),
+                    .syncPendingChanges(),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
               ),
               if (lastSync != null)
@@ -116,14 +113,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ],
           ),
           _SettingsSection(
-            title: 'Conflicts', // strings.conflicts doesn't exist
+            title: strings.conflicts,
             children: [
               if (state.conflictLog.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                   child: Text(
-                    'No conflicts recorded.',
-                    style: TextStyle(
+                    strings.noConflictsRecorded,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppThemeTokens.secondaryText,
                     ),
@@ -139,10 +136,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           if (session?.role == UserRole.manager)
             _SettingsSection(
-              title: 'Audit log',
+              title: strings.auditLog,
               children: [
                 ListTile(
-                  title: const Text('Audit log'),
+                  title: Text(strings.auditLog),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
@@ -195,20 +192,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: DropdownButtonFormField<String>(
-                    value: 'USD',
+                    value: state.appPreferences.preferredCurrency ==
+                            FinanceCurrency.eur
+                        ? 'EUR'
+                        : 'USD',
                     decoration: InputDecoration(labelText: strings.currency),
                     items: const [
                       DropdownMenuItem(value: 'USD', child: Text('USD')),
                       DropdownMenuItem(value: 'EUR', child: Text('EUR')),
                     ],
-                    onChanged: (_) {},
+                    onChanged: (value) {
+                      if (value == null) return;
+                      ref.read(offlineStoreProvider.notifier).setAppPreferences(
+                            state.appPreferences.copyWith(
+                              preferredCurrency: value == 'EUR'
+                                  ? FinanceCurrency.eur
+                                  : FinanceCurrency.usd,
+                            ),
+                          );
+                    },
                   ),
                 ),
                 ListTile(
                   title: Text(state.appPreferences.disputeWindowDays == 1
-                      ? 'Dispute window: 1 day after due date'
-                      : 'Dispute window: ${state.appPreferences.disputeWindowDays} days after due date'),
-                  subtitle: const Text('0 days means disputes are only allowed until the due date.'),
+                      ? strings.disputeWindowOneDay
+                      : strings.disputeWindowManyDays(
+                          state.appPreferences.disputeWindowDays,
+                        )),
+                  subtitle: Text(strings.disputeWindowHint),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -241,7 +252,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
                 ListTile(
-                  title: const Text('Company profile (invoices)'),
+                  title: Text(strings.companyProfileInvoices),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
@@ -252,49 +263,94 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ],
             ),
-          _SettingsSection(
-            title: strings.notifications,
-            children: [
-              SwitchListTile(
-                title: Text(strings.notificationsForClients),
-                value: _notifyClients,
-                onChanged: (value) => setState(() => _notifyClients = value),
-              ),
-              SwitchListTile(
-                title: Text(strings.notificationsForTeam),
-                value: _notifyTeam,
-                onChanged: (value) => setState(() => _notifyTeam = value),
-              ),
-              SwitchListTile(
-                title: Text(strings.pushNotifications),
-                value: _pushEnabled,
-                onChanged: (value) => setState(() => _pushEnabled = value),
-              ),
-              SwitchListTile(
-                title: Text(strings.siriSuggestions),
-                value: _siriSuggestions,
-                onChanged: (value) => setState(() => _siriSuggestions = value),
-              ),
-            ],
-          ),
+            _SettingsSection(
+              title: strings.notifications,
+              children: [
+                SwitchListTile(
+                  title: Text(strings.notificationsForClients),
+                  value: state.notificationPreferences.enableClientNotifications,
+                  onChanged: (value) {
+                    ref
+                        .read(offlineStoreProvider.notifier)
+                        .setNotificationPreferences(
+                          state.notificationPreferences.copyWith(
+                            enableClientNotifications: value,
+                          ),
+                        );
+                  },
+                ),
+                SwitchListTile(
+                  title: Text(strings.notificationsForTeam),
+                  value: state.notificationPreferences.enableTeamNotifications,
+                  onChanged: (value) {
+                    ref
+                        .read(offlineStoreProvider.notifier)
+                        .setNotificationPreferences(
+                          state.notificationPreferences.copyWith(
+                            enableTeamNotifications: value,
+                          ),
+                        );
+                  },
+                ),
+                SwitchListTile(
+                  title: Text(strings.pushNotifications),
+                  value: state.notificationPreferences.enablePush,
+                  onChanged: (value) {
+                    ref
+                        .read(offlineStoreProvider.notifier)
+                        .setNotificationPreferences(
+                          state.notificationPreferences.copyWith(
+                            enablePush: value,
+                          ),
+                        );
+                  },
+                ),
+                SwitchListTile(
+                  title: Text(strings.siriSuggestions),
+                  value: state.notificationPreferences.enableSiri,
+                  onChanged: (value) {
+                    ref
+                        .read(offlineStoreProvider.notifier)
+                        .setNotificationPreferences(
+                          state.notificationPreferences.copyWith(
+                            enableSiri: value,
+                          ),
+                        );
+                  },
+                ),
+              ],
+            ),
           if (session?.role == UserRole.manager)
             _SettingsSection(
               title: strings.deliveryChannels,
               children: [
                 SwitchListTile(
-                  title: const Text('WhatsApp'),
-                  value: _enableWhatsApp,
-                  onChanged: (value) => setState(() => _enableWhatsApp = value),
+                  title: Text(strings.whatsapp),
+                  value: state.appPreferences.enableWhatsApp,
+                  onChanged: (value) {
+                    ref.read(offlineStoreProvider.notifier).setAppPreferences(
+                          state.appPreferences.copyWith(enableWhatsApp: value),
+                        );
+                  },
                 ),
                 SwitchListTile(
                   title: Text(strings.textMessage),
-                  value: _enableSms,
-                  onChanged: (value) => setState(() => _enableSms = value),
+                  value: state.appPreferences.enableTextMessages,
+                  onChanged: (value) {
+                    ref.read(offlineStoreProvider.notifier).setAppPreferences(
+                          state.appPreferences
+                              .copyWith(enableTextMessages: value),
+                        );
+                  },
                 ),
                 SwitchListTile(
-                  title: const Text('Email'),
-                  value: _enableEmail,
-                  onChanged: (value) => setState(() => _enableEmail = value),
+                  title: Text(strings.email),
+                  value: state.appPreferences.enableEmail,
+                  onChanged: (value) {
+                    ref.read(offlineStoreProvider.notifier).setAppPreferences(
+                          state.appPreferences.copyWith(enableEmail: value),
+                        );
+                  },
                 ),
               ],
             ),

@@ -36,6 +36,12 @@ jobs:
       - name: Instalar Dependências
         run: flutter pub get
 
+      - name: Static Analysis
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
+
       - name: Build Web
         run: flutter build web --release --base-href /gorda/
         

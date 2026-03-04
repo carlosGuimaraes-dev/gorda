@@ -810,7 +810,7 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
                   const SizedBox(height: DsSpaceTokens.space2),
                   TextButton.icon(
                     onPressed: () {
-                      ref.read(offlineStoreProvider.notifier).syncPendingChangesStub();
+                      ref.read(offlineStoreProvider.notifier).syncPendingChanges();
                     },
                     icon: const Icon(Icons.sync),
                     label: Text(strings.forceSyncNow),

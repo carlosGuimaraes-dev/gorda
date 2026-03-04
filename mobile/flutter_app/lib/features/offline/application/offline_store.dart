@@ -13,9 +13,14 @@ import '../domain/app_preferences.dart';
 import '../domain/log_entries.dart';
 import '../domain/notification_preferences.dart';
 import '../domain/pending_change.dart';
+import 'sync_gateway.dart';
 
 final offlineStoreProvider =
     NotifierProvider<OfflineStore, OfflineState>(OfflineStore.new);
+
+final syncGatewayProvider = Provider<SyncGateway>((ref) {
+  return StubSyncGateway();
+});
 
 class OfflineState {
   const OfflineState({
@@ -995,6 +1000,63 @@ class OfflineStore extends Notifier<OfflineState> {
     }
   }
 
+  Future<void> syncPendingChanges() async {
+    if (state.pendingChanges.isEmpty) {
+      state = state.copyWith(lastSync: DateTime.now());
+      return;
+    }
+
+    final latestByEntity = <String, PendingChange>{};
+    final sorted = [...state.pendingChanges]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    for (final item in sorted) {
+      latestByEntity[item.entityId] = item;
+    }
+
+    final gateway = ref.read(syncGatewayProvider);
+    final changes = latestByEntity.values
+        .map(
+          (change) => SyncPushChange(
+            entity: _entityFromOperation(change.operation),
+            entityId: change.entityId,
+            operation: _operationFromPending(change.operation),
+            clientUpdatedAt: change.timestamp,
+          ),
+        )
+        .toList(growable: false);
+
+    try {
+      final pushResult = await gateway.pushChanges(
+        deviceId: state.session?.name ?? 'device-local',
+        clientTime: DateTime.now(),
+        changes: changes,
+      );
+
+      final pullResult = await gateway.pullChanges(
+        since: state.lastSync,
+        limit: 500,
+      );
+
+      final mergedConflicts = [
+        ...state.conflictLog,
+        ...pushResult.conflicts,
+        ...pullResult.conflicts,
+      ];
+      final mergedAudit = [...state.auditLog, ...pullResult.auditEntries];
+
+      state = state.copyWith(
+        pendingChanges: const [],
+        lastSync: pullResult.serverTime,
+        conflictLog: mergedConflicts,
+        auditLog: mergedAudit.length > 200
+            ? mergedAudit.sublist(mergedAudit.length - 200)
+            : mergedAudit,
+      );
+    } catch (_) {
+      syncPendingChangesStub();
+    }
+  }
+
   List<InvoiceLineItemData> lineItemsForInvoice(FinanceEntry invoice) {
     final startEnd = _invoicePeriod(invoice);
     final invoiceTasks = state.tasks.where((task) {
@@ -1207,6 +1269,45 @@ class OfflineStore extends Notifier<OfflineState> {
         ),
       ),
     ];
+  }
+
+  String _entityFromOperation(PendingOperation operation) {
+    return switch (operation) {
+      PendingOperation.addTask || PendingOperation.updateTask => 'task',
+      PendingOperation.addClient ||
+      PendingOperation.updateClient ||
+      PendingOperation.deleteClient =>
+        'client',
+      PendingOperation.addFinanceEntry ||
+      PendingOperation.updateFinanceEntry ||
+      PendingOperation.markFinanceEntry ||
+      PendingOperation.deleteFinanceEntry =>
+        'finance_entry',
+      PendingOperation.addEmployee ||
+      PendingOperation.updateEmployee ||
+      PendingOperation.deleteEmployee =>
+        'employee',
+      PendingOperation.addServiceType ||
+      PendingOperation.updateServiceType ||
+      PendingOperation.deleteServiceType =>
+        'service_type',
+      PendingOperation.addTeam ||
+      PendingOperation.updateTeam ||
+      PendingOperation.deleteTeam =>
+        'team',
+    };
+  }
+
+  String _operationFromPending(PendingOperation operation) {
+    return switch (operation) {
+      PendingOperation.deleteClient ||
+      PendingOperation.deleteFinanceEntry ||
+      PendingOperation.deleteEmployee ||
+      PendingOperation.deleteServiceType ||
+      PendingOperation.deleteTeam =>
+        'delete',
+      _ => 'upsert',
+    };
   }
 
   OfflineState _seedState() {

@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/design/design_theme.dart';
 import '../../../core/i18n/app_strings.dart';
-import '../../../core/theme/app_card.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/user_session.dart';
+import '../../offline/application/offline_store.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -18,12 +17,20 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _userController = TextEditingController();
   final _passController = TextEditingController();
+  UserRole _role = UserRole.manager;
 
   Future<void> _doLogin() async {
+    final username = _userController.text.trim();
+    final password = _passController.text;
+    if (username.isEmpty) return;
+
     await ref.read(authStateProvider.notifier).login(
-          _userController.text,
-          _passController.text,
+          username,
+          password,
+          role: _role,
         );
+
+    ref.read(offlineStoreProvider.notifier).login(user: username, role: _role);
   }
 
   @override
@@ -53,7 +60,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: DsSpaceTokens.space4),
                     Text(
-                      'AG Home Organizer',
+                      strings.welcomeBack,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: DsColorTokens.textPrimary,
@@ -61,7 +68,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                     ),
                     Text(
-                      'Premium Cleaning Management',
+                      strings.signInSubtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: DsColorTokens.textSecondary,
                           ),
@@ -78,10 +85,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     TextField(
                       controller: _passController,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
+                      decoration: InputDecoration(
+                        labelText: strings.password,
+                        prefixIcon: const Icon(Icons.lock_outline),
                       ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space4),
+                    SegmentedButton<UserRole>(
+                      segments: [
+                        ButtonSegment<UserRole>(
+                          value: UserRole.employee,
+                          label: Text(strings.employee),
+                        ),
+                        ButtonSegment<UserRole>(
+                          value: UserRole.manager,
+                          label: Text(strings.manager),
+                        ),
+                      ],
+                      selected: {_role},
+                      onSelectionChanged: (value) {
+                        setState(() => _role = value.first);
+                      },
                     ),
                     const SizedBox(height: DsSpaceTokens.space8),
                     DsPrimaryButton(
@@ -104,85 +128,3 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
-
-class RoleSelectionPage extends ConsumerWidget {
-  const RoleSelectionPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final strings = AppStrings.of(Localizations.localeOf(context));
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: DsBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(DsSpaceTokens.space6),
-            child: Column(
-              children: [
-                const SizedBox(height: DsSpaceTokens.space8),
-                const Hero(
-                  tag: 'logo',
-                  child: Icon(
-                    Icons.account_circle_outlined,
-                    size: 64,
-                    color: DsColorTokens.actionPrimary,
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space4),
-                Text(
-                  'Choose your role',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: DsColorTokens.textPrimary,
-                      ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space12),
-                DsCard(
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(DsSpaceTokens.space4),
-                    leading: const Icon(Icons.manage_accounts,
-                        size: 40, color: DsColorTokens.actionPrimary),
-                    title: Text(strings.manager,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: DsColorTokens.textPrimary)),
-                    subtitle: Text('Manage schedules, finances, and teams.',
-                        style: TextStyle(color: DsColorTokens.textSecondary)),
-                    onTap: () {
-                      ref
-                          .read(authStateProvider.notifier)
-                          .selectRole(UserRole.manager);
-                    },
-                  ),
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                DsCard(
-                  padding: EdgeInsets.zero,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(DsSpaceTokens.space4),
-                    leading: const Icon(Icons.person,
-                        size: 40, color: DsColorTokens.actionPrimary),
-                    title: Text(strings.employee,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: DsColorTokens.textPrimary)),
-                    subtitle: Text('View your schedule and earnings.',
-                        style: TextStyle(color: DsColorTokens.textSecondary)),
-                    onTap: () {
-                      ref
-                          .read(authStateProvider.notifier)
-                          .selectRole(UserRole.employee);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
