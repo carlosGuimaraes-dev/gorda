@@ -292,7 +292,7 @@ void main() {
         pushResult: SyncPushResult(
           serverTime: now,
           conflicts: [
-            const ConflictLogEntry(
+            ConflictLogEntry(
               id: 'conf-1',
               entity: 'client',
               field: 'email',
@@ -304,7 +304,7 @@ void main() {
         pullResult: SyncPullResult(
           serverTime: now.add(const Duration(minutes: 1)),
           conflicts: [
-            const ConflictLogEntry(
+            ConflictLogEntry(
               id: 'conf-2',
               entity: 'finance_entry',
               field: 'amount',
@@ -313,7 +313,7 @@ void main() {
             ),
           ],
           auditEntries: [
-            const AuditLogEntry(
+            AuditLogEntry(
               id: 'audit-1',
               entity: 'Finance',
               action: 'Updated',
