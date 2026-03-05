@@ -15,10 +15,14 @@ class _FakeSyncGateway implements SyncGateway {
   _FakeSyncGateway({
     required this.pushResult,
     required this.pullResult,
+    this.conflicts = const [],
+    this.audit = const [],
   });
 
   final SyncPushResult pushResult;
   final SyncPullResult pullResult;
+  final List<ConflictLogEntry> conflicts;
+  final List<AuditLogEntry> audit;
 
   @override
   Future<SyncPullResult> pullChanges({
@@ -35,6 +39,42 @@ class _FakeSyncGateway implements SyncGateway {
     required List<SyncPushChange> changes,
   }) async {
     return pushResult;
+  }
+
+  @override
+  Future<List<ConflictLogEntry>> fetchConflicts({required DateTime? since}) async {
+    return conflicts;
+  }
+
+  @override
+  Future<List<AuditLogEntry>> fetchAudit({required DateTime? since}) async {
+    return audit;
+  }
+}
+
+class _FailingSyncGateway implements SyncGateway {
+  @override
+  Future<List<AuditLogEntry>> fetchAudit({required DateTime? since}) async {
+    throw Exception('offline');
+  }
+
+  @override
+  Future<List<ConflictLogEntry>> fetchConflicts({required DateTime? since}) async {
+    throw Exception('offline');
+  }
+
+  @override
+  Future<SyncPullResult> pullChanges({required DateTime? since, int limit = 500}) async {
+    throw Exception('offline');
+  }
+
+  @override
+  Future<SyncPushResult> pushChanges({
+    required String deviceId,
+    required DateTime clientTime,
+    required List<SyncPushChange> changes,
+  }) async {
+    throw Exception('offline');
   }
 }
 
@@ -323,6 +363,25 @@ void main() {
             ),
           ],
         ),
+        conflicts: [
+          ConflictLogEntry(
+            id: 'conf-3',
+            entity: 'task',
+            field: 'status',
+            summary: 'Endpoint conflict',
+            timestamp: DateTime(2026, 1, 3),
+          ),
+        ],
+        audit: [
+          AuditLogEntry(
+            id: 'audit-2',
+            entity: 'Client',
+            action: 'Created',
+            summary: 'Endpoint audit',
+            actor: 'server',
+            timestamp: DateTime(2026, 1, 3),
+          ),
+        ],
       );
 
       final container = ProviderContainer(
@@ -348,7 +407,39 @@ void main() {
       expect(state.lastSync, now.add(const Duration(minutes: 1)));
       expect(state.conflictLog.any((item) => item.id == 'conf-1'), isTrue);
       expect(state.conflictLog.any((item) => item.id == 'conf-2'), isTrue);
+      expect(state.conflictLog.any((item) => item.id == 'conf-3'), isTrue);
       expect(state.auditLog.any((item) => item.id == 'audit-1'), isTrue);
+      expect(state.auditLog.any((item) => item.id == 'audit-2'), isTrue);
+    });
+
+    test('syncPendingChanges keeps queue on network error', () async {
+      final container = ProviderContainer(
+        overrides: [
+          syncGatewayProvider.overrideWithValue(_FailingSyncGateway()),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+
+      notifier.addClient(
+        const Client(
+          id: 'sync-fail-client',
+          name: 'Sync Fail',
+          address: 'Addr',
+          phone: '+1',
+        ),
+      );
+
+      final queuedBefore = container.read(offlineStoreProvider).pendingChanges.length;
+      expect(queuedBefore, greaterThan(0));
+
+      await notifier.syncPendingChanges();
+      final state = container.read(offlineStoreProvider);
+      expect(state.pendingChanges.length, queuedBefore);
+      expect(
+        state.auditLog.any((item) => item.entity == 'Sync' && item.action == 'Error'),
+        isTrue,
+      );
     });
   });
 }

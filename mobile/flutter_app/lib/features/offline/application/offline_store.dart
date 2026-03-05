@@ -19,6 +19,10 @@ final offlineStoreProvider =
     NotifierProvider<OfflineStore, OfflineState>(OfflineStore.new);
 
 final syncGatewayProvider = Provider<SyncGateway>((ref) {
+  const syncBaseUrl = String.fromEnvironment('SYNC_BASE_URL');
+  if (syncBaseUrl.isNotEmpty) {
+    return HttpSyncGateway(baseUrl: syncBaseUrl);
+  }
   return StubSyncGateway();
 });
 
@@ -982,12 +986,7 @@ class OfflineStore extends Notifier<OfflineState> {
       return;
     }
 
-    final latestByEntity = <String, PendingChange>{};
-    final sorted = [...state.pendingChanges]
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    for (final item in sorted) {
-      latestByEntity[item.entityId] = item;
-    }
+    final latestByEntity = _latestPendingByEntityKey();
 
     state = state.copyWith(
       pendingChanges: const [],
@@ -1006,12 +1005,7 @@ class OfflineStore extends Notifier<OfflineState> {
       return;
     }
 
-    final latestByEntity = <String, PendingChange>{};
-    final sorted = [...state.pendingChanges]
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    for (final item in sorted) {
-      latestByEntity[item.entityId] = item;
-    }
+    final latestByEntity = _latestPendingByEntityKey();
 
     final gateway = ref.read(syncGatewayProvider);
     final changes = latestByEntity.values
@@ -1036,13 +1030,24 @@ class OfflineStore extends Notifier<OfflineState> {
         since: state.lastSync,
         limit: 500,
       );
+      final endpointConflicts = await gateway.fetchConflicts(
+        since: state.lastSync,
+      );
+      final endpointAudit = await gateway.fetchAudit(
+        since: state.lastSync,
+      );
 
       final mergedConflicts = [
         ...state.conflictLog,
         ...pushResult.conflicts,
         ...pullResult.conflicts,
+        ...endpointConflicts,
       ];
-      final mergedAudit = [...state.auditLog, ...pullResult.auditEntries];
+      final mergedAudit = [
+        ...state.auditLog,
+        ...pullResult.auditEntries,
+        ...endpointAudit,
+      ];
 
       state = state.copyWith(
         pendingChanges: const [],
@@ -1053,8 +1058,23 @@ class OfflineStore extends Notifier<OfflineState> {
             : mergedAudit,
       );
     } catch (_) {
-      syncPendingChangesStub();
+      _appendAudit(
+        entity: 'Sync',
+        action: 'Error',
+        summary: 'Sync failed, pending queue preserved for retry',
+      );
     }
+  }
+
+  Map<String, PendingChange> _latestPendingByEntityKey() {
+    final latestByEntity = <String, PendingChange>{};
+    final sorted = [...state.pendingChanges]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    for (final item in sorted) {
+      final entity = _entityFromOperation(item.operation);
+      latestByEntity['$entity:${item.entityId}'] = item;
+    }
+    return latestByEntity;
   }
 
   List<InvoiceLineItemData> lineItemsForInvoice(FinanceEntry invoice) {
