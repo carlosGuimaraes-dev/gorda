@@ -954,7 +954,13 @@ class OfflineStore extends Notifier<OfflineState> {
     final index = state.tasks.indexWhere((task) => task.id == taskId);
     if (index < 0) return;
     final nextTasks = [...state.tasks];
-    nextTasks[index] = nextTasks[index].copyWith(checkInTime: timestamp);
+    final currentTask = nextTasks[index];
+    nextTasks[index] = currentTask.copyWith(
+      checkInTime: timestamp,
+      status: currentTask.status == TaskStatus.scheduled
+          ? TaskStatus.inProgress
+          : currentTask.status,
+    );
     state = state.copyWith(
       tasks: nextTasks,
       pendingChanges: _enqueueChange(
@@ -968,6 +974,10 @@ class OfflineStore extends Notifier<OfflineState> {
   void markTaskCheckOut(String taskId, DateTime timestamp) {
     final index = state.tasks.indexWhere((task) => task.id == taskId);
     if (index < 0) return;
+    final currentTask = state.tasks[index];
+    final checkInTime = currentTask.checkInTime;
+    if (checkInTime == null) return;
+    if (timestamp.isBefore(checkInTime)) return;
     final nextTasks = [...state.tasks];
     nextTasks[index] = nextTasks[index].copyWith(checkOutTime: timestamp);
     state = state.copyWith(

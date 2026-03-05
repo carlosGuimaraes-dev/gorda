@@ -274,6 +274,20 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     return null;
   }
 
+  String? _resolveSessionEmployeeId(OfflineState state) {
+    final session = state.session;
+    if (session == null) return null;
+
+    final identity = session.name.trim().toLowerCase();
+    if (identity.isEmpty) return null;
+
+    for (final employee in state.employees) {
+      if (employee.id.trim().toLowerCase() == identity) return employee.id;
+      if (employee.name.trim().toLowerCase() == identity) return employee.id;
+    }
+    return null;
+  }
+
   void _openTask(BuildContext context, ServiceTask task) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -295,12 +309,15 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     DateTime endTime = DateTime(
         selectedDate.year, selectedDate.month, selectedDate.day, 10, 0);
     String assignedEmployeeId = '';
-    if (widget.role == UserRole.manager && state.employees.isNotEmpty) {
-      assignedEmployeeId = state.employees.first.id;
+    if (widget.role == UserRole.manager) {
+      if (state.employees.isNotEmpty) {
+        assignedEmployeeId = state.employees.first.id;
+      }
     } else {
-      assignedEmployeeId = state.session?.name ?? '';
+      assignedEmployeeId = _resolveSessionEmployeeId(state) ?? '';
     }
-    if (state.employees.isNotEmpty &&
+    if (widget.role == UserRole.manager &&
+        state.employees.isNotEmpty &&
         !state.employees.any((employee) => employee.id == assignedEmployeeId)) {
       assignedEmployeeId = state.employees.first.id;
     }
@@ -396,7 +413,11 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                   onPressed: () {
                     final title = titleCtrl.text.trim();
                     final clientName = clientCtrl.text.trim();
-                    if (title.isEmpty || clientName.isEmpty) return;
+                    if (title.isEmpty ||
+                        clientName.isEmpty ||
+                        assignedEmployeeId.trim().isEmpty) {
+                      return;
+                    }
                     final address = addressCtrl.text.trim();
                     ref.read(offlineStoreProvider.notifier).addTask(
                           ServiceTask(

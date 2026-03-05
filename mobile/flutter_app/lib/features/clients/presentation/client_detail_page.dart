@@ -51,6 +51,9 @@ class ClientDetailPage extends ConsumerWidget {
     }).toList()
       ..sort(
           (a, b) => (b.startTime ?? b.date).compareTo(a.startTime ?? a.date));
+    final hasDeliveryChannels = current.phone.trim().isNotEmpty ||
+        current.whatsappPhone.trim().isNotEmpty ||
+        current.email.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -94,12 +97,43 @@ class ClientDetailPage extends ConsumerWidget {
                           fontSize: 18,
                           color: DsColorTokens.textPrimary)),
                   const SizedBox(height: 12),
-                  if (current.phone.isNotEmpty)
-                    _detailItem(strings.phone, current.phone),
-                  if (current.whatsappPhone.isNotEmpty)
-                    _detailItem('WhatsApp', current.whatsappPhone),
-                  if (current.email.isNotEmpty)
-                    _detailItem('Email', current.email),
+                  Text(
+                    strings.deliveryChannels,
+                    style: const TextStyle(
+                      color: DsColorTokens.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (current.phone.trim().isNotEmpty)
+                    _channelItem(
+                      icon: Icons.phone_outlined,
+                      label: strings.phone,
+                      value: current.phone.trim(),
+                    ),
+                  if (current.whatsappPhone.trim().isNotEmpty)
+                    _channelItem(
+                      icon: Icons.message_outlined,
+                      label: strings.whatsapp,
+                      value: current.whatsappPhone.trim(),
+                    ),
+                  if (current.email.trim().isNotEmpty)
+                    _channelItem(
+                      icon: Icons.alternate_email_outlined,
+                      label: strings.email,
+                      value: current.email.trim(),
+                    ),
+                  if (!hasDeliveryChannels)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        strings.noAvailableChannels,
+                        style: const TextStyle(
+                          color: DsColorTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
                   if (current.address.isNotEmpty)
                     _detailItem(strings.address, current.address),
                   if (current.propertyDetails.isNotEmpty)
@@ -200,6 +234,42 @@ class ClientDetailPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _channelItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: DsColorTokens.actionPrimary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$label: $value',
+              style: const TextStyle(
+                color: DsColorTokens.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _resolveSessionEmployeeId(OfflineState state) {
+    final identity = state.session?.name.trim().toLowerCase() ?? '';
+    if (identity.isEmpty) return '';
+    for (final employee in state.employees) {
+      if (employee.id.trim().toLowerCase() == identity) return employee.id;
+      if (employee.name.trim().toLowerCase() == identity) return employee.id;
+    }
+    return '';
   }
 
   String _taskSubtitle(String locale, ServiceTask task) {
@@ -308,12 +378,13 @@ class ClientDetailPage extends ConsumerWidget {
   Future<void> _showCreateService(BuildContext context, WidgetRef ref,
       Client client, OfflineState state) async {
     final strings = AppStrings.of(Localizations.localeOf(context));
+    final isManager = state.session?.role == UserRole.manager;
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
-    String employeeId = state.employees.isEmpty
-        ? (state.session?.name ?? '')
-        : state.employees.first.id;
+    String employeeId = isManager
+        ? (state.employees.isEmpty ? '' : state.employees.first.id)
+        : _resolveSessionEmployeeId(state);
 
     await showDialog<void>(
       context: context,
@@ -358,7 +429,7 @@ class ClientDetailPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  if (state.employees.isNotEmpty)
+                  if (isManager && state.employees.isNotEmpty)
                     DropdownButtonFormField<String>(
                       value: employeeId,
                       decoration: InputDecoration(labelText: strings.employee),
@@ -384,7 +455,7 @@ class ClientDetailPage extends ConsumerWidget {
               FilledButton(
                 onPressed: () {
                   final title = titleCtrl.text.trim();
-                  if (title.isEmpty) return;
+                  if (title.isEmpty || employeeId.trim().isEmpty) return;
                   ref.read(offlineStoreProvider.notifier).addTask(
                         ServiceTask(
                           id: 'task-${DateTime.now().millisecondsSinceEpoch}',

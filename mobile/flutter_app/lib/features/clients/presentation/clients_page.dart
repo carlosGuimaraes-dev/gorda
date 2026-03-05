@@ -45,7 +45,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
     final clients = _filteredClients(state);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: DsColorTokens.surfaceSection,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -171,12 +171,15 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
       case ClientSortOrder.nameAsc:
         clients.sort(
             (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
       case ClientSortOrder.nameDesc:
         clients.sort(
             (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
       case ClientSortOrder.pendingReceivablesDesc:
         clients.sort((a, b) => _pendingReceivables(state, b)
             .compareTo(_pendingReceivables(state, a)));
+        break;
     }
     return clients;
   }

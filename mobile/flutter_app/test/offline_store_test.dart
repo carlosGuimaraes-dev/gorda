@@ -296,6 +296,94 @@ void main() {
       expect(payroll.amount, 75); // 3h * 25
     });
 
+    test('check-in transitions task from scheduled to inProgress', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+      final state = container.read(offlineStoreProvider);
+      final timestamp = DateTime(2026, 1, 10, 9, 30);
+
+      notifier.addTask(
+        ServiceTask(
+          id: 'task-checkin-transition',
+          title: 'Check-in transition',
+          date: timestamp,
+          status: TaskStatus.scheduled,
+          assignedEmployeeId: state.employees.first.id,
+          clientName: 'Client',
+          address: 'Address',
+        ),
+      );
+
+      notifier.markTaskCheckIn('task-checkin-transition', timestamp);
+      final updatedTask = container
+          .read(offlineStoreProvider)
+          .tasks
+          .firstWhere((task) => task.id == 'task-checkin-transition');
+
+      expect(updatedTask.checkInTime, timestamp);
+      expect(updatedTask.status, TaskStatus.inProgress);
+    });
+
+    test('checkout without check-in does not set checkOutTime', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+      final state = container.read(offlineStoreProvider);
+      final timestamp = DateTime(2026, 1, 10, 10, 0);
+
+      notifier.addTask(
+        ServiceTask(
+          id: 'task-checkout-without-checkin',
+          title: 'Checkout without checkin',
+          date: timestamp,
+          status: TaskStatus.inProgress,
+          assignedEmployeeId: state.employees.first.id,
+          clientName: 'Client',
+          address: 'Address',
+        ),
+      );
+
+      notifier.markTaskCheckOut('task-checkout-without-checkin', timestamp);
+      final updatedTask = container
+          .read(offlineStoreProvider)
+          .tasks
+          .firstWhere((task) => task.id == 'task-checkout-without-checkin');
+
+      expect(updatedTask.checkOutTime, isNull);
+    });
+
+    test('checkout before check-in does not set checkOutTime', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+      final state = container.read(offlineStoreProvider);
+      final checkInTime = DateTime(2026, 1, 10, 11, 0);
+      final invalidCheckOut = DateTime(2026, 1, 10, 10, 30);
+
+      notifier.addTask(
+        ServiceTask(
+          id: 'task-checkout-before-checkin',
+          title: 'Checkout before checkin',
+          date: checkInTime,
+          status: TaskStatus.scheduled,
+          assignedEmployeeId: state.employees.first.id,
+          clientName: 'Client',
+          address: 'Address',
+        ),
+      );
+      notifier.markTaskCheckIn('task-checkout-before-checkin', checkInTime);
+      notifier.markTaskCheckOut('task-checkout-before-checkin', invalidCheckOut);
+
+      final updatedTask = container
+          .read(offlineStoreProvider)
+          .tasks
+          .firstWhere((task) => task.id == 'task-checkout-before-checkin');
+
+      expect(updatedTask.checkInTime, checkInTime);
+      expect(updatedTask.checkOutTime, isNull);
+    });
+
     test('sync stub clears queue and updates lastSync', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
