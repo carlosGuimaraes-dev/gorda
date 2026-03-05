@@ -1063,11 +1063,6 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   Future<void> syncPendingChanges() async {
-    if (state.pendingChanges.isEmpty) {
-      state = state.copyWith(lastSync: DateTime.now());
-      return;
-    }
-
     final latestByEntity = _latestPendingByEntityKey();
 
     final gateway = ref.read(syncGatewayProvider);
@@ -1078,16 +1073,19 @@ class OfflineStore extends Notifier<OfflineState> {
             entityId: change.entityId,
             operation: _operationFromPending(change.operation),
             clientUpdatedAt: change.timestamp,
+            payload: _payloadForPendingChange(change),
           ),
         )
         .toList(growable: false);
 
     try {
-      final pushResult = await gateway.pushChanges(
-        deviceId: state.session?.name ?? 'device-local',
-        clientTime: DateTime.now(),
-        changes: changes,
-      );
+      final pushResult = changes.isEmpty
+          ? SyncPushResult(serverTime: DateTime.now().toUtc())
+          : await gateway.pushChanges(
+              deviceId: state.session?.name ?? 'device-local',
+              clientTime: DateTime.now(),
+              changes: changes,
+            );
 
       final pullResult = await gateway.pullChanges(
         since: state.lastSync,
@@ -1106,6 +1104,11 @@ class OfflineStore extends Notifier<OfflineState> {
         ...pullResult.conflicts,
         ...endpointConflicts,
       ];
+      final remoteMerge = _mergeRemoteTaskChanges(
+        baseTasks: state.tasks,
+        remoteChanges: pullResult.changes,
+        latestLocalPendingByEntity: latestByEntity,
+      );
       final mergedAudit = [
         ...state.auditLog,
         ...pullResult.auditEntries,
@@ -1113,9 +1116,10 @@ class OfflineStore extends Notifier<OfflineState> {
       ];
 
       state = state.copyWith(
+        tasks: remoteMerge.tasks,
         pendingChanges: const [],
         lastSync: pullResult.serverTime,
-        conflictLog: mergedConflicts,
+        conflictLog: [...mergedConflicts, ...remoteMerge.conflicts],
         auditLog: mergedAudit.length > 200
             ? mergedAudit.sublist(mergedAudit.length - 200)
             : mergedAudit,
@@ -1138,6 +1142,164 @@ class OfflineStore extends Notifier<OfflineState> {
       latestByEntity['$entity:${item.entityId}'] = item;
     }
     return latestByEntity;
+  }
+
+  Map<String, dynamic> _payloadForPendingChange(PendingChange change) {
+    if (change.operation == PendingOperation.addTask ||
+        change.operation == PendingOperation.updateTask) {
+      final task = state.tasks.where((item) => item.id == change.entityId);
+      if (task.isNotEmpty) return _taskToSyncPayload(task.first);
+    }
+    return const <String, dynamic>{};
+  }
+
+  ({List<ServiceTask> tasks, List<ConflictLogEntry> conflicts})
+      _mergeRemoteTaskChanges({
+    required List<ServiceTask> baseTasks,
+    required List<SyncRemoteChange> remoteChanges,
+    required Map<String, PendingChange> latestLocalPendingByEntity,
+  }) {
+    if (remoteChanges.isEmpty) {
+      return (tasks: baseTasks, conflicts: const <ConflictLogEntry>[]);
+    }
+
+    final nextTasks = [...baseTasks];
+    final nextConflicts = <ConflictLogEntry>[];
+    final sortedChanges = [...remoteChanges]
+      ..sort((a, b) => a.serverUpdatedAt.compareTo(b.serverUpdatedAt));
+
+    for (final change in sortedChanges) {
+      if (change.entity != 'task' || change.entityId.trim().isEmpty) continue;
+
+      final key = 'task:${change.entityId}';
+      final hasLocalPending = latestLocalPendingByEntity.containsKey(key);
+      if (hasLocalPending) {
+        nextConflicts.add(
+          ConflictLogEntry(
+            id: 'task-conflict-${_uuid.v4()}',
+            entity: 'task',
+            field: 'payload',
+            summary:
+                'Remote task change skipped because local pending update exists for ${change.entityId}',
+            timestamp: change.serverUpdatedAt,
+          ),
+        );
+        continue;
+      }
+
+      if (change.operation == 'delete') {
+        nextTasks.removeWhere((task) => task.id == change.entityId);
+        continue;
+      }
+
+      final remoteTask = _taskFromSyncPayload(
+        payload: change.payload,
+        entityId: change.entityId,
+      );
+      if (remoteTask == null) {
+        nextConflicts.add(
+          ConflictLogEntry(
+            id: 'task-conflict-${_uuid.v4()}',
+            entity: 'task',
+            field: 'payload',
+            summary:
+                'Remote task payload could not be parsed for ${change.entityId}',
+            timestamp: change.serverUpdatedAt,
+          ),
+        );
+        continue;
+      }
+
+      final index = nextTasks.indexWhere((task) => task.id == remoteTask.id);
+      if (index >= 0) {
+        nextTasks[index] = remoteTask;
+      } else {
+        nextTasks.add(remoteTask);
+      }
+    }
+
+    nextTasks.sort((a, b) => a.date.compareTo(b.date));
+    return (tasks: nextTasks, conflicts: nextConflicts);
+  }
+
+  Map<String, dynamic> _taskToSyncPayload(ServiceTask task) {
+    return {
+      'id': task.id,
+      'title': task.title,
+      'date': task.date.toUtc().toIso8601String(),
+      'status': task.status.name,
+      'assignedEmployeeId': task.assignedEmployeeId,
+      'clientId': task.clientId,
+      'serviceTypeId': task.serviceTypeId,
+      'clientName': task.clientName,
+      'address': task.address,
+      'startTime': task.startTime?.toUtc().toIso8601String(),
+      'endTime': task.endTime?.toUtc().toIso8601String(),
+      'notes': task.notes,
+      'checkInTime': task.checkInTime?.toUtc().toIso8601String(),
+      'checkOutTime': task.checkOutTime?.toUtc().toIso8601String(),
+    };
+  }
+
+  ServiceTask? _taskFromSyncPayload({
+    required Map<String, dynamic> payload,
+    required String entityId,
+  }) {
+    final title = '${payload['title'] ?? ''}'.trim();
+    final assignedEmployeeId = '${payload['assignedEmployeeId'] ?? ''}'.trim();
+    final clientName = '${payload['clientName'] ?? ''}'.trim();
+    final address = '${payload['address'] ?? ''}'.trim();
+    final date = _parseSyncDate(payload['date']);
+    final status = _parseTaskStatus(payload['status']);
+
+    if (title.isEmpty ||
+        assignedEmployeeId.isEmpty ||
+        clientName.isEmpty ||
+        address.isEmpty ||
+        date == null ||
+        status == null) {
+      return null;
+    }
+
+    return ServiceTask(
+      id: entityId,
+      title: title,
+      date: date,
+      status: status,
+      assignedEmployeeId: assignedEmployeeId,
+      clientId: _nullableString(payload['clientId']),
+      serviceTypeId: _nullableString(payload['serviceTypeId']),
+      clientName: clientName,
+      address: address,
+      startTime: _parseSyncDate(payload['startTime']),
+      endTime: _parseSyncDate(payload['endTime']),
+      notes: _nullableString(payload['notes']) ?? '',
+      checkInTime: _parseSyncDate(payload['checkInTime']),
+      checkOutTime: _parseSyncDate(payload['checkOutTime']),
+    );
+  }
+
+  DateTime? _parseSyncDate(dynamic value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value)?.toLocal();
+  }
+
+  String? _nullableString(dynamic value) {
+    if (value == null) return null;
+    final text = '$value'.trim();
+    if (text.isEmpty) return null;
+    return text;
+  }
+
+  TaskStatus? _parseTaskStatus(dynamic value) {
+    final raw = '${value ?? ''}'.trim();
+    return switch (raw) {
+      'scheduled' => TaskStatus.scheduled,
+      'inProgress' || 'in_progress' => TaskStatus.inProgress,
+      'completed' => TaskStatus.completed,
+      'canceled' || 'cancelled' => TaskStatus.canceled,
+      _ => null,
+    };
   }
 
   List<InvoiceLineItemData> lineItemsForInvoice(FinanceEntry invoice) {

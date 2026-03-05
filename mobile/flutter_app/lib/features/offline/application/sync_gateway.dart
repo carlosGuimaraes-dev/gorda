@@ -40,16 +40,34 @@ class SyncPushResult {
   final List<ConflictLogEntry> conflicts;
 }
 
+class SyncRemoteChange {
+  const SyncRemoteChange({
+    required this.entity,
+    required this.entityId,
+    required this.operation,
+    required this.serverUpdatedAt,
+    this.payload = const <String, dynamic>{},
+  });
+
+  final String entity;
+  final String entityId;
+  final String operation;
+  final DateTime serverUpdatedAt;
+  final Map<String, dynamic> payload;
+}
+
 class SyncPullResult {
   const SyncPullResult({
     required this.serverTime,
     this.nextCursor,
+    this.changes = const [],
     this.conflicts = const [],
     this.auditEntries = const [],
   });
 
   final DateTime serverTime;
   final DateTime? nextCursor;
+  final List<SyncRemoteChange> changes;
   final List<ConflictLogEntry> conflicts;
   final List<AuditLogEntry> auditEntries;
 }
@@ -156,6 +174,9 @@ class HttpSyncGateway implements SyncGateway {
     return SyncPullResult(
       serverTime: _parseDate(data['serverTime']) ?? DateTime.now().toUtc(),
       nextCursor: _parseDate(data['nextCursor']),
+      changes: _parseChanges(data['changes']),
+      conflicts: _parseConflicts(data['conflicts']),
+      auditEntries: _parseAuditEntries(data['audit']),
     );
   }
 
@@ -229,6 +250,26 @@ class HttpSyncGateway implements SyncGateway {
         summary: '${item['summary'] ?? ''}',
         actor: '${item['actor'] ?? ''}',
         timestamp: _parseDate(item['createdAt']) ?? DateTime.now().toUtc(),
+      );
+    }).toList(growable: false);
+  }
+
+  List<SyncRemoteChange> _parseChanges(dynamic value) {
+    if (value is! List) return const [];
+    return value.map((raw) {
+      final item = _asMap(raw);
+      final payload = item['payload'];
+      return SyncRemoteChange(
+        entity: '${item['entity'] ?? ''}',
+        entityId: '${item['entityId'] ?? ''}',
+        operation: '${item['op'] ?? item['operation'] ?? 'upsert'}',
+        serverUpdatedAt:
+            _parseDate(item['serverUpdatedAt']) ?? DateTime.now().toUtc(),
+        payload: payload is Map<String, dynamic>
+            ? payload
+            : payload is Map
+                ? payload.map((key, val) => MapEntry('$key', val))
+                : const <String, dynamic>{},
       );
     }).toList(growable: false);
   }

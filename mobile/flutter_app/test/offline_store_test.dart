@@ -23,12 +23,22 @@ class _FakeSyncGateway implements SyncGateway {
   final SyncPullResult pullResult;
   final List<ConflictLogEntry> conflicts;
   final List<AuditLogEntry> audit;
+  int pushCalls = 0;
+  int pullCalls = 0;
+  List<SyncPushChange> lastPushedChanges = const [];
+  String? lastDeviceId;
+  DateTime? lastClientTime;
+  DateTime? lastPullSince;
+  int? lastPullLimit;
 
   @override
   Future<SyncPullResult> pullChanges({
     required DateTime? since,
     int limit = 500,
   }) async {
+    pullCalls += 1;
+    lastPullSince = since;
+    lastPullLimit = limit;
     return pullResult;
   }
 
@@ -38,6 +48,10 @@ class _FakeSyncGateway implements SyncGateway {
     required DateTime clientTime,
     required List<SyncPushChange> changes,
   }) async {
+    pushCalls += 1;
+    lastDeviceId = deviceId;
+    lastClientTime = clientTime;
+    lastPushedChanges = changes;
     return pushResult;
   }
 
@@ -499,6 +513,201 @@ void main() {
       expect(state.auditLog.any((item) => item.id == 'audit-1'), isTrue);
       expect(state.auditLog.any((item) => item.id == 'audit-2'), isTrue);
     });
+
+    test('syncPendingChanges sends schedule payload for queued task changes', () async {
+      final pushTime = DateTime.parse('2026-03-05T10:00:00Z');
+      final pullTime = DateTime.parse('2026-03-05T10:01:00Z');
+      final fakeGateway = _FakeSyncGateway(
+        pushResult: SyncPushResult(serverTime: pushTime),
+        pullResult: SyncPullResult(serverTime: pullTime),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          syncGatewayProvider.overrideWithValue(fakeGateway),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+      final state = container.read(offlineStoreProvider);
+
+      final date = DateTime(2026, 3, 6, 9, 0);
+      final startTime = DateTime(2026, 3, 6, 9, 0);
+      final endTime = DateTime(2026, 3, 6, 11, 0);
+      notifier.addTask(
+        ServiceTask(
+          id: 'task-sync-payload',
+          title: 'Schedule payload task',
+          date: date,
+          status: TaskStatus.scheduled,
+          assignedEmployeeId: state.employees.first.id,
+          clientId: state.clients.first.id,
+          serviceTypeId: state.serviceTypes.first.id,
+          clientName: state.clients.first.name,
+          address: state.clients.first.address,
+          startTime: startTime,
+          endTime: endTime,
+          notes: 'Bring supplies',
+        ),
+      );
+      notifier.updateTaskStatus(
+        taskId: 'task-sync-payload',
+        status: TaskStatus.inProgress,
+      );
+
+      await notifier.syncPendingChanges();
+
+      expect(fakeGateway.pushCalls, 1);
+      expect(fakeGateway.lastPushedChanges, hasLength(1));
+      final pushed = fakeGateway.lastPushedChanges.first;
+      expect(pushed.entity, 'task');
+      expect(pushed.entityId, 'task-sync-payload');
+      expect(pushed.operation, 'upsert');
+      expect(pushed.payload['title'], 'Schedule payload task');
+      expect(pushed.payload['status'], 'inProgress');
+      expect(pushed.payload['notes'], 'Bring supplies');
+      expect(pushed.payload['clientName'], state.clients.first.name);
+      expect(pushed.payload['address'], state.clients.first.address);
+      expect(
+        DateTime.parse('${pushed.payload['date']}').toUtc(),
+        date.toUtc(),
+      );
+      expect(
+        DateTime.parse('${pushed.payload['startTime']}').toUtc(),
+        startTime.toUtc(),
+      );
+      expect(
+        DateTime.parse('${pushed.payload['endTime']}').toUtc(),
+        endTime.toUtc(),
+      );
+      expect(container.read(offlineStoreProvider).pendingChanges, isEmpty);
+      expect(container.read(offlineStoreProvider).lastSync, pullTime);
+    });
+
+    test('syncPendingChanges applies remote schedule changes without local queue', () async {
+      final pullTime = DateTime.parse('2026-03-05T11:00:00Z');
+      final remoteDate = DateTime.parse('2026-03-07T12:00:00Z');
+      final fakeGateway = _FakeSyncGateway(
+        pushResult: SyncPushResult(serverTime: DateTime.parse('2026-03-05T10:59:00Z')),
+        pullResult: SyncPullResult(
+          serverTime: pullTime,
+          changes: [
+            SyncRemoteChange(
+              entity: 'task',
+              entityId: 'remote-task-1',
+              operation: 'upsert',
+              serverUpdatedAt: DateTime.parse('2026-03-05T10:59:30Z'),
+              payload: {
+                'title': 'Remote schedule task',
+                'date': remoteDate.toUtc().toIso8601String(),
+                'status': 'completed',
+                'assignedEmployeeId': 'maria',
+                'clientId': 'client-1',
+                'serviceTypeId': 'service-cleaning',
+                'clientName': 'Smith Family',
+                'address': '241 Oak Street',
+                'notes': 'Remote note',
+              },
+            ),
+          ],
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          syncGatewayProvider.overrideWithValue(fakeGateway),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+
+      expect(container.read(offlineStoreProvider).pendingChanges, isEmpty);
+
+      await notifier.syncPendingChanges();
+
+      final state = container.read(offlineStoreProvider);
+      final remoteTask =
+          state.tasks.firstWhere((task) => task.id == 'remote-task-1');
+      expect(fakeGateway.pushCalls, 0);
+      expect(fakeGateway.pullCalls, 1);
+      expect(remoteTask.title, 'Remote schedule task');
+      expect(remoteTask.status, TaskStatus.completed);
+      expect(remoteTask.clientId, 'client-1');
+      expect(remoteTask.clientName, 'Smith Family');
+      expect(remoteTask.address, '241 Oak Street');
+      expect(remoteTask.notes, 'Remote note');
+      expect(remoteTask.date.toUtc(), remoteDate.toUtc());
+      expect(state.lastSync, pullTime);
+    });
+
+    test(
+      'syncPendingChanges creates conflict and keeps local task when remote collides with local pending',
+      () async {
+        final pullTime = DateTime.parse('2026-03-05T12:00:00Z');
+        final fakeGateway = _FakeSyncGateway(
+          pushResult: SyncPushResult(serverTime: DateTime.parse('2026-03-05T11:59:00Z')),
+          pullResult: SyncPullResult(
+            serverTime: pullTime,
+            changes: [
+              SyncRemoteChange(
+                entity: 'task',
+                entityId: 'task-conflict-1',
+                operation: 'upsert',
+                serverUpdatedAt: DateTime.parse('2026-03-05T11:59:30Z'),
+                payload: {
+                  'title': 'Remote title',
+                  'date': DateTime(2026, 3, 8, 14, 0).toUtc().toIso8601String(),
+                  'status': 'completed',
+                  'assignedEmployeeId': 'maria',
+                  'clientName': 'Smith Family',
+                  'address': '241 Oak Street',
+                },
+              ),
+            ],
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            syncGatewayProvider.overrideWithValue(fakeGateway),
+          ],
+        );
+        addTearDown(container.dispose);
+        final notifier = container.read(offlineStoreProvider.notifier);
+
+        notifier.addTask(
+          const ServiceTask(
+            id: 'task-conflict-1',
+            title: 'Local title',
+            date: DateTime(2026, 3, 8, 14, 0),
+            status: TaskStatus.scheduled,
+            assignedEmployeeId: 'maria',
+            clientName: 'Smith Family',
+            address: '241 Oak Street',
+          ),
+        );
+        notifier.updateTaskStatus(
+          taskId: 'task-conflict-1',
+          status: TaskStatus.inProgress,
+        );
+
+        await notifier.syncPendingChanges();
+
+        final state = container.read(offlineStoreProvider);
+        final task = state.tasks.firstWhere((item) => item.id == 'task-conflict-1');
+        expect(task.title, 'Local title');
+        expect(task.status, TaskStatus.inProgress);
+        expect(state.pendingChanges, isEmpty);
+        expect(
+          state.conflictLog.any(
+            (entry) =>
+                entry.entity == 'task' &&
+                entry.summary.contains('task-conflict-1'),
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('syncPendingChanges keeps queue on network error', () async {
       final container = ProviderContainer(

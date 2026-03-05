@@ -88,6 +88,66 @@ void main() {
     expect(result.nextCursor?.toIso8601String(), '2026-03-05T00:00:00.000Z');
   });
 
+  test('pullChanges parses remote changes, conflicts and audit', () async {
+    final gateway = HttpSyncGateway(
+      baseUrl: 'https://api.example.com',
+      client: MockClient((request) async {
+        expect(request.method, 'GET');
+        expect(request.url.path, '/v1/sync/pull');
+        return http.Response(
+          jsonEncode({
+            'serverTime': '2026-03-05T01:00:00Z',
+            'changes': [
+              {
+                'op': 'upsert',
+                'entity': 'task',
+                'entityId': 'task-1',
+                'serverUpdatedAt': '2026-03-05T01:00:01Z',
+                'payload': {
+                  'title': 'Remote task',
+                  'status': 'scheduled',
+                },
+              }
+            ],
+            'conflicts': [
+              {
+                'id': 'conf-1',
+                'entity': 'task',
+                'entityId': 'task-1',
+                'fields': ['status'],
+                'summary': 'Conflict',
+                'createdAt': '2026-03-05T01:00:02Z',
+              }
+            ],
+            'audit': [
+              {
+                'id': 'audit-1',
+                'entity': 'Task',
+                'action': 'Updated',
+                'summary': 'Task updated remotely',
+                'actor': 'sync-service',
+                'createdAt': '2026-03-05T01:00:03Z',
+              }
+            ],
+          }),
+          200,
+        );
+      }),
+    );
+
+    final result = await gateway.pullChanges(since: null);
+
+    expect(result.changes, hasLength(1));
+    expect(result.changes.first.entity, 'task');
+    expect(result.changes.first.entityId, 'task-1');
+    expect(result.changes.first.operation, 'upsert');
+    expect(result.changes.first.payload['title'], 'Remote task');
+    expect(result.conflicts, hasLength(1));
+    expect(result.conflicts.first.field, 'status');
+    expect(result.auditEntries, hasLength(1));
+    expect(result.auditEntries.first.actor, 'sync-service');
+  });
+
   test('fetchConflicts and fetchAudit parse list payloads', () async {
     final gateway = HttpSyncGateway(
       baseUrl: 'https://api.example.com',
