@@ -29,6 +29,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Services'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Navigation'), findsOneWidget);
     expect(find.text('Catalogs'), findsOneWidget);
     expect(find.text('Dashboard'), findsWidgets);
