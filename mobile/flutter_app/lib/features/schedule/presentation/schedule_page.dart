@@ -57,17 +57,17 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu_rounded),
               ),
         title: Text(
           strings.schedule,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         actions: [
           IconButton(
             key: const ValueKey('schedule_add_service_button'),
             onPressed: () => _showNewServiceDialog(context, state),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_circle_outline_rounded),
             tooltip: strings.newService,
           ),
           IconButton(
@@ -75,7 +75,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
             onPressed: () => ref
                 .read(offlineStoreProvider.notifier)
                 .syncPendingChanges(),
-            icon: const Icon(Icons.sync),
+            icon: const Icon(Icons.sync_rounded),
             tooltip: strings.forceSync,
           ),
         ],
@@ -114,6 +114,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                 value: _selectedTeam,
                 decoration: InputDecoration(labelText: strings.team),
                 hint: Text(strings.allTeams),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w400,
+                    ),
                 items: [
                   DropdownMenuItem<String>(
                     value: '',
@@ -351,7 +354,11 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
         state.activeClients.isEmpty ? '' : state.activeClients.first.id;
     if (state.activeClients.isNotEmpty) {
       clientCtrl.text = state.activeClients.first.name;
+      addressCtrl.text = state.activeClients.first.address;
     }
+    String selectedServiceTypeId =
+        state.activeServiceTypes.isNotEmpty ? state.activeServiceTypes.first.id : '';
+    TaskStatus selectedStatus = TaskStatus.scheduled;
     String assignedEmployeeId = '';
     if (widget.role == UserRole.manager) {
       if (state.activeEmployees.isNotEmpty) {
@@ -399,6 +406,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                           key: const ValueKey('schedule_form_client_picker'),
                           value: selectedClientId,
                           decoration: InputDecoration(labelText: strings.client),
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w400,
+                              ),
                           items: state.activeClients
                               .map((client) => DropdownMenuItem<String>(
                                     value: client.id,
@@ -413,6 +423,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                             setModalState(() {
                               selectedClientId = value;
                               clientCtrl.text = client.name;
+                              if (addressCtrl.text.trim().isEmpty) {
+                                addressCtrl.text = client.address;
+                              }
                             });
                           },
                           validator: (_) {
@@ -435,6 +448,27 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                           },
                         ),
                       const SizedBox(height: 8),
+                      if (state.activeServiceTypes.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          key: const ValueKey('schedule_form_service_type_picker'),
+                          value: selectedServiceTypeId,
+                          decoration: InputDecoration(labelText: strings.service),
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w400,
+                              ),
+                          items: state.activeServiceTypes
+                              .map((serviceType) => DropdownMenuItem<String>(
+                                    value: serviceType.id,
+                                    child: Text(serviceType.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setModalState(() => selectedServiceTypeId = value);
+                          },
+                        ),
+                      if (state.activeServiceTypes.isNotEmpty)
+                        const SizedBox(height: 8),
                       TextFormField(
                         key: const ValueKey('schedule_form_address'),
                         controller: addressCtrl,
@@ -446,6 +480,37 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                         controller: notesCtrl,
                         decoration: InputDecoration(labelText: strings.notes),
                         maxLines: 2,
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<TaskStatus>(
+                        key: const ValueKey('schedule_form_status_picker'),
+                        value: selectedStatus,
+                        decoration: InputDecoration(labelText: strings.status),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w400,
+                            ),
+                        items: [
+                          DropdownMenuItem(
+                            value: TaskStatus.scheduled,
+                            child: Text(strings.scheduled),
+                          ),
+                          DropdownMenuItem(
+                            value: TaskStatus.inProgress,
+                            child: Text(strings.inProgress),
+                          ),
+                          DropdownMenuItem(
+                            value: TaskStatus.completed,
+                            child: Text(strings.completed),
+                          ),
+                          DropdownMenuItem(
+                            value: TaskStatus.canceled,
+                            child: Text(strings.canceled),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setModalState(() => selectedStatus = value);
+                        },
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -554,6 +619,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                           value: assignedEmployeeId,
                           decoration:
                               InputDecoration(labelText: strings.employee),
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w400,
+                              ),
                           items: state.activeEmployees
                               .map((employee) => DropdownMenuItem(
                                     value: employee.id,
@@ -605,8 +673,14 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                             id: const Uuid().v4(),
                             title: title,
                             date: selectedDate,
-                            status: TaskStatus.scheduled,
+                            status: selectedStatus,
                             assignedEmployeeId: assignedEmployeeId,
+                            clientId: selectedClientId.trim().isEmpty
+                                ? null
+                                : selectedClientId,
+                            serviceTypeId: selectedServiceTypeId.trim().isEmpty
+                                ? null
+                                : selectedServiceTypeId,
                             clientName: clientName,
                             address: address,
                             startTime: startTime,

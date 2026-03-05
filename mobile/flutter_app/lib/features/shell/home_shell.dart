@@ -46,7 +46,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: Text(strings.navigation),
               ),
               ListTile(
-                leading: const Icon(Icons.dashboard_outlined),
+                leading: const Icon(Icons.space_dashboard_rounded),
                 title: Text(strings.dashboard),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -54,7 +54,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.calendar_month_outlined),
+                leading: const Icon(Icons.calendar_today_rounded),
                 title: Text(strings.schedule),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -63,7 +63,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
               if (widget.role == UserRole.manager)
                 ListTile(
-                  leading: const Icon(Icons.people_outline),
+                  leading: const Icon(Icons.groups_2_rounded),
                   title: Text(strings.clients),
                   onTap: () {
                     Navigator.of(context).pop();
@@ -71,7 +71,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.payments_outlined),
+                leading: const Icon(Icons.account_balance_wallet_rounded),
                 title: Text(strings.finance),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -79,7 +79,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.settings_outlined),
+                leading: const Icon(Icons.tune_rounded),
                 title: Text(strings.settings),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -90,7 +90,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: Text(strings.catalogs),
               ),
               ListTile(
-                leading: const Icon(Icons.handyman_outlined),
+                leading: const Icon(Icons.build_circle_outlined),
                 title: Text(strings.services),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -98,7 +98,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.group_outlined),
+                leading: const Icon(Icons.badge_outlined),
                 title: Text(strings.employees),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -106,7 +106,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.flag_outlined),
+                leading: const Icon(Icons.flag_circle_outlined),
                 title: Text(strings.teams),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -168,42 +168,42 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               destinations: widget.role == UserRole.manager
                   ? [
                       NavigationDestination(
-                          icon: const Icon(Icons.dashboard_outlined),
+                          icon: const Icon(Icons.space_dashboard_rounded),
                           label: strings.dashboard),
                       NavigationDestination(
-                          icon: const Icon(Icons.calendar_month_outlined),
+                          icon: const Icon(Icons.calendar_today_rounded),
                           label: strings.schedule),
                       NavigationDestination(
-                          icon: const Icon(Icons.people_outline),
+                          icon: const Icon(Icons.groups_2_rounded),
                           label: strings.clients),
                       NavigationDestination(
-                          icon: const Icon(Icons.payments_outlined),
+                          icon: const Icon(Icons.account_balance_wallet_rounded),
                           label: strings.finance),
                       NavigationDestination(
                           icon: conflictCount == 0
-                              ? const Icon(Icons.settings_outlined)
+                              ? const Icon(Icons.tune_rounded)
                               : Badge.count(
                                   count: conflictCount,
-                                  child: const Icon(Icons.settings_outlined),
+                                  child: const Icon(Icons.tune_rounded),
                                 ),
                           label: strings.settings),
                     ]
                   : [
                       NavigationDestination(
-                          icon: const Icon(Icons.dashboard_outlined),
+                          icon: const Icon(Icons.space_dashboard_rounded),
                           label: strings.dashboard),
                       NavigationDestination(
-                          icon: const Icon(Icons.calendar_month_outlined),
+                          icon: const Icon(Icons.calendar_today_rounded),
                           label: strings.schedule),
                       NavigationDestination(
-                          icon: const Icon(Icons.payments_outlined),
+                          icon: const Icon(Icons.account_balance_wallet_rounded),
                           label: strings.finance),
                       NavigationDestination(
                           icon: conflictCount == 0
-                              ? const Icon(Icons.settings_outlined)
+                              ? const Icon(Icons.tune_rounded)
                               : Badge.count(
                                   count: conflictCount,
-                                  child: const Icon(Icons.settings_outlined),
+                                  child: const Icon(Icons.tune_rounded),
                                 ),
                           label: strings.settings),
                     ],

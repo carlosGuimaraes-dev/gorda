@@ -50,10 +50,10 @@ class FinancePage extends ConsumerWidget {
         scrolledUnderElevation: 0,
         leading: onMenu == null
             ? null
-            : IconButton(onPressed: onMenu, icon: const Icon(Icons.menu)),
+            : IconButton(onPressed: onMenu, icon: const Icon(Icons.menu_rounded)),
         title: Text(
           strings.finance,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         actions: [
           if (isManager)
@@ -65,7 +65,7 @@ class FinancePage extends ConsumerWidget {
                   ),
                 );
               },
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add_circle_outline_rounded),
               tooltip: strings.newItem,
             ),
         ],
@@ -80,7 +80,7 @@ class FinancePage extends ConsumerWidget {
               children: [
                 _FinanceNavigationTile(
                   title: strings.closingWizard,
-                  icon: Icons.format_list_numbered,
+                  icon: Icons.rule_folder_outlined,
                   onTap: () => _openPage(
                     context,
                     const MonthlyClosingWizardPage(),
@@ -88,7 +88,7 @@ class FinancePage extends ConsumerWidget {
                 ),
                 _FinanceNavigationTile(
                   title: strings.receiptsHub,
-                  icon: Icons.camera_alt_outlined,
+                  icon: Icons.photo_camera_back_outlined,
                   onTap: () => _openPage(
                     context,
                     const ReceiptsHubPage(),
@@ -96,7 +96,7 @@ class FinancePage extends ConsumerWidget {
                 ),
                 _FinanceNavigationTile(
                   title: strings.readyToEmit,
-                  icon: Icons.send_outlined,
+                  icon: Icons.send_rounded,
                   onTap: () => _openPage(
                     context,
                     const EmissionReadyPage(),
@@ -109,7 +109,7 @@ class FinancePage extends ConsumerWidget {
               children: [
                 _FinanceActionTile(
                   title: strings.generateClientInvoices,
-                  icon: Icons.description_outlined,
+                  icon: Icons.article_outlined,
                   onTap: () => _openPage(
                     context,
                     const InvoiceGeneratorPage(),
@@ -117,7 +117,7 @@ class FinancePage extends ConsumerWidget {
                 ),
                 _FinanceActionTile(
                   title: strings.generatePayroll,
-                  icon: Icons.badge_outlined,
+                  icon: Icons.badge_rounded,
                   onTap: () => _openPage(
                     context,
                     const PayrollGeneratorPage(),
@@ -130,7 +130,7 @@ class FinancePage extends ConsumerWidget {
               children: [
                 _FinanceNavigationTile(
                   title: strings.invoices,
-                  icon: Icons.receipt_long_outlined,
+                  icon: Icons.receipt_rounded,
                   onTap: () => _openPage(
                     context,
                     const InvoicesListPage(),
@@ -138,7 +138,7 @@ class FinancePage extends ConsumerWidget {
                 ),
                 _FinanceNavigationTile(
                   title: strings.payroll,
-                  icon: Icons.payments_outlined,
+                  icon: Icons.payments_rounded,
                   onTap: () => _openPage(
                     context,
                     const PayrollListPage(),
@@ -151,7 +151,7 @@ class FinancePage extends ConsumerWidget {
               children: [
                 _FinanceNavigationTile(
                   title: strings.monthlyReports,
-                  icon: Icons.bar_chart_outlined,
+                  icon: Icons.monitoring_rounded,
                   onTap: () => _openPage(
                     context,
                     const ReportsPage(),
@@ -229,10 +229,10 @@ class _FinanceNavigationTile extends StatelessWidget {
         title,
         style: const TextStyle(
           color: DsColorTokens.textPrimary,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: DsColorTokens.textMuted),
+      trailing: const Icon(Icons.chevron_right_rounded, color: DsColorTokens.textMuted),
       onTap: onTap,
     );
   }
@@ -261,7 +261,7 @@ class _FinanceActionTile extends StatelessWidget {
         title,
         style: const TextStyle(
           color: DsColorTokens.textPrimary,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
       onTap: onTap,
@@ -290,13 +290,30 @@ class _FinanceEntriesSection extends ConsumerWidget {
       children: [
         if (entries.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: DsSpaceTokens.space2),
-            child: Text(
-              emptyMessage ?? strings.noEntries,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: DsColorTokens.textSecondary),
+            padding: const EdgeInsets.fromLTRB(
+              DsSpaceTokens.space2,
+              DsSpaceTokens.space2,
+              DsSpaceTokens.space2,
+              DsSpaceTokens.space3,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.inbox_outlined,
+                  size: 18,
+                  color: DsColorTokens.textSecondary,
+                ),
+                const SizedBox(width: DsSpaceTokens.space2),
+                Expanded(
+                  child: Text(
+                    emptyMessage ?? strings.noEntries,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: DsColorTokens.textSecondary),
+                  ),
+                ),
+              ],
             ),
           )
         else

@@ -1,18 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
 
 ThemeData buildDesignTheme() {
-  const textTheme = TextTheme(
+  final baseTextTheme = GoogleFonts.manropeTextTheme(const TextTheme(
     titleLarge: TextStyle(
       fontSize: DsTypeTokens.textXl,
-      fontWeight: DsTypeTokens.fontBold,
+      fontWeight: DsTypeTokens.fontSemibold,
       color: DsColorTokens.textPrimary,
     ),
     titleMedium: TextStyle(
       fontSize: DsTypeTokens.textLg,
-      fontWeight: DsTypeTokens.fontSemibold,
+      fontWeight: DsTypeTokens.fontMedium,
       color: DsColorTokens.textPrimary,
     ),
     bodyLarge: TextStyle(
@@ -30,7 +31,7 @@ ThemeData buildDesignTheme() {
       fontWeight: DsTypeTokens.fontNormal,
       color: DsColorTokens.textMuted,
     ),
-  );
+  ));
 
   final colorScheme = ColorScheme.fromSeed(
     seedColor: DsColorTokens.actionPrimary,
@@ -42,7 +43,7 @@ ThemeData buildDesignTheme() {
     useMaterial3: true,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: DsColorTokens.surfaceSection,
-    textTheme: textTheme,
+    textTheme: baseTextTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: DsColorTokens.surfaceSection,
       surfaceTintColor: Colors.transparent,
@@ -51,9 +52,29 @@ ThemeData buildDesignTheme() {
       foregroundColor: DsColorTokens.textPrimary,
       titleTextStyle: TextStyle(
         fontSize: DsTypeTokens.textXl,
-        fontWeight: DsTypeTokens.fontBold,
+        fontWeight: DsTypeTokens.fontSemibold,
         color: DsColorTokens.textPrimary,
       ),
+    ),
+    dropdownMenuTheme: DropdownMenuThemeData(
+      textStyle: baseTextTheme.bodyLarge?.copyWith(
+        fontWeight: DsTypeTokens.fontNormal,
+      ),
+      menuStyle: MenuStyle(
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DsRadiusTokens.radiusLg),
+          ),
+        ),
+      ),
+    ),
+    dropdownButtonTheme: DropdownButtonThemeData(
+      style: baseTextTheme.bodyLarge?.copyWith(
+        color: DsColorTokens.textPrimary,
+        fontWeight: DsTypeTokens.fontNormal,
+      ),
+      borderRadius: BorderRadius.circular(DsRadiusTokens.radiusLg),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -112,7 +133,7 @@ ThemeData buildDesignTheme() {
       labelTextStyle: WidgetStatePropertyAll(
         TextStyle(
           fontSize: DsTypeTokens.textSm,
-          fontWeight: DsTypeTokens.fontSemibold,
+          fontWeight: DsTypeTokens.fontMedium,
         ),
       ),
     ),

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_card.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/presentation/employees_page.dart';
@@ -45,12 +44,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu_rounded),
               ),
         title: Text(
           strings.settings,
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: DsColorTokens.textPrimary,
           ),
         ),
@@ -106,6 +105,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               ListTile(
                 title: Text(strings.forceSync),
+                leading: const Icon(Icons.sync_rounded),
                 onTap: () => ref
                     .read(offlineStoreProvider.notifier)
                     .syncPendingChanges(),
@@ -117,7 +117,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: Text(
                     '${strings.last}: $lastSync',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                   ),
                 ),
@@ -127,7 +127,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: Text(
                     '${state.pendingChanges.length} ${strings.pendingChangesInQueue}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppThemeTokens.secondaryText,
+                          color: DsColorTokens.textSecondary,
                         ),
                   ),
                 ),
@@ -143,7 +143,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     strings.noConflictsRecorded,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppThemeTokens.secondaryText,
+                      color: DsColorTokens.textSecondary,
                     ),
                   ),
                 )
@@ -163,7 +163,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 ListTile(
                   title: Text(strings.auditLog),
-                  trailing: const Icon(Icons.chevron_right),
+                  leading: const Icon(Icons.history_rounded),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const AuditLogPage(),
@@ -179,7 +180,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 ListTile(
                   title: Text(strings.employees),
-                  trailing: const Icon(Icons.chevron_right),
+                  leading: const Icon(Icons.badge_rounded),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const EmployeesPage(),
@@ -198,6 +200,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: DropdownButtonFormField<String>(
                     value: state.languageCode,
                     decoration: InputDecoration(labelText: strings.language),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
                     items: const [
                       DropdownMenuItem(value: 'en', child: Text('English')),
                       DropdownMenuItem(value: 'es', child: Text('Español')),
@@ -220,6 +225,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         ? 'EUR'
                         : 'USD',
                     decoration: InputDecoration(labelText: strings.currency),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
                     items: const [
                       DropdownMenuItem(value: 'USD', child: Text('USD')),
                       DropdownMenuItem(value: 'EUR', child: Text('EUR')),
@@ -276,7 +284,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
                 ListTile(
                   title: Text(strings.companyProfileInvoices),
-                  trailing: const Icon(Icons.chevron_right),
+                  leading: const Icon(Icons.business_rounded),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const CompanyProfilePage(),
@@ -425,7 +434,7 @@ class _SettingsSection extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           ...children,

@@ -529,6 +529,9 @@ class ClientDetailPage extends ConsumerWidget {
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
+    String selectedServiceTypeId =
+        state.activeServiceTypes.isEmpty ? '' : state.activeServiceTypes.first.id;
+    TaskStatus selectedStatus = TaskStatus.scheduled;
     String employeeId = isManager
         ? (state.activeEmployees.isEmpty ? '' : state.activeEmployees.first.id)
         : _resolveSessionEmployeeId(state);
@@ -552,6 +555,56 @@ class ClientDetailPage extends ConsumerWidget {
                     controller: notesCtrl,
                     decoration: InputDecoration(labelText: strings.notes),
                     maxLines: 2,
+                  ),
+                  const SizedBox(height: 8),
+                  if (state.activeServiceTypes.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: selectedServiceTypeId,
+                      decoration: InputDecoration(labelText: strings.service),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w400,
+                          ),
+                      items: state.activeServiceTypes
+                          .map((serviceType) => DropdownMenuItem<String>(
+                                value: serviceType.id,
+                                child: Text(serviceType.name),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setModalState(() => selectedServiceTypeId = value);
+                      },
+                    ),
+                  if (state.activeServiceTypes.isNotEmpty)
+                    const SizedBox(height: 8),
+                  DropdownButtonFormField<TaskStatus>(
+                    value: selectedStatus,
+                    decoration: InputDecoration(labelText: strings.status),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
+                    items: [
+                      DropdownMenuItem(
+                        value: TaskStatus.scheduled,
+                        child: Text(strings.scheduled),
+                      ),
+                      DropdownMenuItem(
+                        value: TaskStatus.inProgress,
+                        child: Text(strings.inProgress),
+                      ),
+                      DropdownMenuItem(
+                        value: TaskStatus.completed,
+                        child: Text(strings.completed),
+                      ),
+                      DropdownMenuItem(
+                        value: TaskStatus.canceled,
+                        child: Text(strings.canceled),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setModalState(() => selectedStatus = value);
+                    },
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -580,6 +633,9 @@ class ClientDetailPage extends ConsumerWidget {
                     DropdownButtonFormField<String>(
                       value: employeeId,
                       decoration: InputDecoration(labelText: strings.employee),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w400,
+                          ),
                       items: state.activeEmployees
                           .map((employee) => DropdownMenuItem(
                                 value: employee.id,
@@ -608,9 +664,12 @@ class ClientDetailPage extends ConsumerWidget {
                           id: const Uuid().v4(),
                           title: title,
                           date: selectedDate,
-                          status: TaskStatus.scheduled,
+                          status: selectedStatus,
                           assignedEmployeeId: employeeId,
                           clientId: client.id,
+                          serviceTypeId: selectedServiceTypeId.trim().isEmpty
+                              ? null
+                              : selectedServiceTypeId,
                           clientName: client.name,
                           address: client.address,
                           notes: notesCtrl.text.trim(),

@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
-import '../../../core/theme/app_card.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/domain/employee.dart';
 import '../../finance/domain/finance_entry.dart';
@@ -44,11 +42,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ? null
             : IconButton(
                 onPressed: widget.onMenu,
-                icon: const Icon(Icons.menu),
+                icon: const Icon(Icons.menu_rounded),
               ),
         title: Text(
           strings.dashboard,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       body: Column(
@@ -75,7 +73,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     child: Text(
                       strings.noActiveSession,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppThemeTokens.secondaryText,
+                            color: DsColorTokens.textSecondary,
                           ),
                     ),
                   )
@@ -102,11 +100,13 @@ class _EmployeeDashboard extends ConsumerWidget {
 
     if (session == null) return const SizedBox.shrink();
 
-    final employee = _findEmployee(state, session.name);
     final employeeTasks = state.tasks.where((task) {
-      final matchesEmployee = task.assignedEmployeeId == session.name ||
-          (employee != null && task.assignedEmployeeId == employee.id);
-      return matchesEmployee && _matchesScope(task.date, scope);
+      return _isTaskAssignedToCurrentEmployee(
+            state: state,
+            task: task,
+            sessionNameOrId: session.name,
+          ) &&
+          _matchesScope(task.date, scope);
     }).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
@@ -128,6 +128,7 @@ class _EmployeeDashboard extends ConsumerWidget {
       return hours > 0 ? sum + hours : sum;
     });
 
+    final employee = _findEmployee(state, session.name);
     final hourlyRate = employee?.hourlyRate;
     final estimatedEarnings =
         hourlyRate == null ? null : totalWorkedHours * hourlyRate;
@@ -141,7 +142,7 @@ class _EmployeeDashboard extends ConsumerWidget {
           child: Text(
             '${strings.hello}, ${session.name}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: DsColorTokens.textPrimary,
                 ),
           ),
@@ -152,7 +153,7 @@ class _EmployeeDashboard extends ConsumerWidget {
             children: [
               Text(strings.workload,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: DsColorTokens.textPrimary,
                       )),
               const SizedBox(height: 12),
@@ -173,13 +174,13 @@ class _EmployeeDashboard extends ConsumerWidget {
             ],
           ),
         ),
-        AppCard(
+        DsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(strings.todayLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: DsColorTokens.textPrimary,
                       )),
               const SizedBox(height: 12),
@@ -223,7 +224,7 @@ class _EmployeeDashboard extends ConsumerWidget {
               children: [
                 Text(strings.nextServices,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: DsColorTokens.textPrimary,
                         )),
                 const SizedBox(height: 8),
@@ -268,6 +269,32 @@ class _ManagerDashboard extends ConsumerWidget {
     final currencyFmt = NumberFormat.currency(name: 'USD', decimalDigits: 2);
     final teamSummary = _buildTeamSummary(state, tasksForScope);
 
+    if (tasksForScope.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        children: [
+          DsCard(
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.query_stats_rounded,
+                  size: 26,
+                  color: DsColorTokens.textSecondary,
+                ),
+                const SizedBox(height: DsSpaceTokens.space2),
+                Text(
+                  strings.noServicesInPeriod,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: DsColorTokens.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       children: [
@@ -277,7 +304,7 @@ class _ManagerDashboard extends ConsumerWidget {
             children: [
               Text(strings.operations,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: DsColorTokens.textPrimary,
                       )),
               const SizedBox(height: 12),
@@ -308,7 +335,7 @@ class _ManagerDashboard extends ConsumerWidget {
               children: [
                 Text(strings.byTeam,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: DsColorTokens.textPrimary,
                         )),
                 const SizedBox(height: 8),
@@ -322,7 +349,7 @@ class _ManagerDashboard extends ConsumerWidget {
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
-                                ?.copyWith(color: AppThemeTokens.secondaryText),
+                                ?.copyWith(color: DsColorTokens.textSecondary),
                           ),
                         ],
                       ),
@@ -340,7 +367,7 @@ class _ManagerDashboard extends ConsumerWidget {
                     Text(
                       strings.monthlyClosing,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                             color: DsColorTokens.textPrimary,
                           ),
                     ),
@@ -491,7 +518,7 @@ class _DashboardTaskRow extends StatelessWidget {
           Text(
             timeLabel.isEmpty ? dateLabel : '$dateLabel · $timeLabel',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppThemeTokens.secondaryText,
+                  color: DsColorTokens.textSecondary,
                 ),
           ),
           const SizedBox(height: 4),
@@ -537,6 +564,27 @@ bool _matchesScope(DateTime date, DashboardScope scope) {
   final weekStart = DateTime(now.year, now.month, now.day - weekdayFromMonday);
   final weekEnd = weekStart.add(const Duration(days: 7));
   return !date.isBefore(weekStart) && date.isBefore(weekEnd);
+}
+
+bool _isTaskAssignedToCurrentEmployee({
+  required OfflineState state,
+  required ServiceTask task,
+  required String sessionNameOrId,
+}) {
+  final identity = sessionNameOrId.trim().toLowerCase();
+  if (identity.isEmpty) return false;
+
+  final assigned = task.assignedEmployeeId.trim().toLowerCase();
+  if (assigned == identity) return true;
+
+  for (final employee in state.activeEmployees) {
+    final employeeId = employee.id.trim().toLowerCase();
+    if (employeeId != assigned) continue;
+    final employeeName = employee.name.trim().toLowerCase();
+    if (employeeName == identity) return true;
+    break;
+  }
+  return false;
 }
 
 Employee? _findEmployee(OfflineState state, String sessionNameOrId) {
