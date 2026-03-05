@@ -337,6 +337,9 @@ class AppStrings {
       _isEs ? 'Reportes mensuales' : 'Monthly reports';
   String get monthlyClosing =>
       _isEs ? 'Cierre mensual' : 'Monthly closing';
+  String get monthlyBatchReady => _isEs
+      ? 'Tu lote mensual está listo para continuar con emisión de facturas y nómina.'
+      : 'Your monthly batch is ready to continue with invoice and payroll emission.';
   String get closingPeriod =>
       _isEs ? 'Período de cierre' : 'Closing period';
   String get back => _isEs ? 'Atrás' : 'Back';
