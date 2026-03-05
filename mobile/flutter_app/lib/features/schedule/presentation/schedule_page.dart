@@ -191,9 +191,14 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
   }
 
   List<String> _teams(OfflineState state) {
+    final activeTeamNames = state.activeTeams
+        .map((team) => team.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet();
     final set = <String>{};
-    for (final employee in state.employees) {
-      if (employee.team.trim().isNotEmpty) set.add(employee.team.trim());
+    for (final employee in state.activeEmployees) {
+      final team = employee.team.trim();
+      if (team.isNotEmpty && activeTeamNames.contains(team)) set.add(team);
     }
     final result = set.toList()..sort();
     return result;
@@ -212,7 +217,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
           final assignedKey = task.assignedEmployeeId.trim().toLowerCase();
           if (assignedKey == sessionKey) return true;
 
-          for (final employee in state.employees) {
+          for (final employee in state.activeEmployees) {
             if (employee.id.trim().toLowerCase() != assignedKey) continue;
             final employeeNameKey = employee.name.trim().toLowerCase();
             if (employeeNameKey == sessionKey) return true;
@@ -261,14 +266,14 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
   }
 
   String? _employeeNameById(OfflineState state, String id) {
-    for (final employee in state.employees) {
+    for (final employee in state.activeEmployees) {
       if (employee.id == id) return employee.name;
     }
     return null;
   }
 
   String? _teamOfEmployee(OfflineState state, String id) {
-    for (final employee in state.employees) {
+    for (final employee in state.activeEmployees) {
       if (employee.id == id) return employee.team;
     }
     return null;
@@ -281,7 +286,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     final identity = session.name.trim().toLowerCase();
     if (identity.isEmpty) return null;
 
-    for (final employee in state.employees) {
+    for (final employee in state.activeEmployees) {
       if (employee.id.trim().toLowerCase() == identity) return employee.id;
       if (employee.name.trim().toLowerCase() == identity) return employee.id;
     }
@@ -310,16 +315,16 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
         selectedDate.year, selectedDate.month, selectedDate.day, 10, 0);
     String assignedEmployeeId = '';
     if (widget.role == UserRole.manager) {
-      if (state.employees.isNotEmpty) {
-        assignedEmployeeId = state.employees.first.id;
+      if (state.activeEmployees.isNotEmpty) {
+        assignedEmployeeId = state.activeEmployees.first.id;
       }
     } else {
       assignedEmployeeId = _resolveSessionEmployeeId(state) ?? '';
     }
     if (widget.role == UserRole.manager &&
-        state.employees.isNotEmpty &&
-        !state.employees.any((employee) => employee.id == assignedEmployeeId)) {
-      assignedEmployeeId = state.employees.first.id;
+        state.activeEmployees.isNotEmpty &&
+        !state.activeEmployees.any((employee) => employee.id == assignedEmployeeId)) {
+      assignedEmployeeId = state.activeEmployees.first.id;
     }
 
     await showDialog<void>(
@@ -384,13 +389,13 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                         ),
                       ],
                     ),
-                    if (state.employees.isNotEmpty &&
+                    if (state.activeEmployees.isNotEmpty &&
                         widget.role == UserRole.manager)
                       DropdownButtonFormField<String>(
                         value: assignedEmployeeId,
                         decoration:
                             InputDecoration(labelText: strings.employee),
-                        items: state.employees
+                        items: state.activeEmployees
                             .map((employee) => DropdownMenuItem(
                                   value: employee.id,
                                   child: Text(employee.name),

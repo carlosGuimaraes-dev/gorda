@@ -60,6 +60,16 @@ class OfflineState {
   final DateTime? lastSync;
   final String languageCode;
   final String countryCode;
+  List<Client> get activeClients =>
+      clients.where((item) => !item.isDeleted).toList(growable: false);
+  List<Employee> get activeEmployees =>
+      employees.where((item) => !item.isDeleted).toList(growable: false);
+  List<ServiceType> get activeServiceTypes =>
+      serviceTypes.where((item) => !item.isDeleted).toList(growable: false);
+  List<Team> get activeTeams =>
+      teams.where((item) => !item.isDeleted).toList(growable: false);
+  List<FinanceEntry> get activeFinance =>
+      finance.where((item) => !item.isDeleted).toList(growable: false);
 
   OfflineState copyWith({
     List<Client>? clients,
@@ -215,7 +225,9 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   void updateClient(Client client) {
-    final index = state.clients.indexWhere((item) => item.id == client.id);
+    final index = state.clients.indexWhere(
+      (item) => item.id == client.id && !item.isDeleted,
+    );
     if (index < 0) return;
     final nextClients = [...state.clients];
     nextClients[index] = client;
@@ -237,7 +249,7 @@ class OfflineStore extends Notifier<OfflineState> {
   bool deleteClient(String clientId) {
     final hasLinkedTasks = state.tasks.any((task) => task.clientId == clientId);
     final hasLinkedFinance =
-        state.finance.any((entry) => entry.clientId == clientId);
+        state.activeFinance.any((entry) => entry.clientId == clientId);
     if (hasLinkedTasks || hasLinkedFinance) return false;
 
     final deleted = state.clients.firstWhere(
@@ -245,8 +257,13 @@ class OfflineStore extends Notifier<OfflineState> {
       orElse: () => const Client(id: '', name: ''),
     );
 
-    final nextClients =
-        state.clients.where((item) => item.id != clientId).toList();
+    final deletedAt = DateTime.now();
+    final nextClients = state.clients
+        .map((item) {
+          if (item.id != clientId || item.isDeleted) return item;
+          return item.copyWith(isDeleted: true, deletedAt: deletedAt);
+        })
+        .toList();
     state = state.copyWith(
       clients: nextClients,
       pendingChanges: _enqueueChange(
@@ -287,7 +304,9 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   void updateEmployee(Employee employee) {
-    final index = state.employees.indexWhere((item) => item.id == employee.id);
+    final index = state.employees.indexWhere(
+      (item) => item.id == employee.id && !item.isDeleted,
+    );
     if (index < 0) return;
     final next = [...state.employees];
     next[index] = employee;
@@ -315,7 +334,7 @@ class OfflineStore extends Notifier<OfflineState> {
     final hasLinkedTasks =
         state.tasks.any((task) => task.assignedEmployeeId == employeeId);
     final hasLinkedFinance =
-        state.finance.any((entry) => entry.employeeId == employeeId);
+        state.activeFinance.any((entry) => entry.employeeId == employeeId);
     if (hasLinkedTasks || hasLinkedFinance) return false;
 
     final deleted = state.employees.firstWhere(
@@ -323,7 +342,13 @@ class OfflineStore extends Notifier<OfflineState> {
       orElse: () => const Employee(id: '', name: ''),
     );
 
-    final next = state.employees.where((item) => item.id != employeeId).toList();
+    final deletedAt = DateTime.now();
+    final next = state.employees
+        .map((item) {
+          if (item.id != employeeId || item.isDeleted) return item;
+          return item.copyWith(isDeleted: true, deletedAt: deletedAt);
+        })
+        .toList();
     state = state.copyWith(
       employees: next,
       pendingChanges: _enqueueChange(
@@ -347,7 +372,7 @@ class OfflineStore extends Notifier<OfflineState> {
     final normalizedName = teamName.trim();
     if (normalizedName.isEmpty) return false;
 
-    final teamExists = state.teams.any(
+    final teamExists = state.activeTeams.any(
       (team) => _sameTeamName(team.name, normalizedName),
     );
     if (teamExists) return false;
@@ -359,7 +384,9 @@ class OfflineStore extends Notifier<OfflineState> {
     final selectedIds = memberIds.toSet();
     final changedEmployeeIds = <String>[];
     final nextEmployees = state.employees.map((employee) {
-      if (!selectedIds.contains(employee.id)) return employee;
+      if (employee.isDeleted || !selectedIds.contains(employee.id)) {
+        return employee;
+      }
       changedEmployeeIds.add(employee.id);
       return employee.copyWith(team: normalizedName);
     }).toList();
@@ -400,13 +427,13 @@ class OfflineStore extends Notifier<OfflineState> {
     if (normalizedOld.isEmpty || normalizedNew.isEmpty) return false;
 
     final teamIndex = state.teams.indexWhere(
-      (team) => _sameTeamName(team.name, normalizedOld),
+      (team) => !team.isDeleted && _sameTeamName(team.name, normalizedOld),
     );
     if (teamIndex < 0) return false;
     final currentTeam = state.teams[teamIndex];
 
     final nameTaken = !_sameTeamName(normalizedOld, normalizedNew) &&
-        state.teams.any((team) => _sameTeamName(team.name, normalizedNew));
+        state.activeTeams.any((team) => _sameTeamName(team.name, normalizedNew));
     if (nameTaken) return false;
 
     final nextTeams = [...state.teams];
@@ -416,6 +443,7 @@ class OfflineStore extends Notifier<OfflineState> {
     final selectedIds = memberIds.toSet();
     final changedEmployeeIds = <String>[];
     final nextEmployees = state.employees.map((employee) {
+      if (employee.isDeleted) return employee;
       final isSelected = selectedIds.contains(employee.id);
       var nextTeam = employee.team;
 
@@ -461,14 +489,20 @@ class OfflineStore extends Notifier<OfflineState> {
     if (normalizedName.isEmpty) return false;
 
     final teamIndex = state.teams.indexWhere(
-      (team) => _sameTeamName(team.name, normalizedName),
+      (team) => !team.isDeleted && _sameTeamName(team.name, normalizedName),
     );
     if (teamIndex < 0) return false;
     final targetTeam = state.teams[teamIndex];
-    final nextTeams = [...state.teams]..removeAt(teamIndex);
+    final deletedAt = DateTime.now();
+    final nextTeams = [...state.teams];
+    nextTeams[teamIndex] = targetTeam.copyWith(
+      isDeleted: true,
+      deletedAt: deletedAt,
+    );
 
     final changedEmployeeIds = <String>[];
     final nextEmployees = state.employees.map((employee) {
+      if (employee.isDeleted) return employee;
       if (!_sameTeamName(employee.team, normalizedName)) return employee;
       changedEmployeeIds.add(employee.id);
       return employee.copyWith(team: '');
@@ -556,7 +590,7 @@ class OfflineStore extends Notifier<OfflineState> {
 
   void updateServiceType(ServiceType serviceType) {
     final index =
-        state.serviceTypes.indexWhere((item) => item.id == serviceType.id);
+        state.serviceTypes.indexWhere((item) => item.id == serviceType.id && !item.isDeleted);
     if (index < 0) return;
     final next = [...state.serviceTypes];
     next[index] = serviceType;
@@ -575,8 +609,13 @@ class OfflineStore extends Notifier<OfflineState> {
         state.tasks.any((task) => task.serviceTypeId == serviceTypeId);
     if (hasLinkedTasks) return false;
 
-    final next =
-        state.serviceTypes.where((item) => item.id != serviceTypeId).toList();
+    final deletedAt = DateTime.now();
+    final next = state.serviceTypes
+        .map((item) {
+          if (item.id != serviceTypeId || item.isDeleted) return item;
+          return item.copyWith(isDeleted: true, deletedAt: deletedAt);
+        })
+        .toList();
     state = state.copyWith(
       serviceTypes: next,
       pendingChanges: _enqueueChange(
@@ -608,7 +647,9 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   void updateFinanceEntry(FinanceEntry entry) {
-    final index = state.finance.indexWhere((item) => item.id == entry.id);
+    final index = state.finance.indexWhere(
+      (item) => item.id == entry.id && !item.isDeleted,
+    );
     if (index < 0) return;
     final next = [...state.finance];
     next[index] = entry.copyWith(currency: state.appPreferences.preferredCurrency);
@@ -632,7 +673,9 @@ class OfflineStore extends Notifier<OfflineState> {
     FinanceStatus status, {
     FinancePaymentMethod? method,
   }) {
-    final index = state.finance.indexWhere((entry) => entry.id == entryId);
+    final index = state.finance.indexWhere(
+      (entry) => entry.id == entryId && !entry.isDeleted,
+    );
     if (index < 0) return;
     final next = [...state.finance];
     final current = next[index];
@@ -657,7 +700,7 @@ class OfflineStore extends Notifier<OfflineState> {
 
   void deleteFinanceEntry(String entryId) {
     final entry = state.finance.firstWhere(
-      (item) => item.id == entryId,
+      (item) => item.id == entryId && !item.isDeleted,
       orElse: () => FinanceEntry(
         id: '',
         title: '',
@@ -669,8 +712,14 @@ class OfflineStore extends Notifier<OfflineState> {
         kind: FinanceKind.general,
       ),
     );
+    final deletedAt = DateTime.now();
     state = state.copyWith(
-      finance: state.finance.where((item) => item.id != entryId).toList(),
+      finance: state.finance
+          .map((item) {
+            if (item.id != entryId || item.isDeleted) return item;
+            return item.copyWith(isDeleted: true, deletedAt: deletedAt);
+          })
+          .toList(),
       pendingChanges: _enqueueChange(
         state.pendingChanges,
         PendingOperation.deleteFinanceEntry,
@@ -689,7 +738,9 @@ class OfflineStore extends Notifier<OfflineState> {
     required bool isDisputed,
     String? reason,
   }) {
-    final index = state.finance.indexWhere((entry) => entry.id == entryId);
+    final index = state.finance.indexWhere(
+      (entry) => entry.id == entryId && !entry.isDeleted,
+    );
     if (index < 0) return;
     final target = state.finance[index];
     if (target.kind != FinanceKind.invoiceClient) return;
@@ -715,7 +766,7 @@ class OfflineStore extends Notifier<OfflineState> {
     required DateTime dueDate,
   }) {
     final current = state.finance.firstWhere(
-      (entry) => entry.id == entryId,
+      (entry) => entry.id == entryId && !entry.isDeleted,
       orElse: () => FinanceEntry(
         id: '',
         title: '',
@@ -766,7 +817,7 @@ class OfflineStore extends Notifier<OfflineState> {
   }) {
     final clientId = clientName == null
         ? null
-        : state.clients
+        : state.activeClients
             .firstWhere(
               (client) => client.name == clientName,
               orElse: () => const Client(id: '', name: ''),
@@ -795,8 +846,10 @@ class OfflineStore extends Notifier<OfflineState> {
       if (task.date.isBefore(start) || !task.date.isBefore(endExclusive)) {
         return false;
       }
+      final resolvedClient = _resolveClient(task.clientId, task.clientName);
+      if (task.clientId != null && resolvedClient == null) return false;
       if (clientId != null) {
-        return task.clientId == clientId;
+        return resolvedClient?.id == clientId;
       }
       return true;
     }).toList();
@@ -850,8 +903,8 @@ class OfflineStore extends Notifier<OfflineState> {
         .add(const Duration(days: 1));
 
     final employees = employeeId == null
-        ? state.employees
-        : state.employees.where((e) => e.id == employeeId).toList();
+        ? state.activeEmployees
+        : state.activeEmployees.where((e) => e.id == employeeId).toList();
 
     final periodLabel = DateFormat('MMM yyyy').format(startDate);
 
@@ -922,7 +975,7 @@ class OfflineStore extends Notifier<OfflineState> {
   }) {
     final employeeId = employeeName == null
         ? null
-        : state.employees
+        : state.activeEmployees
             .firstWhere(
               (employee) => employee.name == employeeName,
               orElse: () => const Employee(id: '', name: ''),
@@ -1145,7 +1198,7 @@ class OfflineStore extends Notifier<OfflineState> {
   List<InvoiceLineItemData> _lineItemsForTasks(List<ServiceTask> tasks) {
     final items = <InvoiceLineItemData>[];
     for (final task in tasks) {
-      final type = state.serviceTypes.firstWhere(
+      final type = state.activeServiceTypes.firstWhere(
         (item) => item.id == task.serviceTypeId,
         orElse: () => ServiceType(
           id: '',
@@ -1204,6 +1257,7 @@ class OfflineStore extends Notifier<OfflineState> {
     final map = <String, Team>{};
 
     for (final team in currentTeams) {
+      if (team.isDeleted) continue;
       final name = team.name.trim();
       if (name.isEmpty) continue;
       final key = name.toLowerCase();
@@ -1211,6 +1265,7 @@ class OfflineStore extends Notifier<OfflineState> {
     }
 
     for (final employee in employees) {
+      if (employee.isDeleted) continue;
       final name = employee.team.trim();
       if (name.isEmpty) continue;
       final key = name.toLowerCase();
@@ -1233,10 +1288,10 @@ class OfflineStore extends Notifier<OfflineState> {
 
   Client? _resolveClient(String? clientId, String clientName) {
     if (clientId != null) {
-      final byId = state.clients.where((item) => item.id == clientId);
+      final byId = state.activeClients.where((item) => item.id == clientId);
       if (byId.isNotEmpty) return byId.first;
     }
-    final byName = state.clients.where((item) => item.name == clientName);
+    final byName = state.activeClients.where((item) => item.name == clientName);
     if (byName.isNotEmpty) return byName.first;
     return null;
   }

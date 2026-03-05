@@ -11,6 +11,8 @@ class Employee {
     this.currency,
     this.extraEarningsDescription,
     this.documentsDescription,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   final String id;
@@ -22,6 +24,8 @@ class Employee {
   final EmployeeCurrency? currency;
   final String? extraEarningsDescription;
   final String? documentsDescription;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   Employee copyWith({
     String? id,
@@ -33,6 +37,9 @@ class Employee {
     EmployeeCurrency? currency,
     String? extraEarningsDescription,
     String? documentsDescription,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return Employee(
       id: id ?? this.id,
@@ -45,6 +52,8 @@ class Employee {
       extraEarningsDescription:
           extraEarningsDescription ?? this.extraEarningsDescription,
       documentsDescription: documentsDescription ?? this.documentsDescription,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 }

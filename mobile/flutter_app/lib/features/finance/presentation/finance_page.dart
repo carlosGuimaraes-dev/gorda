@@ -32,11 +32,11 @@ class FinancePage extends ConsumerWidget {
     final state = ref.watch(offlineStoreProvider);
     final isManager = state.session?.role == UserRole.manager;
 
-    final receivables = state.finance
+    final receivables = state.activeFinance
         .where((entry) => entry.type == FinanceEntryType.receivable)
         .toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-    final payables = state.finance
+    final payables = state.activeFinance
         .where((entry) => entry.type == FinanceEntryType.payable)
         .toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -186,12 +186,12 @@ class FinancePage extends ConsumerWidget {
       return const [];
     }
 
-    final employee = state.employees.firstWhere(
+    final employee = state.activeEmployees.firstWhere(
       (item) => item.id == session.name || item.name == session.name,
       orElse: () => const Employee(id: '', name: ''),
     );
 
-    return state.finance.where((entry) {
+    return state.activeFinance.where((entry) {
       if (entry.kind != FinanceKind.payrollEmployee) return false;
       if (entry.employeeId != null && employee.id.isNotEmpty) {
         return entry.employeeId == employee.id;
@@ -488,7 +488,7 @@ class _MonthlyClosingWizardPageState
     final state = ref.watch(offlineStoreProvider);
 
     final monthRange = _monthRange(selectedMonth);
-    final pendingOutOfPocketReceipts = state.finance.where((entry) {
+    final pendingOutOfPocketReceipts = state.activeFinance.where((entry) {
       return entry.kind == FinanceKind.expenseOutOfPocket &&
           entry.status == FinanceStatus.pending &&
           _isInRange(entry.dueDate, monthRange.start, monthRange.end);
@@ -502,13 +502,13 @@ class _MonthlyClosingWizardPageState
     final syncConflictsCount = state.conflictLog.length;
     final blockingIssuesCount = receiptsWithoutClientCount + syncConflictsCount;
 
-    final draftInvoices = state.finance.where((entry) {
+    final draftInvoices = state.activeFinance.where((entry) {
       return entry.kind == FinanceKind.invoiceClient &&
           entry.status == FinanceStatus.pending &&
           _isInRange(entry.dueDate, monthRange.start, monthRange.end);
     }).toList();
 
-    final draftPayrolls = state.finance.where((entry) {
+    final draftPayrolls = state.activeFinance.where((entry) {
       return entry.kind == FinanceKind.payrollEmployee &&
           entry.status == FinanceStatus.pending &&
           _isInRange(entry.dueDate, monthRange.start, monthRange.end);
@@ -841,7 +841,7 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
     Client? suggestedClient;
     if (firstTask != null) {
       if (firstTask.clientId != null) {
-        suggestedClient = state.clients.firstWhere(
+        suggestedClient = state.activeClients.firstWhere(
           (client) => client.id == firstTask.clientId,
           orElse: () => const Client(id: '', name: ''),
         );
@@ -849,7 +849,7 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
           suggestedClient = null;
         }
       }
-      suggestedClient ??= state.clients.firstWhere(
+      suggestedClient ??= state.activeClients.firstWhere(
         (client) => client.name == firstTask.clientName,
         orElse: () => const Client(id: '', name: ''),
       );
@@ -858,7 +858,7 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
       }
     }
 
-    final latestReceipts = state.finance
+    final latestReceipts = state.activeFinance
         .where((entry) =>
             entry.kind == FinanceKind.expenseOutOfPocket &&
             entry.receiptData != null)
@@ -1026,9 +1026,9 @@ class _ReceiptsHubPageState extends ConsumerState<ReceiptsHubPage> {
                 return QuickReceiptEntrySheet(
                   imageBytes: bytes,
                   suggestedClientId: suggestedClient?.id,
-                  clients: state.clients,
+                  clients: state.activeClients,
                   onSave: (title, amount, dueDate, clientId) {
-                    final client = state.clients.firstWhere(
+                    final client = state.activeClients.firstWhere(
                       (value) => value.id == clientId,
                       orElse: () => const Client(id: '', name: ''),
                     );
@@ -1215,12 +1215,12 @@ class EmissionReadyPage extends ConsumerWidget {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
 
-    final pendingInvoices = state.finance.where((entry) {
+    final pendingInvoices = state.activeFinance.where((entry) {
       return entry.kind == FinanceKind.invoiceClient &&
           entry.status == FinanceStatus.pending;
     }).toList();
 
-    final pendingPayrolls = state.finance.where((entry) {
+    final pendingPayrolls = state.activeFinance.where((entry) {
       return entry.kind == FinanceKind.payrollEmployee &&
           entry.status == FinanceStatus.pending;
     }).toList();
@@ -1368,7 +1368,7 @@ class InvoicesListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
-    final invoices = ref.watch(offlineStoreProvider).finance.where((entry) {
+    final invoices = ref.watch(offlineStoreProvider).activeFinance.where((entry) {
       return entry.kind == FinanceKind.invoiceClient;
     }).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -1526,7 +1526,7 @@ class _InvoiceFormPageState extends ConsumerState<InvoiceFormPage> {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
 
-    final clients = [...state.clients]..sort((a, b) => a.name.compareTo(b.name));
+    final clients = [...state.activeClients]..sort((a, b) => a.name.compareTo(b.name));
     final selectedClient = clients.firstWhere(
       (client) => client.id == _selectedClientId,
       orElse: () => const Client(id: '', name: ''),
@@ -1731,12 +1731,12 @@ class _InvoiceDetailPageState extends ConsumerState<InvoiceDetailPage> {
     final state = ref.watch(offlineStoreProvider);
     final store = ref.read(offlineStoreProvider.notifier);
 
-    final entry = state.finance.firstWhere(
+    final entry = state.activeFinance.firstWhere(
       (item) => item.id == widget.entry.id,
       orElse: () => widget.entry,
     );
 
-    final client = state.clients.firstWhere(
+    final client = state.activeClients.firstWhere(
       (item) => item.id == entry.clientId || item.name == entry.clientName,
       orElse: () => const Client(id: '', name: ''),
     );
@@ -2325,7 +2325,7 @@ class PayrollListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
-    final payrolls = ref.watch(offlineStoreProvider).finance.where((entry) {
+    final payrolls = ref.watch(offlineStoreProvider).activeFinance.where((entry) {
       return entry.kind == FinanceKind.payrollEmployee;
     }).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -2476,7 +2476,7 @@ class _PayrollFormPageState extends ConsumerState<PayrollFormPage> {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
 
-    final employees = [...state.employees]..sort((a, b) => a.name.compareTo(b.name));
+    final employees = [...state.activeEmployees]..sort((a, b) => a.name.compareTo(b.name));
     if (_selectedEmployeeId.isEmpty && employees.isNotEmpty) {
       final first = employees.first;
       _selectedEmployeeId = first.id;
@@ -2874,7 +2874,7 @@ class _PayrollDetailPageState extends ConsumerState<PayrollDetailPage> {
     final state = ref.watch(offlineStoreProvider);
     final store = ref.read(offlineStoreProvider.notifier);
 
-    final entry = state.finance.firstWhere(
+    final entry = state.activeFinance.firstWhere(
       (item) => item.id == widget.entry.id,
       orElse: () => widget.entry,
     );
@@ -3192,7 +3192,7 @@ class _GenericFinanceDetailPageState
     final state = ref.watch(offlineStoreProvider);
     final store = ref.read(offlineStoreProvider.notifier);
 
-    final entry = state.finance.firstWhere(
+    final entry = state.activeFinance.firstWhere(
       (item) => item.id == widget.entry.id,
       orElse: () => widget.entry,
     );
@@ -3339,7 +3339,7 @@ class _ExpenseDetailPageState extends ConsumerState<ExpenseDetailPage> {
     final state = ref.watch(offlineStoreProvider);
     final store = ref.read(offlineStoreProvider.notifier);
 
-    final entry = state.finance.firstWhere(
+    final entry = state.activeFinance.firstWhere(
       (item) => item.id == widget.entry.id,
       orElse: () => widget.entry,
     );
@@ -3528,7 +3528,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     final state = ref.watch(offlineStoreProvider);
 
     final range = _reportRange();
-    final entriesInRange = state.finance.where((entry) {
+    final entriesInRange = state.activeFinance.where((entry) {
       return _isInRange(entry.dueDate, range.start, range.end);
     }).toList();
 
@@ -4024,7 +4024,7 @@ class _InvoiceGeneratorPageState extends ConsumerState<InvoiceGeneratorPage> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(Localizations.localeOf(context));
-    final clients = [...ref.watch(offlineStoreProvider).clients]
+    final clients = [...ref.watch(offlineStoreProvider).activeClients]
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
@@ -4115,7 +4115,7 @@ class _PayrollGeneratorPageState extends ConsumerState<PayrollGeneratorPage> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(Localizations.localeOf(context));
-    final employees = [...ref.watch(offlineStoreProvider).employees]
+    final employees = [...ref.watch(offlineStoreProvider).activeEmployees]
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(

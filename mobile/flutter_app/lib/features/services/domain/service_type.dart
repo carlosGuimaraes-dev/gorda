@@ -10,6 +10,8 @@ class ServiceType {
     required this.currency,
     this.description = '',
     this.pricingModel = ServicePricingModel.perTask,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   final String id;
@@ -18,6 +20,8 @@ class ServiceType {
   final double basePrice;
   final FinanceCurrency currency;
   final ServicePricingModel pricingModel;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   ServiceType copyWith({
     String? id,
@@ -26,6 +30,9 @@ class ServiceType {
     double? basePrice,
     FinanceCurrency? currency,
     ServicePricingModel? pricingModel,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return ServiceType(
       id: id ?? this.id,
@@ -34,6 +41,8 @@ class ServiceType {
       basePrice: basePrice ?? this.basePrice,
       currency: currency ?? this.currency,
       pricingModel: pricingModel ?? this.pricingModel,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 }

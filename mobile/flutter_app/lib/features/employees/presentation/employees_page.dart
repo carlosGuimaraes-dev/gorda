@@ -16,7 +16,7 @@ class EmployeesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
-    final employees = [...state.employees]
+    final employees = [...state.activeEmployees]
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
@@ -44,7 +44,7 @@ class EmployeesPage extends ConsumerWidget {
           itemCount: employees.length,
           itemBuilder: (context, index) {
             final employee = employees[index];
-            final hasPendingPayables = state.finance.any((entry) =>
+            final hasPendingPayables = state.activeFinance.any((entry) =>
                 entry.employeeName == employee.name &&
                 entry.type == FinanceEntryType.payable &&
                 entry.status == FinanceStatus.pending);
@@ -206,7 +206,7 @@ class EmployeeDetailPage extends ConsumerWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final state = ref.watch(offlineStoreProvider);
     Employee? employee;
-    for (final item in state.employees) {
+    for (final item in state.activeEmployees) {
       if (item.id == employeeId) {
         employee = item;
         break;

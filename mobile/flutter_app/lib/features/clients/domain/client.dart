@@ -13,6 +13,8 @@ class Client {
     this.accessNotes = '',
     this.preferredSchedule = '',
     this.preferredDeliveryChannels = const [DeliveryChannel.email],
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   final String id;
@@ -26,6 +28,8 @@ class Client {
   final String accessNotes;
   final String preferredSchedule;
   final List<DeliveryChannel> preferredDeliveryChannels;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   Client copyWith({
     String? id,
@@ -39,6 +43,9 @@ class Client {
     String? accessNotes,
     String? preferredSchedule,
     List<DeliveryChannel>? preferredDeliveryChannels,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return Client(
       id: id ?? this.id,
@@ -53,6 +60,8 @@ class Client {
       preferredSchedule: preferredSchedule ?? this.preferredSchedule,
       preferredDeliveryChannels:
           preferredDeliveryChannels ?? this.preferredDeliveryChannels,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 }

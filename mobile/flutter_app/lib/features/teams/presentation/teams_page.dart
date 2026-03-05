@@ -13,10 +13,10 @@ class TeamsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
-    final teams = [...state.teams]..sort((a, b) => a.name.compareTo(b.name));
-    final membersByTeam = _groupTeams(state.employees);
+    final teams = [...state.activeTeams]..sort((a, b) => a.name.compareTo(b.name));
+    final membersByTeam = _groupTeams(state.activeEmployees);
     final teamNames = teams.map((team) => team.name).toList();
-    final unassigned = state.employees
+    final unassigned = state.activeEmployees
         .where((employee) => employee.team.trim().isEmpty)
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
@@ -186,7 +186,7 @@ Future<void> _showTeamFormDialog(
 }) async {
   final strings = AppStrings.of(Localizations.localeOf(context));
   final state = ref.read(offlineStoreProvider);
-  final allEmployees = [...state.employees]
+  final allEmployees = [...state.activeEmployees]
     ..sort((a, b) => a.name.compareTo(b.name));
   final nameCtrl = TextEditingController(text: existingTeamName ?? '');
   final selectedIds = Set<String>.from(initiallySelectedIds ?? <String>{});
@@ -250,7 +250,7 @@ Future<void> _showTeamFormDialog(
                   final teamName = nameCtrl.text.trim();
                   if (teamName.isEmpty) return;
 
-                  final existingNames = state.teams
+                  final existingNames = state.activeTeams
                       .map((team) => team.name.trim())
                       .where((name) => name.isNotEmpty)
                       .toSet();

@@ -25,7 +25,7 @@ class ClientDetailPage extends ConsumerWidget {
     final isManager = state.session?.role == UserRole.manager;
 
     Client? client;
-    for (final item in state.clients) {
+    for (final item in state.activeClients) {
       if (item.id == clientId) {
         client = item;
         break;
@@ -270,7 +270,7 @@ class ClientDetailPage extends ConsumerWidget {
   String _resolveSessionEmployeeId(OfflineState state) {
     final identity = state.session?.name.trim().toLowerCase() ?? '';
     if (identity.isEmpty) return '';
-    for (final employee in state.employees) {
+    for (final employee in state.activeEmployees) {
       if (employee.id.trim().toLowerCase() == identity) return employee.id;
       if (employee.name.trim().toLowerCase() == identity) return employee.id;
     }
@@ -505,7 +505,7 @@ class ClientDetailPage extends ConsumerWidget {
     final notesCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
     String employeeId = isManager
-        ? (state.employees.isEmpty ? '' : state.employees.first.id)
+        ? (state.activeEmployees.isEmpty ? '' : state.activeEmployees.first.id)
         : _resolveSessionEmployeeId(state);
 
     await showDialog<void>(
@@ -551,11 +551,11 @@ class ClientDetailPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  if (isManager && state.employees.isNotEmpty)
+                  if (isManager && state.activeEmployees.isNotEmpty)
                     DropdownButtonFormField<String>(
                       value: employeeId,
                       decoration: InputDecoration(labelText: strings.employee),
-                      items: state.employees
+                      items: state.activeEmployees
                           .map((employee) => DropdownMenuItem(
                                 value: employee.id,
                                 child: Text(employee.name),

@@ -117,16 +117,21 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
   }
 
   List<String> _teamOptions(OfflineState state) {
+    final activeTeamNames = state.activeTeams
+        .map((team) => team.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet();
     final set = <String>{};
     for (final task in state.tasks) {
-      final employee = state.employees.firstWhere(
+      final employee = state.activeEmployees.firstWhere(
         (item) =>
             item.id == task.assignedEmployeeId ||
             item.name == task.assignedEmployeeId,
         orElse: () => const Employee(id: '', name: '', team: ''),
       );
-      if (employee.team.trim().isNotEmpty) {
-        set.add(employee.team.trim());
+      final team = employee.team.trim();
+      if (team.isNotEmpty && activeTeamNames.contains(team)) {
+        set.add(team);
       }
     }
     final values = set.toList()..sort();
@@ -137,7 +142,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
     final query = _searchText.trim().toLowerCase();
     final range = _periodRange();
 
-    final clients = state.clients.where((client) {
+    final clients = state.activeClients.where((client) {
       final haystack = [
         client.name,
         client.phone,
@@ -203,7 +208,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
   }
 
   String _teamForTask(OfflineState state, ServiceTask task) {
-    for (final employee in state.employees) {
+    for (final employee in state.activeEmployees) {
       if (employee.id == task.assignedEmployeeId ||
           employee.name == task.assignedEmployeeId) {
         return employee.team;
@@ -220,7 +225,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
   }
 
   double _pendingReceivables(OfflineState state, Client client) {
-    return state.finance
+    return state.activeFinance
         .where((entry) =>
             entry.type == FinanceEntryType.receivable &&
             entry.status == FinanceStatus.pending &&
@@ -542,7 +547,7 @@ class _ClientCard extends StatelessWidget {
       return task.clientName == client.name;
     }).toList();
     final active = tasks.any((task) => task.status != TaskStatus.canceled);
-    final hasPendingReceivables = state.finance.any((entry) {
+    final hasPendingReceivables = state.activeFinance.any((entry) {
       return entry.type == FinanceEntryType.receivable &&
           entry.status == FinanceStatus.pending &&
           (entry.clientId == client.id || entry.clientName == client.name);

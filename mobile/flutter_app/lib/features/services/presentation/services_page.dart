@@ -16,7 +16,7 @@ class ServicesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
-    final serviceTypes = [...state.serviceTypes]
+    final serviceTypes = [...state.activeServiceTypes]
       ..sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
@@ -325,7 +325,7 @@ class ServiceTypeDetailPage extends ConsumerWidget {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final state = ref.watch(offlineStoreProvider);
     ServiceType? serviceType;
-    for (final item in state.serviceTypes) {
+    for (final item in state.activeServiceTypes) {
       if (item.id == serviceTypeId) {
         serviceType = item;
         break;

@@ -42,6 +42,8 @@ class FinanceEntry {
     this.payrollNetPay = 0,
     this.payrollNotes,
     this.notes,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   final String id;
@@ -76,6 +78,8 @@ class FinanceEntry {
   final double payrollNetPay;
   final String? payrollNotes;
   final String? notes;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   FinanceEntry copyWith({
     String? id,
@@ -115,6 +119,9 @@ class FinanceEntry {
     bool clearPayrollNotes = false,
     String? notes,
     bool clearNotes = false,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return FinanceEntry(
       id: id ?? this.id,
@@ -152,6 +159,8 @@ class FinanceEntry {
       payrollNetPay: payrollNetPay ?? this.payrollNetPay,
       payrollNotes: clearPayrollNotes ? null : (payrollNotes ?? this.payrollNotes),
       notes: clearNotes ? null : (notes ?? this.notes),
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 }

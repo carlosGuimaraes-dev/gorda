@@ -253,12 +253,12 @@ class _ManagerDashboard extends ConsumerWidget {
     final completedCount = tasksForScope
         .where((task) => task.status == TaskStatus.completed)
         .length;
-    final pendingReceivables = state.finance
+    final pendingReceivables = state.activeFinance
         .where((entry) =>
             entry.type == FinanceEntryType.receivable &&
             entry.status == FinanceStatus.pending)
         .fold<double>(0, (sum, entry) => sum + entry.amount);
-    final pendingPayables = state.finance
+    final pendingPayables = state.activeFinance
         .where((entry) =>
             entry.type == FinanceEntryType.payable &&
             entry.status == FinanceStatus.pending)
@@ -540,7 +540,7 @@ bool _matchesScope(DateTime date, DashboardScope scope) {
 }
 
 Employee? _findEmployee(OfflineState state, String sessionNameOrId) {
-  for (final employee in state.employees) {
+  for (final employee in state.activeEmployees) {
     if (employee.id == sessionNameOrId || employee.name == sessionNameOrId) {
       return employee;
     }
@@ -550,16 +550,21 @@ Employee? _findEmployee(OfflineState state, String sessionNameOrId) {
 
 List<({String team, int total, int completed})> _buildTeamSummary(
     OfflineState state, List<ServiceTask> tasks) {
+  final activeTeamNames = state.activeTeams
+      .map((team) => team.name.trim())
+      .where((name) => name.isNotEmpty)
+      .toSet();
   final grouped = <String, List<ServiceTask>>{};
   for (final task in tasks) {
-    final employee = state.employees.firstWhere(
+    final employee = state.activeEmployees.firstWhere(
       (item) =>
           item.id == task.assignedEmployeeId ||
           item.name == task.assignedEmployeeId,
       orElse: () => const Employee(id: '', name: '', team: ''),
     );
+    final teamName = employee.team.trim();
     final team =
-        employee.team.trim().isEmpty ? 'No team' : employee.team.trim();
+        teamName.isNotEmpty && activeTeamNames.contains(teamName) ? teamName : 'No team';
     grouped.putIfAbsent(team, () => []);
     grouped[team]!.add(task);
   }
