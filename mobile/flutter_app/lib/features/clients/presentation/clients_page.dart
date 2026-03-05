@@ -515,7 +515,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
                   child: Text(strings.save),
                 ),
               ],
-            ),
+            );
           },
         );
       },
