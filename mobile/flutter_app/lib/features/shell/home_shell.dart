@@ -61,21 +61,20 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   setState(() => index = 1);
                 },
               ),
-              if (widget.role == UserRole.manager)
-                ListTile(
-                  leading: const Icon(Icons.people_outline),
-                  title: Text(strings.clients),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    setState(() => index = 2);
-                  },
-                ),
+              ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: Text(strings.clients),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() => index = 2);
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.payments_outlined),
                 title: Text(strings.finance),
                 onTap: () {
                   Navigator.of(context).pop();
-                  setState(() => index = widget.role == UserRole.manager ? 3 : 2);
+                  setState(() => index = 3);
                 },
               ),
               ListTile(
@@ -83,7 +82,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: Text(strings.settings),
                 onTap: () {
                   Navigator.of(context).pop();
-                  setState(() => index = widget.role == UserRole.manager ? 4 : 3);
+                  setState(() => index = 4);
                 },
               ),
               ListTile(
@@ -136,6 +135,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final employeePages = [
       DashboardPage(onMenu: _openMenu),
       SchedulePage(role: widget.role, onMenu: _openMenu),
+      ClientsPage(onMenu: _openMenu),
       FinancePage(onMenu: _openMenu),
       SettingsPage(onMenu: _openMenu),
     ];
@@ -195,6 +195,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                       NavigationDestination(
                           icon: const Icon(Icons.calendar_month_outlined),
                           label: strings.schedule),
+                      NavigationDestination(
+                          icon: const Icon(Icons.people_outline),
+                          label: strings.clients),
                       NavigationDestination(
                           icon: const Icon(Icons.payments_outlined),
                           label: strings.finance),
