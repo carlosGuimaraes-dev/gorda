@@ -268,32 +268,7 @@ class _ManagerDashboard extends ConsumerWidget {
 
     final currencyFmt = NumberFormat.currency(name: 'USD', decimalDigits: 2);
     final teamSummary = _buildTeamSummary(state, tasksForScope);
-
-    if (tasksForScope.isEmpty) {
-      return ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        children: [
-          DsCard(
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.query_stats_rounded,
-                  size: 26,
-                  color: DsColorTokens.textSecondary,
-                ),
-                const SizedBox(height: DsSpaceTokens.space2),
-                Text(
-                  strings.noServicesInPeriod,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: DsColorTokens.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
+    final showNoTasksHint = tasksForScope.isEmpty;
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
@@ -328,6 +303,25 @@ class _ManagerDashboard extends ConsumerWidget {
             ],
           ),
         ),
+        if (showNoTasksHint)
+          DsCard(
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.query_stats_rounded,
+                  size: 26,
+                  color: DsColorTokens.textSecondary,
+                ),
+                const SizedBox(height: DsSpaceTokens.space2),
+                Text(
+                  strings.noServicesInPeriod,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: DsColorTokens.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
         if (teamSummary.isNotEmpty)
           DsCard(
             child: Column(
@@ -401,7 +395,7 @@ class _ManagerDashboard extends ConsumerWidget {
             children: [
               Text(strings.finance,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: DsColorTokens.textPrimary,
                       )),
               const SizedBox(height: 12),
