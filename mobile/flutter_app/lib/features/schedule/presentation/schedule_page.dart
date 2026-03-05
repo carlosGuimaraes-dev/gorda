@@ -331,7 +331,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
   void _openTask(BuildContext context, ServiceTask task) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ServiceDetailPage(taskId: task.id, role: widget.role),
+        builder: (_) => ServiceDetailPage(taskId: task.id),
       ),
     );
   }
@@ -358,7 +358,6 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     }
     String selectedServiceTypeId =
         state.activeServiceTypes.isNotEmpty ? state.activeServiceTypes.first.id : '';
-    TaskStatus selectedStatus = TaskStatus.scheduled;
     String assignedEmployeeId = '';
     if (widget.role == UserRole.manager) {
       if (state.activeEmployees.isNotEmpty) {
@@ -480,37 +479,6 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                         controller: notesCtrl,
                         decoration: InputDecoration(labelText: strings.notes),
                         maxLines: 2,
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<TaskStatus>(
-                        key: const ValueKey('schedule_form_status_picker'),
-                        value: selectedStatus,
-                        decoration: InputDecoration(labelText: strings.status),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w400,
-                            ),
-                        items: [
-                          DropdownMenuItem(
-                            value: TaskStatus.scheduled,
-                            child: Text(strings.scheduled),
-                          ),
-                          DropdownMenuItem(
-                            value: TaskStatus.inProgress,
-                            child: Text(strings.inProgress),
-                          ),
-                          DropdownMenuItem(
-                            value: TaskStatus.completed,
-                            child: Text(strings.completed),
-                          ),
-                          DropdownMenuItem(
-                            value: TaskStatus.canceled,
-                            child: Text(strings.canceled),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setModalState(() => selectedStatus = value);
-                        },
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -673,7 +641,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                             id: const Uuid().v4(),
                             title: title,
                             date: selectedDate,
-                            status: selectedStatus,
+                            status: TaskStatus.scheduled,
                             assignedEmployeeId: assignedEmployeeId,
                             clientId: selectedClientId.trim().isEmpty
                                 ? null

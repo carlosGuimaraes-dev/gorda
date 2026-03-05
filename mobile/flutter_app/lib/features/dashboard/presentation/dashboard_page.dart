@@ -352,30 +352,24 @@ class _ManagerDashboard extends ConsumerWidget {
             ),
           ),
         DsCard(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.monthlyClosing,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: DsColorTokens.textPrimary,
-                          ),
+              Text(
+                strings.monthlyClosing,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: DsColorTokens.textPrimary,
                     ),
-                    const SizedBox(height: DsSpaceTokens.space1),
-                    Text(
-                      strings.monthlyBatchReady,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: DsColorTokens.textSecondary,
-                          ),
-                    ),
-                  ],
-                ),
               ),
-              const SizedBox(width: DsSpaceTokens.space2),
+              const SizedBox(height: DsSpaceTokens.space1),
+              Text(
+                strings.monthlyBatchReady,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: DsColorTokens.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: DsSpaceTokens.space3),
               FilledButton(
                 onPressed: () {
                   Navigator.of(context).push(

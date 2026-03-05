@@ -367,6 +367,39 @@ void main() {
       expect(updatedTask.checkOutTime, isNull);
     });
 
+    test('checkout sets checkOutTime and transitions task to completed', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+      final state = container.read(offlineStoreProvider);
+      final checkInTime = DateTime(2026, 1, 10, 9, 0);
+      final checkOutTime = DateTime(2026, 1, 10, 10, 30);
+
+      notifier.addTask(
+        ServiceTask(
+          id: 'task-checkout-completes',
+          title: 'Checkout completes',
+          date: checkInTime,
+          status: TaskStatus.scheduled,
+          assignedEmployeeId: state.employees.first.id,
+          clientName: 'Client',
+          address: 'Address',
+        ),
+      );
+
+      notifier.markTaskCheckIn('task-checkout-completes', checkInTime);
+      notifier.markTaskCheckOut('task-checkout-completes', checkOutTime);
+
+      final updatedTask = container
+          .read(offlineStoreProvider)
+          .tasks
+          .firstWhere((task) => task.id == 'task-checkout-completes');
+
+      expect(updatedTask.checkInTime, checkInTime);
+      expect(updatedTask.checkOutTime, checkOutTime);
+      expect(updatedTask.status, TaskStatus.completed);
+    });
+
     test('checkout before check-in does not set checkOutTime', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

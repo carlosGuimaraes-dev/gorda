@@ -101,7 +101,7 @@ ThemeData buildDesignTheme() {
       style: FilledButton.styleFrom(
         backgroundColor: DsColorTokens.actionPrimary,
         foregroundColor: DsColorTokens.textOnBrand,
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(DsRadiusTokens.radiusXl),
         ),

@@ -1050,14 +1050,19 @@ class OfflineStore extends Notifier<OfflineState> {
     if (checkInTime == null) return;
     if (timestamp.isBefore(checkInTime)) return;
     final nextTasks = [...state.tasks];
-    nextTasks[index] = nextTasks[index].copyWith(checkOutTime: timestamp);
+    nextTasks[index] = nextTasks[index].copyWith(
+      checkOutTime: timestamp,
+      status: currentTask.status == TaskStatus.canceled
+          ? TaskStatus.canceled
+          : TaskStatus.completed,
+    );
     state = state.copyWith(
       tasks: nextTasks,
       pendingChanges: _enqueueChange(
         state.pendingChanges,
         PendingOperation.updateTask,
         taskId,
-        fields: const ['checkOutTime'],
+        fields: const ['checkOutTime', 'status'],
       ),
     );
   }

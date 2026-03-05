@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
-import '../../auth/domain/user_session.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
 import '../../../core/design/design_theme.dart';
@@ -13,11 +12,9 @@ class ServiceDetailPage extends ConsumerWidget {
   const ServiceDetailPage({
     super.key,
     required this.taskId,
-    required this.role,
   });
 
   final String taskId;
-  final UserRole role;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,22 +133,6 @@ class ServiceDetailPage extends ConsumerWidget {
                         },
                         child: Text(strings.checkOut),
                       ),
-                      if (role == UserRole.manager)
-                        OutlinedButton(
-                          onPressed: () {
-                            ref
-                                .read(offlineStoreProvider.notifier)
-                                .advanceTaskStatus(currentTask.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(strings.advanceStatus)),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: DsColorTokens.actionPrimary),
-                            foregroundColor: DsColorTokens.actionPrimary,
-                          ),
-                          child: Text(strings.advanceStatus),
-                        ),
                     ],
                   ),
                 ],

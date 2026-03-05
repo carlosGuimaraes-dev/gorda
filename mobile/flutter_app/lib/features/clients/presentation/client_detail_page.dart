@@ -189,7 +189,6 @@ class ClientDetailPage extends ConsumerWidget {
                             MaterialPageRoute(
                               builder: (_) => ServiceDetailPage(
                                 taskId: task.id,
-                                role: state.session?.role ?? UserRole.manager,
                               ),
                             ),
                           ),
@@ -530,7 +529,6 @@ class ClientDetailPage extends ConsumerWidget {
     DateTime selectedDate = DateTime.now();
     String selectedServiceTypeId =
         state.activeServiceTypes.isEmpty ? '' : state.activeServiceTypes.first.id;
-    TaskStatus selectedStatus = TaskStatus.scheduled;
     String employeeId = isManager
         ? (state.activeEmployees.isEmpty ? '' : state.activeEmployees.first.id)
         : _resolveSessionEmployeeId(state);
@@ -576,36 +574,6 @@ class ClientDetailPage extends ConsumerWidget {
                     ),
                   if (state.activeServiceTypes.isNotEmpty)
                     const SizedBox(height: 8),
-                  DropdownButtonFormField<TaskStatus>(
-                    value: selectedStatus,
-                    decoration: InputDecoration(labelText: strings.status),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w400,
-                        ),
-                    items: [
-                      DropdownMenuItem(
-                        value: TaskStatus.scheduled,
-                        child: Text(strings.scheduled),
-                      ),
-                      DropdownMenuItem(
-                        value: TaskStatus.inProgress,
-                        child: Text(strings.inProgress),
-                      ),
-                      DropdownMenuItem(
-                        value: TaskStatus.completed,
-                        child: Text(strings.completed),
-                      ),
-                      DropdownMenuItem(
-                        value: TaskStatus.canceled,
-                        child: Text(strings.canceled),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setModalState(() => selectedStatus = value);
-                    },
-                  ),
-                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
@@ -663,7 +631,7 @@ class ClientDetailPage extends ConsumerWidget {
                           id: const Uuid().v4(),
                           title: title,
                           date: selectedDate,
-                          status: selectedStatus,
+                          status: TaskStatus.scheduled,
                           assignedEmployeeId: employeeId,
                           clientId: client.id,
                           serviceTypeId: selectedServiceTypeId.trim().isEmpty
