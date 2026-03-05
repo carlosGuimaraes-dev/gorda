@@ -43,6 +43,15 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text(
+        'No active channels. Enable at least one to avoid delivery failures.',
+      ),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     expect(
       find.text(
         'No active channels. Enable at least one to avoid delivery failures.',
