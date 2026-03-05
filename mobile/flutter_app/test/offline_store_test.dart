@@ -676,7 +676,7 @@ void main() {
         final notifier = container.read(offlineStoreProvider.notifier);
 
         notifier.addTask(
-          const ServiceTask(
+          ServiceTask(
             id: 'task-conflict-1',
             title: 'Local title',
             date: DateTime(2026, 3, 8, 14, 0),
