@@ -269,7 +269,7 @@ class _FinanceActionTile extends StatelessWidget {
   }
 }
 
-class _FinanceEntriesSection extends StatelessWidget {
+class _FinanceEntriesSection extends ConsumerWidget {
   const _FinanceEntriesSection({
     required this.title,
     required this.entries,
@@ -281,8 +281,9 @@ class _FinanceEntriesSection extends StatelessWidget {
   final String? emptyMessage;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(Localizations.localeOf(context));
+    final store = ref.read(offlineStoreProvider.notifier);
 
     return DsSectionContainer(
       title: title,
@@ -327,6 +328,23 @@ class _FinanceEntriesSection extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: DsSpaceTokens.space1),
+                          if ((entry.clientName ?? '').isNotEmpty ||
+                              (entry.employeeName ?? '').isNotEmpty)
+                            Text(
+                              [
+                                if ((entry.clientName ?? '').isNotEmpty)
+                                  '${strings.client}: ${entry.clientName!}',
+                                if ((entry.employeeName ?? '').isNotEmpty)
+                                  '${strings.employee}: ${entry.employeeName!}',
+                              ].join(' · '),
+                              style: const TextStyle(
+                                color: DsColorTokens.textSecondary,
+                                fontSize: DsTypeTokens.textXs,
+                              ),
+                            ),
+                          if ((entry.clientName ?? '').isNotEmpty ||
+                              (entry.employeeName ?? '').isNotEmpty)
+                            const SizedBox(height: DsSpaceTokens.space1),
                           Text(
                             _formatDate(context, entry.dueDate),
                             style: const TextStyle(
@@ -343,15 +361,92 @@ class _FinanceEntriesSection extends StatelessWidget {
                       children: [
                         Text(
                           _formatCurrency(entry.amount, entry.currency),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: DsTypeTokens.fontSemibold,
                             fontSize: DsTypeTokens.textSm,
+                            color: entry.type == FinanceEntryType.receivable
+                                ? DsColorTokens.statusSuccess
+                                : DsColorTokens.statusError,
                           ),
                         ),
                         const SizedBox(height: DsSpaceTokens.space1),
                         DsStatusPill(
                           label: _statusLabel(strings, entry.status),
                           color: _statusColor(entry.status),
+                        ),
+                        if (entry.method != null) ...[
+                          const SizedBox(height: DsSpaceTokens.space1),
+                          DsStatusPill(
+                            label: _methodLabel(strings, entry.method!),
+                            color: DsColorTokens.actionPrimary,
+                          ),
+                        ],
+                        if (entry.isDisputed) ...[
+                          const SizedBox(height: DsSpaceTokens.space1),
+                          DsStatusPill(
+                            label: strings.disputed,
+                            color: DsColorTokens.statusError,
+                          ),
+                        ],
+                        if (entry.receiptData != null) ...[
+                          const SizedBox(height: DsSpaceTokens.space1),
+                          DsStatusPill(
+                            label: strings.receipt,
+                            color: DsColorTokens.statusSuccess,
+                          ),
+                        ],
+                        const SizedBox(height: DsSpaceTokens.space1),
+                        PopupMenuButton<String>(
+                          tooltip: strings.change,
+                          onSelected: (value) {
+                            if (value == 'pending') {
+                              store.markFinanceEntry(
+                                entry.id,
+                                FinanceStatus.pending,
+                              );
+                              return;
+                            }
+
+                            if (value.startsWith('paid:')) {
+                              final methodKey = value.split(':').last;
+                              final method = switch (methodKey) {
+                                'pix' => FinancePaymentMethod.pix,
+                                'card' => FinancePaymentMethod.card,
+                                _ => FinancePaymentMethod.cash,
+                              };
+                              store.markFinanceEntry(
+                                entry.id,
+                                FinanceStatus.paid,
+                                method: method,
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem<String>(
+                              value: 'pending',
+                              child: Text(strings.pending),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'paid:pix',
+                              child: Text('${strings.paid} · ${strings.pix}'),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'paid:card',
+                              child: Text('${strings.paid} · ${strings.card}'),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'paid:cash',
+                              child: Text('${strings.paid} · ${strings.cash}'),
+                            ),
+                          ],
+                          child: Text(
+                            strings.change,
+                            style: const TextStyle(
+                              color: DsColorTokens.actionPrimary,
+                              fontSize: DsTypeTokens.textXs,
+                              fontWeight: DsTypeTokens.fontSemibold,
+                            ),
+                          ),
                         ),
                       ],
                     ),

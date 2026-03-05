@@ -36,9 +36,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : DateFormat.yMd(locale).add_Hm().format(state.lastSync!);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: DsColorTokens.surfaceSection,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: DsColorTokens.surfaceSection,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: widget.onMenu == null
@@ -57,7 +57,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
       body: DsBackground(
         child: ListView(
-          padding: const EdgeInsets.only(top: kToolbarHeight + 20),
+          padding: const EdgeInsets.only(top: 12),
         children: [
           if (session != null)
             _SettingsSection(
@@ -73,6 +73,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     style: const TextStyle(color: Colors.red),
                   ),
                   onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: Text(strings.signOut),
+                        content: Text(strings.signOutConfirm),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(false),
+                            child: Text(strings.cancel),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: Text(strings.signOut),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
                     await ref.read(authStateProvider.notifier).logout();
                     ref.read(offlineStoreProvider.notifier).logout();
                   },
@@ -127,7 +148,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                 )
               else
-                ...state.conflictLog.map((entry) => ListTile(
+                ...([...state.conflictLog]
+                      ..sort((a, b) => b.timestamp.compareTo(a.timestamp)))
+                    .map((entry) => ListTile(
                       title: Text(entry.summary),
                       subtitle: Text('${entry.entity} · ${entry.field}\n${DateFormat.yMd(locale).format(entry.timestamp)}'),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -296,6 +319,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: Text(strings.pushNotifications),
                   value: state.notificationPreferences.enablePush,
                   onChanged: (value) {
+                    if (value) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(strings.pushPermissionHint),
+                        ),
+                      );
+                    }
                     ref
                         .read(offlineStoreProvider.notifier)
                         .setNotificationPreferences(
@@ -352,6 +382,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         );
                   },
                 ),
+                if (!state.appPreferences.enableWhatsApp &&
+                    !state.appPreferences.enableTextMessages &&
+                    !state.appPreferences.enableEmail)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      strings.noDeliveryChannelsWarning,
+                      style: const TextStyle(
+                        color: DsColorTokens.statusWarning,
+                        fontSize: DsTypeTokens.textXs,
+                        fontWeight: DsTypeTokens.fontMedium,
+                      ),
+                    ),
+                  ),
               ],
             ),
         ],

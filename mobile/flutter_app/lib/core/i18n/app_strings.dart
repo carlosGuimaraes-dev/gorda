@@ -114,6 +114,9 @@ class AppStrings {
   String get session => _isEs ? 'Sesión' : 'Session';
   String get sync => _isEs ? 'Sincronización' : 'Sync';
   String get signOut => _isEs ? 'Cerrar sesión' : 'Sign out';
+  String get signOutConfirm => _isEs
+      ? '¿Seguro que quieres cerrar sesión?'
+      : 'Are you sure you want to sign out?';
   String get last => _isEs ? 'Último' : 'Last';
   String get pendingChangesInQueue =>
       _isEs ? 'cambios pendientes en la cola' : 'pending changes in the queue';
@@ -131,6 +134,9 @@ class AppStrings {
       _isEs ? 'Notificaciones para el equipo' : 'Notifications for team';
   String get pushNotifications =>
       _isEs ? 'Notificaciones push' : 'Push notifications';
+  String get pushPermissionHint => _isEs
+      ? 'Activa permisos de notificaciones en el sistema para recibir alertas.'
+      : 'Enable system notification permission to receive alerts.';
   String get siriSuggestions =>
       _isEs ? 'Sugerencias de Siri' : 'Siri suggestions';
   String get disputeWindowOneDay => _isEs
@@ -147,6 +153,9 @@ class AppStrings {
       : 'Company profile (invoices)';
   String get deliveryChannels =>
       _isEs ? 'Canales de entrega' : 'Delivery channels';
+  String get noDeliveryChannelsWarning => _isEs
+      ? 'Sin canales activos. Activa al menos uno para evitar fallas de entrega.'
+      : 'No active channels. Enable at least one to avoid delivery failures.';
   String get textMessage => _isEs ? 'Mensaje de texto' : 'Text Message';
   String get navigation => _isEs ? 'Navegación' : 'Navigation';
   String get catalogs => _isEs ? 'Catálogos' : 'Catalogs';

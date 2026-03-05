@@ -20,16 +20,17 @@ class DsColorTokens {
   static const Color surfaceGlassProminent = Color.fromRGBO(255, 255, 255, 0.9);
   static const Color surfaceGlassClear = Color.fromRGBO(255, 255, 255, 0.6);
 
-  static const Color actionPrimary = Color(0xFF533AFD);
-  static const Color actionPrimaryHover = Color(0xFF4A34E3);
-  static const Color actionPrimaryActive = Color(0xFF422ECA);
+  // Parity with SwiftUI Theme.primary (0.10, 0.45, 0.95)
+  static const Color actionPrimary = Color(0xFF1A73F2);
+  static const Color actionPrimaryHover = Color(0xFF1667D9);
+  static const Color actionPrimaryActive = Color(0xFF145CC2);
   static const Color actionSecondary = Color(0xFFE5E7EB);
   static const Color actionStrong = Color(0xFF1C1C1E);
   static const Color actionStrongHover = Color(0xFF0E0E10);
 
   static const Color borderDefault = Color(0xFFD1D5DB);
   static const Color borderSubtle = Color(0xFFE5E7EB);
-  static const Color borderFocus = Color(0xFF533AFD);
+  static const Color borderFocus = actionPrimary;
 
   static const Color statusSuccess = Color(0xFF22C55E);
   static const Color statusWarning = Color(0xFFF97316);

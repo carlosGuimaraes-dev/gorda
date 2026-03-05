@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../employees/domain/employee.dart';
 import '../../finance/domain/finance_entry.dart';
+import '../../finance/presentation/finance_page.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
 import '../../../core/design/design_theme.dart';
@@ -34,9 +35,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final role = state.session?.role;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: DsColorTokens.surfaceSection,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: DsColorTokens.surfaceSection,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: widget.onMenu == null
@@ -330,6 +331,44 @@ class _ManagerDashboard extends ConsumerWidget {
             ),
           ),
         DsCard(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.monthlyClosing,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: DsColorTokens.textPrimary,
+                          ),
+                    ),
+                    const SizedBox(height: DsSpaceTokens.space1),
+                    Text(
+                      strings.monthlyBatchReady,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: DsColorTokens.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: DsSpaceTokens.space2),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const MonthlyClosingWizardPage(),
+                    ),
+                  );
+                },
+                child: Text(strings.closingWizard),
+              ),
+            ],
+          ),
+        ),
+        DsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -414,7 +453,7 @@ class _MetricStat extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 color: valueColor ?? DsColorTokens.textPrimary,
                 letterSpacing: -0.5,
               ),
