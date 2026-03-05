@@ -78,8 +78,14 @@ void main() {
       'Front desk key',
     );
 
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('client_form_channel_whatsapp')),
+    );
     await tester.tap(find.byKey(const ValueKey('client_form_channel_whatsapp')));
     await tester.pump();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('client_form_channel_sms')),
+    );
     await tester.tap(find.byKey(const ValueKey('client_form_channel_sms')));
     await tester.pump();
     expect(
