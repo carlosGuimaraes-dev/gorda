@@ -1006,20 +1006,6 @@ class OfflineStore extends Notifier<OfflineState> {
     );
   }
 
-  void advanceTaskStatus(String taskId) {
-    final index = state.tasks.indexWhere((task) => task.id == taskId);
-    if (index < 0) return;
-
-    final current = state.tasks[index].status;
-    final next = switch (current) {
-      TaskStatus.scheduled => TaskStatus.inProgress,
-      TaskStatus.inProgress => TaskStatus.completed,
-      TaskStatus.completed => TaskStatus.completed,
-      TaskStatus.canceled => TaskStatus.canceled,
-    };
-    updateTaskStatus(taskId: taskId, status: next);
-  }
-
   void markTaskCheckIn(String taskId, DateTime timestamp) {
     final index = state.tasks.indexWhere((task) => task.id == taskId);
     if (index < 0) return;
