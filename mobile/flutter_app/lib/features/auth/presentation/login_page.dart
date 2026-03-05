@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/design/design_tokens.dart';
 import '../../../core/design/design_theme.dart';
 import '../../../core/i18n/app_strings.dart';
@@ -36,7 +37,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final offlineState = ref.watch(offlineStoreProvider);
     final strings = AppStrings.of(Localizations.localeOf(context));
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final lastSync = offlineState.lastSync == null
+        ? null
+        : DateFormat.yMd(locale).add_Hm().format(offlineState.lastSync!);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -108,15 +114,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       },
                     ),
                     const SizedBox(height: DsSpaceTokens.space8),
-                    DsPrimaryButton(
-                      title: strings.signIn,
-                      onPressed: authState.isLoading ? () {} : _doLogin,
-                      isDisabled: authState.isLoading,
+                    Semantics(
+                      label: strings.signInAccessibilityLabel,
+                      button: true,
+                      child: DsPrimaryButton(
+                        title: strings.signIn,
+                        onPressed: authState.isLoading ? () {} : _doLogin,
+                        isDisabled: authState.isLoading,
+                      ),
                     ),
                     if (authState.isLoading)
                       const Padding(
                         padding: EdgeInsets.only(top: DsSpaceTokens.space4),
                         child: CircularProgressIndicator(),
+                      ),
+                    if (lastSync != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: DsSpaceTokens.space4),
+                        child: Text(
+                          '${strings.last}: $lastSync',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: DsColorTokens.textSecondary,
+                              ),
+                        ),
                       ),
                   ],
                 ),

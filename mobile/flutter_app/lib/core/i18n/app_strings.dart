@@ -21,6 +21,9 @@ class AppStrings {
   String get user => _isEs ? 'Usuario' : 'User';
   String get password => _isEs ? 'Contraseña' : 'Password';
   String get signIn => _isEs ? 'Iniciar sesión' : 'Sign in';
+  String get signInAccessibilityLabel => _isEs
+      ? 'Iniciar sesión en Gestión de Servicios'
+      : 'Sign in to Service Management';
   String get dashboard => _isEs ? 'Panel' : 'Dashboard';
   String get schedule => _isEs ? 'Agenda' : 'Schedule';
   String get clients => _isEs ? 'Clientes' : 'Clients';

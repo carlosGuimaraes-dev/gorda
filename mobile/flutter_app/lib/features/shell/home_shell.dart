@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/i18n/app_strings.dart';
-import '../../core/theme/app_theme.dart';
 import '../auth/domain/user_session.dart';
 import '../clients/presentation/clients_page.dart';
 import '../dashboard/presentation/dashboard_page.dart';
@@ -11,19 +11,20 @@ import '../schedule/presentation/schedule_page.dart';
 import '../services/presentation/services_page.dart';
 import '../settings/presentation/settings_page.dart';
 import '../teams/presentation/teams_page.dart';
+import '../offline/application/offline_store.dart';
 import '../../core/design/design_theme.dart';
 import '../../core/design/design_tokens.dart';
 
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.role});
 
   final UserRole role;
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> {
   int index = 0;
 
   void _openCatalogPage(Widget page) {
@@ -41,6 +42,50 @@ class _HomeShellState extends State<HomeShell> {
           child: ListView(
             shrinkWrap: true,
             children: [
+              ListTile(
+                title: Text(strings.navigation),
+              ),
+              ListTile(
+                leading: const Icon(Icons.dashboard_outlined),
+                title: Text(strings.dashboard),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() => index = 0);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_outlined),
+                title: Text(strings.schedule),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() => index = 1);
+                },
+              ),
+              if (widget.role == UserRole.manager)
+                ListTile(
+                  leading: const Icon(Icons.people_outline),
+                  title: Text(strings.clients),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() => index = 2);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.payments_outlined),
+                title: Text(strings.finance),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() => index = widget.role == UserRole.manager ? 3 : 2);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: Text(strings.settings),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  setState(() => index = widget.role == UserRole.manager ? 4 : 3);
+                },
+              ),
               ListTile(
                 title: Text(strings.catalogs),
               ),
@@ -78,6 +123,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(Localizations.localeOf(context));
+    final conflictCount = ref.watch(offlineStoreProvider.select((s) => s.conflictLog.length));
 
     final managerPages = [
       DashboardPage(onMenu: _openMenu),
@@ -134,7 +180,12 @@ class _HomeShellState extends State<HomeShell> {
                           icon: const Icon(Icons.payments_outlined),
                           label: strings.finance),
                       NavigationDestination(
-                          icon: const Icon(Icons.settings_outlined),
+                          icon: conflictCount == 0
+                              ? const Icon(Icons.settings_outlined)
+                              : Badge.count(
+                                  count: conflictCount,
+                                  child: const Icon(Icons.settings_outlined),
+                                ),
                           label: strings.settings),
                     ]
                   : [
@@ -148,7 +199,12 @@ class _HomeShellState extends State<HomeShell> {
                           icon: const Icon(Icons.payments_outlined),
                           label: strings.finance),
                       NavigationDestination(
-                          icon: const Icon(Icons.settings_outlined),
+                          icon: conflictCount == 0
+                              ? const Icon(Icons.settings_outlined)
+                              : Badge.count(
+                                  count: conflictCount,
+                                  child: const Icon(Icons.settings_outlined),
+                                ),
                           label: strings.settings),
                     ],
             ),
