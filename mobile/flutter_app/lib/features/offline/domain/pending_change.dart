@@ -24,9 +24,11 @@ class PendingChange {
     required this.operation,
     required this.entityId,
     required this.timestamp,
+    this.fields = const [],
   });
 
   final PendingOperation operation;
   final String entityId;
   final DateTime timestamp;
+  final List<String> fields;
 }

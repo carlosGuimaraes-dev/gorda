@@ -112,6 +112,21 @@ class OfflineState {
 
 class OfflineStore extends Notifier<OfflineState> {
   final Uuid _uuid = const Uuid();
+  static const List<String> _allTaskSyncFields = <String>[
+    'title',
+    'date',
+    'status',
+    'assignedEmployeeId',
+    'clientId',
+    'serviceTypeId',
+    'clientName',
+    'address',
+    'startTime',
+    'endTime',
+    'notes',
+    'checkInTime',
+    'checkOutTime',
+  ];
 
   @override
   OfflineState build() {
@@ -543,6 +558,7 @@ class OfflineStore extends Notifier<OfflineState> {
         state.pendingChanges,
         PendingOperation.addTask,
         task.id,
+        fields: _allTaskSyncFields,
       ),
     );
     _appendAudit(
@@ -566,6 +582,7 @@ class OfflineStore extends Notifier<OfflineState> {
         state.pendingChanges,
         PendingOperation.updateTask,
         taskId,
+        fields: const ['status'],
       ),
     );
     _appendAudit(
@@ -1020,6 +1037,7 @@ class OfflineStore extends Notifier<OfflineState> {
         state.pendingChanges,
         PendingOperation.updateTask,
         taskId,
+        fields: const ['checkInTime', 'status'],
       ),
     );
   }
@@ -1039,6 +1057,7 @@ class OfflineStore extends Notifier<OfflineState> {
         state.pendingChanges,
         PendingOperation.updateTask,
         taskId,
+        fields: const ['checkOutTime'],
       ),
     );
   }
@@ -1181,7 +1200,18 @@ class OfflineStore extends Notifier<OfflineState> {
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     for (final item in sorted) {
       final entity = _entityFromOperation(item.operation);
-      latestByEntity['$entity:${item.entityId}'] = item;
+      final key = '$entity:${item.entityId}';
+      final previous = latestByEntity[key];
+      if (previous == null) {
+        latestByEntity[key] = item;
+        continue;
+      }
+      latestByEntity[key] = PendingChange(
+        operation: item.operation,
+        entityId: item.entityId,
+        timestamp: item.timestamp,
+        fields: _mergePendingFields(previous.fields, item.fields),
+      );
     }
     return latestByEntity;
   }
@@ -1208,6 +1238,16 @@ class OfflineStore extends Notifier<OfflineState> {
       }
     }
     return null;
+  }
+
+  List<String> _mergePendingFields(
+    List<String> previous,
+    List<String> next,
+  ) {
+    final merged = <String>{};
+    merged.addAll(previous.map((field) => field.trim()).where((f) => f.isNotEmpty));
+    merged.addAll(next.map((field) => field.trim()).where((f) => f.isNotEmpty));
+    return merged.toList(growable: false);
   }
 
   Map<String, dynamic> _payloadForPendingChange(PendingChange change) {
@@ -1238,22 +1278,23 @@ class OfflineStore extends Notifier<OfflineState> {
       if (change.entity != 'task' || change.entityId.trim().isEmpty) continue;
 
       final key = 'task:${change.entityId}';
-      final hasLocalPending = latestLocalPendingByEntity.containsKey(key);
-      if (hasLocalPending) {
-        nextConflicts.add(
-          ConflictLogEntry(
-            id: 'task-conflict-${_uuid.v4()}',
-            entity: 'task',
-            field: 'payload',
-            summary:
-                'Remote task change skipped because local pending update exists for ${change.entityId}',
-            timestamp: change.serverUpdatedAt,
-          ),
-        );
-        continue;
-      }
+      final localPending = latestLocalPendingByEntity[key];
+      final hasLocalPending = localPending != null;
 
       if (change.operation == 'delete') {
+        if (hasLocalPending) {
+          nextConflicts.add(
+            ConflictLogEntry(
+              id: 'task-conflict-${_uuid.v4()}',
+              entity: 'task',
+              field: 'status',
+              summary:
+                  'Remote delete skipped because local pending update exists for ${change.entityId}',
+              timestamp: change.serverUpdatedAt,
+            ),
+          );
+          continue;
+        }
         nextTasks.removeWhere((task) => task.id == change.entityId);
         continue;
       }
@@ -1277,10 +1318,43 @@ class OfflineStore extends Notifier<OfflineState> {
       }
 
       final index = nextTasks.indexWhere((task) => task.id == remoteTask.id);
-      if (index >= 0) {
-        nextTasks[index] = remoteTask;
-      } else {
+      if (index < 0) {
         nextTasks.add(remoteTask);
+        continue;
+      }
+
+      if (!hasLocalPending) {
+        nextTasks[index] = remoteTask;
+        continue;
+      }
+
+      final localTask = nextTasks[index];
+      final localFields = localPending.fields.isEmpty
+          ? _allTaskSyncFields.toSet()
+          : localPending.fields.toSet();
+      final mergedTask = _mergeTaskKeepingLocalFields(
+        local: localTask,
+        remote: remoteTask,
+        localProtectedFields: localFields,
+      );
+      nextTasks[index] = mergedTask;
+
+      final localPayload = _taskToSyncPayload(localTask);
+      final remotePayload = _taskToSyncPayload(remoteTask);
+      final conflictingFields = localFields
+          .where((field) => localPayload[field] != remotePayload[field])
+          .toList(growable: false);
+      if (conflictingFields.isNotEmpty) {
+        nextConflicts.add(
+          ConflictLogEntry(
+            id: 'task-conflict-${_uuid.v4()}',
+            entity: 'task',
+            field: conflictingFields.first,
+            summary:
+                'Remote task merged with local precedence on fields: ${conflictingFields.join(", ")} (${change.entityId})',
+            timestamp: change.serverUpdatedAt,
+          ),
+        );
       }
     }
 
@@ -1305,6 +1379,37 @@ class OfflineStore extends Notifier<OfflineState> {
       'checkInTime': task.checkInTime?.toUtc().toIso8601String(),
       'checkOutTime': task.checkOutTime?.toUtc().toIso8601String(),
     };
+  }
+
+  ServiceTask _mergeTaskKeepingLocalFields({
+    required ServiceTask local,
+    required ServiceTask remote,
+    required Set<String> localProtectedFields,
+  }) {
+    bool keepLocal(String field) => localProtectedFields.contains(field);
+
+    return ServiceTask(
+      id: remote.id,
+      title: keepLocal('title') ? local.title : remote.title,
+      date: keepLocal('date') ? local.date : remote.date,
+      status: keepLocal('status') ? local.status : remote.status,
+      assignedEmployeeId: keepLocal('assignedEmployeeId')
+          ? local.assignedEmployeeId
+          : remote.assignedEmployeeId,
+      clientId: keepLocal('clientId') ? local.clientId : remote.clientId,
+      serviceTypeId: keepLocal('serviceTypeId')
+          ? local.serviceTypeId
+          : remote.serviceTypeId,
+      clientName: keepLocal('clientName') ? local.clientName : remote.clientName,
+      address: keepLocal('address') ? local.address : remote.address,
+      startTime: keepLocal('startTime') ? local.startTime : remote.startTime,
+      endTime: keepLocal('endTime') ? local.endTime : remote.endTime,
+      notes: keepLocal('notes') ? local.notes : remote.notes,
+      checkInTime:
+          keepLocal('checkInTime') ? local.checkInTime : remote.checkInTime,
+      checkOutTime:
+          keepLocal('checkOutTime') ? local.checkOutTime : remote.checkOutTime,
+    );
   }
 
   ServiceTask? _taskFromSyncPayload({
@@ -1554,6 +1659,7 @@ class OfflineStore extends Notifier<OfflineState> {
     List<PendingChange> queue,
     PendingOperation operation,
     String entityId,
+    {List<String> fields = const []}
   ) {
     return [
       ...queue,
@@ -1561,6 +1667,7 @@ class OfflineStore extends Notifier<OfflineState> {
         operation: operation,
         entityId: entityId,
         timestamp: DateTime.now(),
+        fields: fields,
       ),
     ];
   }
@@ -1569,6 +1676,7 @@ class OfflineStore extends Notifier<OfflineState> {
     List<PendingChange> queue,
     PendingOperation operation,
     List<String> entityIds,
+    {List<String> fields = const []}
   ) {
     if (entityIds.isEmpty) return queue;
     final now = DateTime.now();
@@ -1579,6 +1687,7 @@ class OfflineStore extends Notifier<OfflineState> {
           operation: operation,
           entityId: id,
           timestamp: now,
+          fields: fields,
         ),
       ),
     ];

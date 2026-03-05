@@ -709,6 +709,81 @@ void main() {
       },
     );
 
+    test(
+      'syncPendingChanges merges remote task and preserves only locally edited fields',
+      () async {
+        final pullTime = DateTime.parse('2026-03-05T12:30:00Z');
+        final fakeGateway = _FakeSyncGateway(
+          pushResult: SyncPushResult(
+            serverTime: DateTime.parse('2026-03-05T12:29:00Z'),
+            applied: const [
+              SyncAppliedChange(
+                entity: 'task',
+                entityId: 'task-1',
+                operation: 'upsert',
+              ),
+            ],
+          ),
+          pullResult: SyncPullResult(
+            serverTime: pullTime,
+            changes: [
+              SyncRemoteChange(
+                entity: 'task',
+                entityId: 'task-1',
+                operation: 'upsert',
+                serverUpdatedAt: DateTime.parse('2026-03-05T12:29:30Z'),
+                payload: {
+                  'title': 'Remote Retitled Task',
+                  'date': DateTime(2026, 3, 10, 8, 0).toUtc().toIso8601String(),
+                  'status': 'completed',
+                  'assignedEmployeeId': 'lucas',
+                  'clientId': 'client-2',
+                  'serviceTypeId': 'service-grocery',
+                  'clientName': 'Johnson Residence',
+                  'address': '110 Pine Avenue',
+                  'notes': 'Remote merged note',
+                },
+              ),
+            ],
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            syncGatewayProvider.overrideWithValue(fakeGateway),
+          ],
+        );
+        addTearDown(container.dispose);
+        final notifier = container.read(offlineStoreProvider.notifier);
+
+        notifier.updateTaskStatus(
+          taskId: 'task-1',
+          status: TaskStatus.inProgress,
+        );
+        await notifier.syncPendingChanges();
+
+        final state = container.read(offlineStoreProvider);
+        final task = state.tasks.firstWhere((item) => item.id == 'task-1');
+        expect(task.status, TaskStatus.inProgress); // local field preserved
+        expect(task.title, 'Remote Retitled Task'); // remote field merged
+        expect(task.clientId, 'client-2');
+        expect(task.clientName, 'Johnson Residence');
+        expect(task.address, '110 Pine Avenue');
+        expect(task.notes, 'Remote merged note');
+        expect(state.pendingChanges, isEmpty);
+        expect(
+          state.conflictLog.any(
+            (entry) =>
+                entry.entity == 'task' &&
+                entry.field == 'status' &&
+                entry.summary.contains('task-1'),
+          ),
+          isTrue,
+        );
+        expect(state.lastSync, pullTime);
+      },
+    );
+
     test('syncPendingChanges keeps rejected changes in offline queue', () async {
       final pullTime = DateTime.parse('2026-03-05T13:00:00Z');
       final fakeGateway = _FakeSyncGateway(
