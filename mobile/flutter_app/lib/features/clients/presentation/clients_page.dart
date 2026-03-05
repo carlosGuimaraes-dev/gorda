@@ -68,6 +68,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
           ),
           if (isManager)
             IconButton(
+              key: const ValueKey('clients_add_button'),
               onPressed: _showAddClientDialog,
               icon: const Icon(Icons.add),
               tooltip: strings.newItem,
@@ -364,54 +365,158 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
+    final whatsappCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
+    final propertyCtrl = TextEditingController();
+    final preferredScheduleCtrl = TextEditingController();
+    final accessNotesCtrl = TextEditingController();
+    bool enableEmail = true;
+    bool enableWhatsApp = false;
+    bool enableText = false;
 
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(strings.newClient),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(labelText: strings.clientName),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneCtrl,
-                decoration: InputDecoration(labelText: strings.phone),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: addressCtrl,
-                decoration: InputDecoration(labelText: strings.address),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(strings.close),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameCtrl.text.trim();
-                if (name.isEmpty) return;
-                ref.read(offlineStoreProvider.notifier).addClient(
-                      Client(
-                        id: 'client-${DateTime.now().millisecondsSinceEpoch}',
-                        name: name,
-                        phone: phoneCtrl.text.trim(),
-                        address: addressCtrl.text.trim(),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: Text(strings.newClient),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        key: const ValueKey('client_form_name'),
+                        controller: nameCtrl,
+                        decoration: InputDecoration(labelText: strings.clientName),
                       ),
-                    );
-                Navigator.of(context).pop();
-              },
-              child: Text(strings.save),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_phone'),
+                        controller: phoneCtrl,
+                        decoration: InputDecoration(labelText: strings.phone),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_whatsapp'),
+                        controller: whatsappCtrl,
+                        decoration: InputDecoration(labelText: strings.whatsapp),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_email'),
+                        controller: emailCtrl,
+                        decoration: InputDecoration(labelText: strings.email),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_address'),
+                        controller: addressCtrl,
+                        decoration: InputDecoration(labelText: strings.address),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_property'),
+                        controller: propertyCtrl,
+                        decoration: InputDecoration(labelText: strings.property),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_preferred_schedule'),
+                        controller: preferredScheduleCtrl,
+                        decoration:
+                            InputDecoration(labelText: strings.preferredSchedule),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_access_notes'),
+                        controller: accessNotesCtrl,
+                        decoration: InputDecoration(labelText: strings.accessNotes),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        strings.deliveryChannels,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_email'),
+                        value: enableEmail,
+                        title: Text(strings.email),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableEmail = value ?? false);
+                        },
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_whatsapp'),
+                        value: enableWhatsApp,
+                        title: Text(strings.whatsapp),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableWhatsApp = value ?? false);
+                        },
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_sms'),
+                        value: enableText,
+                        title: Text(strings.textMessage),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableText = value ?? false);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(strings.close),
+                ),
+                FilledButton(
+                  key: const ValueKey('client_form_save_button'),
+                  onPressed: () {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty) return;
+                    final channels = <DeliveryChannel>[
+                      if (enableEmail) DeliveryChannel.email,
+                      if (enableWhatsApp) DeliveryChannel.whatsapp,
+                      if (enableText) DeliveryChannel.sms,
+                    ];
+                    ref.read(offlineStoreProvider.notifier).addClient(
+                          Client(
+                            id: 'client-${DateTime.now().millisecondsSinceEpoch}',
+                            name: name,
+                            contact: name,
+                            phone: phoneCtrl.text.trim(),
+                            whatsappPhone: whatsappCtrl.text.trim(),
+                            email: emailCtrl.text.trim(),
+                            address: addressCtrl.text.trim(),
+                            propertyDetails: propertyCtrl.text.trim(),
+                            preferredSchedule: preferredScheduleCtrl.text.trim(),
+                            accessNotes: accessNotesCtrl.text.trim(),
+                            preferredDeliveryChannels: channels.isEmpty
+                                ? const [DeliveryChannel.email]
+                                : channels,
+                          ),
+                        );
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(strings.save),
+                ),
+              ],
             ),
-          ],
+          },
         );
       },
     );
@@ -508,6 +613,22 @@ class _ClientCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           client.whatsappPhone,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: DsColorTokens.textSecondary,
+                              ),
+                        ),
+                      ],
+                    ),
+                  if (client.phone.isEmpty &&
+                      client.whatsappPhone.isEmpty &&
+                      client.email.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.alternate_email_outlined,
+                            size: 13, color: DsColorTokens.actionPrimary),
+                        const SizedBox(width: 4),
+                        Text(
+                          client.email,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: DsColorTokens.textSecondary,
                               ),

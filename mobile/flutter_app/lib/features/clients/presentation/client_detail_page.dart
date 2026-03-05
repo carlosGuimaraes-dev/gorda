@@ -54,6 +54,9 @@ class ClientDetailPage extends ConsumerWidget {
     final hasDeliveryChannels = current.phone.trim().isNotEmpty ||
         current.whatsappPhone.trim().isNotEmpty ||
         current.email.trim().isNotEmpty;
+    final preferredChannels = current.preferredDeliveryChannels
+        .map((channel) => _deliveryChannelLabel(strings, channel))
+        .join(', ');
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -134,6 +137,8 @@ class ClientDetailPage extends ConsumerWidget {
                       ),
                     ),
                   const SizedBox(height: 4),
+                  if (preferredChannels.isNotEmpty)
+                    _detailItem(strings.deliveryChannels, preferredChannels),
                   if (current.address.isNotEmpty)
                     _detailItem(strings.address, current.address),
                   if (current.propertyDetails.isNotEmpty)
@@ -278,65 +283,182 @@ class ClientDetailPage extends ConsumerWidget {
     return '$date · ${DateFormat.Hm(locale).format(task.startTime!)}';
   }
 
+  String _deliveryChannelLabel(AppStrings strings, DeliveryChannel channel) {
+    switch (channel) {
+      case DeliveryChannel.email:
+        return strings.email;
+      case DeliveryChannel.whatsapp:
+        return strings.whatsapp;
+      case DeliveryChannel.sms:
+        return strings.textMessage;
+    }
+  }
+
   Future<void> _showClientForm(
       BuildContext context, WidgetRef ref, Client client) async {
     final strings = AppStrings.of(Localizations.localeOf(context));
     final nameCtrl = TextEditingController(text: client.name);
     final phoneCtrl = TextEditingController(text: client.phone);
+    final whatsappCtrl = TextEditingController(text: client.whatsappPhone);
     final addressCtrl = TextEditingController(text: client.address);
     final emailCtrl = TextEditingController(text: client.email);
+    final propertyCtrl = TextEditingController(text: client.propertyDetails);
+    final preferredScheduleCtrl =
+        TextEditingController(text: client.preferredSchedule);
+    final accessNotesCtrl = TextEditingController(text: client.accessNotes);
+    bool enableEmail =
+        client.preferredDeliveryChannels.contains(DeliveryChannel.email);
+    bool enableWhatsApp =
+        client.preferredDeliveryChannels.contains(DeliveryChannel.whatsapp);
+    bool enableText =
+        client.preferredDeliveryChannels.contains(DeliveryChannel.sms);
+    if (client.preferredDeliveryChannels.isEmpty) {
+      enableEmail = true;
+    }
 
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(strings.editClient),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(labelText: strings.clientName),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: phoneCtrl,
-              decoration: InputDecoration(labelText: strings.phone),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: addressCtrl,
-              decoration: InputDecoration(labelText: strings.address),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(strings.close),
-          ),
-          FilledButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              if (name.isEmpty) return;
-              ref.read(offlineStoreProvider.notifier).updateClient(
-                    client.copyWith(
-                      name: name,
-                      phone: phoneCtrl.text.trim(),
-                      address: addressCtrl.text.trim(),
-                      email: emailCtrl.text.trim(),
-                    ),
-                  );
-              Navigator.of(context).pop();
-            },
-            child: Text(strings.save),
-          ),
-        ],
-      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: Text(strings.editClient),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        key: const ValueKey('client_form_name'),
+                        controller: nameCtrl,
+                        decoration: InputDecoration(labelText: strings.clientName),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_phone'),
+                        controller: phoneCtrl,
+                        decoration: InputDecoration(labelText: strings.phone),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_whatsapp'),
+                        controller: whatsappCtrl,
+                        decoration: InputDecoration(labelText: strings.whatsapp),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_email'),
+                        controller: emailCtrl,
+                        decoration: InputDecoration(labelText: strings.email),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_address'),
+                        controller: addressCtrl,
+                        decoration: InputDecoration(labelText: strings.address),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_property'),
+                        controller: propertyCtrl,
+                        decoration: InputDecoration(labelText: strings.property),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_preferred_schedule'),
+                        controller: preferredScheduleCtrl,
+                        decoration:
+                            InputDecoration(labelText: strings.preferredSchedule),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const ValueKey('client_form_access_notes'),
+                        controller: accessNotesCtrl,
+                        decoration: InputDecoration(labelText: strings.accessNotes),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        strings.deliveryChannels,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_email'),
+                        value: enableEmail,
+                        title: Text(strings.email),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableEmail = value ?? false);
+                        },
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_whatsapp'),
+                        value: enableWhatsApp,
+                        title: Text(strings.whatsapp),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableWhatsApp = value ?? false);
+                        },
+                      ),
+                      CheckboxListTile(
+                        key: const ValueKey('client_form_channel_sms'),
+                        value: enableText,
+                        title: Text(strings.textMessage),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setModalState(() => enableText = value ?? false);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(strings.close),
+                ),
+                FilledButton(
+                  key: const ValueKey('client_form_save_button'),
+                  onPressed: () {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty) return;
+                    final channels = <DeliveryChannel>[
+                      if (enableEmail) DeliveryChannel.email,
+                      if (enableWhatsApp) DeliveryChannel.whatsapp,
+                      if (enableText) DeliveryChannel.sms,
+                    ];
+                    ref.read(offlineStoreProvider.notifier).updateClient(
+                          client.copyWith(
+                            name: name,
+                            contact: name,
+                            phone: phoneCtrl.text.trim(),
+                            whatsappPhone: whatsappCtrl.text.trim(),
+                            address: addressCtrl.text.trim(),
+                            email: emailCtrl.text.trim(),
+                            propertyDetails: propertyCtrl.text.trim(),
+                            preferredSchedule: preferredScheduleCtrl.text.trim(),
+                            accessNotes: accessNotesCtrl.text.trim(),
+                            preferredDeliveryChannels: channels.isEmpty
+                                ? const [DeliveryChannel.email]
+                                : channels,
+                          ),
+                        );
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(strings.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
