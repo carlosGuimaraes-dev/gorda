@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/i18n/app_strings.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../clients/domain/client.dart';
 import '../../schedule/presentation/service_detail_page.dart';

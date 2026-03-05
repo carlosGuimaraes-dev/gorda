@@ -151,7 +151,7 @@ class FinancePage extends ConsumerWidget {
               children: [
                 _FinanceNavigationTile(
                   title: strings.monthlyReports,
-                  icon: Icons.monitoring_rounded,
+                  icon: Icons.bar_chart_rounded,
                   onTap: () => _openPage(
                     context,
                     const ReportsPage(),

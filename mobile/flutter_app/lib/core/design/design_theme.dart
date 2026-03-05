@@ -69,13 +69,6 @@ ThemeData buildDesignTheme() {
         ),
       ),
     ),
-    dropdownButtonTheme: DropdownButtonThemeData(
-      style: baseTextTheme.bodyLarge?.copyWith(
-        color: DsColorTokens.textPrimary,
-        fontWeight: DsTypeTokens.fontNormal,
-      ),
-      borderRadius: BorderRadius.circular(DsRadiusTokens.radiusLg),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: DsColorTokens.surfaceSubtle,
