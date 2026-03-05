@@ -36,10 +36,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Navigation'), findsOneWidget);
-    expect(find.text('Catalogs'), findsOneWidget);
-    expect(find.text('Dashboard'), findsWidgets);
-    expect(find.text('Services'), findsOneWidget);
+    expect(find.byIcon(Icons.dashboard_outlined), findsWidgets);
+    expect(find.byIcon(Icons.calendar_month_outlined), findsWidgets);
+    expect(find.byIcon(Icons.people_outline), findsWidgets);
+    expect(find.byIcon(Icons.payments_outlined), findsWidgets);
+    expect(find.byIcon(Icons.settings_outlined), findsWidgets);
+    expect(find.byIcon(Icons.handyman_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.group_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
   });
 
   testWidgets('settings destination shows conflict badge count', (tester) async {
