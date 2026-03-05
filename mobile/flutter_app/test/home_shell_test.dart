@@ -30,16 +30,16 @@ void main() {
 
     final navClientsIcon = find.descendant(
       of: find.byType(NavigationBar),
-      matching: find.byIcon(Icons.people_outline),
+      matching: find.byIcon(Icons.groups_2_rounded),
     );
     expect(navClientsIcon, findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.tap(find.byIcon(Icons.menu_rounded).first);
     await tester.pumpAndSettle();
 
     final menuClientsIcon = find.descendant(
       of: find.byType(BottomSheet),
-      matching: find.byIcon(Icons.people_outline),
+      matching: find.byIcon(Icons.groups_2_rounded),
     );
     expect(menuClientsIcon, findsOneWidget);
   });
@@ -57,16 +57,16 @@ void main() {
 
     final navClientsIcon = find.descendant(
       of: find.byType(NavigationBar),
-      matching: find.byIcon(Icons.people_outline),
+      matching: find.byIcon(Icons.groups_2_rounded),
     );
     expect(navClientsIcon, findsNothing);
 
-    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.tap(find.byIcon(Icons.menu_rounded).first);
     await tester.pumpAndSettle();
 
     final menuClientsIcon = find.descendant(
       of: find.byType(BottomSheet),
-      matching: find.byIcon(Icons.people_outline),
+      matching: find.byIcon(Icons.groups_2_rounded),
     );
     expect(menuClientsIcon, findsNothing);
   });
@@ -80,24 +80,24 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.tap(find.byIcon(Icons.menu_rounded).first);
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.byIcon(Icons.handyman_outlined),
+      find.byIcon(Icons.build_circle_outlined),
       300,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.dashboard_outlined), findsWidgets);
-    expect(find.byIcon(Icons.calendar_month_outlined), findsWidgets);
-    expect(find.byIcon(Icons.people_outline), findsWidgets);
-    expect(find.byIcon(Icons.payments_outlined), findsWidgets);
-    expect(find.byIcon(Icons.settings_outlined), findsWidgets);
-    expect(find.byIcon(Icons.handyman_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.group_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.space_dashboard_rounded), findsWidgets);
+    expect(find.byIcon(Icons.calendar_today_rounded), findsWidgets);
+    expect(find.byIcon(Icons.groups_2_rounded), findsWidgets);
+    expect(find.byIcon(Icons.account_balance_wallet_rounded), findsWidgets);
+    expect(find.byIcon(Icons.tune_rounded), findsWidgets);
+    expect(find.byIcon(Icons.build_circle_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.badge_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.flag_circle_outlined), findsOneWidget);
   });
 
   testWidgets('settings destination shows conflict badge count', (tester) async {
