@@ -205,8 +205,22 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     final session = state.session;
     if (session == null) return const [];
 
+    final sessionKey = session.name.trim().toLowerCase();
+
     return state.tasks
-        .where((task) => task.assignedEmployeeId == session.name)
+        .where((task) {
+          final assignedKey = task.assignedEmployeeId.trim().toLowerCase();
+          if (assignedKey == sessionKey) return true;
+
+          for (final employee in state.employees) {
+            if (employee.id.trim().toLowerCase() != assignedKey) continue;
+            final employeeNameKey = employee.name.trim().toLowerCase();
+            if (employeeNameKey == sessionKey) return true;
+            break;
+          }
+
+          return false;
+        })
         .toList();
   }
 
