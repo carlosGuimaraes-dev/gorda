@@ -17,6 +17,60 @@ class _TestOfflineStore extends OfflineStore {
 }
 
 void main() {
+  testWidgets('manager role shows clients destination', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: HomeShell(role: UserRole.manager),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final navClientsIcon = find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.people_outline),
+    );
+    expect(navClientsIcon, findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.pumpAndSettle();
+
+    final menuClientsIcon = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byIcon(Icons.people_outline),
+    );
+    expect(menuClientsIcon, findsOneWidget);
+  });
+
+  testWidgets('employee role hides clients destination', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: HomeShell(role: UserRole.employee),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final navClientsIcon = find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.people_outline),
+    );
+    expect(navClientsIcon, findsNothing);
+
+    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.pumpAndSettle();
+
+    final menuClientsIcon = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byIcon(Icons.people_outline),
+    );
+    expect(menuClientsIcon, findsNothing);
+  });
+
   testWidgets('home menu shows navigation and catalogs sections', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
@@ -30,7 +84,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Services'),
+      find.byIcon(Icons.handyman_outlined),
       300,
       scrollable: find.byType(Scrollable).first,
     );
