@@ -219,4 +219,74 @@ void main() {
     expect(updated.propertyDetails, 'Tower B');
     expect(updated.accessNotes, 'Call reception');
   });
+
+  testWidgets('employee cannot access client creation from clients page',
+      (tester) async {
+    final seeded = OfflineState(
+      session: const UserSession(
+        token: 'token',
+        name: 'Employee',
+        role: UserRole.employee,
+      ),
+      clients: const [
+        Client(
+          id: 'client-1',
+          name: 'Read Only Client',
+          address: '123 Main',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          offlineStoreProvider.overrideWith(() => _TestOfflineStore(seeded)),
+        ],
+        child: const MaterialApp(
+          home: ClientsPage(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('clients_add_button')), findsNothing);
+  });
+
+  testWidgets('employee cannot access edit delete or create in client detail',
+      (tester) async {
+    final seeded = OfflineState(
+      session: const UserSession(
+        token: 'token',
+        name: 'Employee',
+        role: UserRole.employee,
+      ),
+      clients: const [
+        Client(
+          id: 'client-2',
+          name: 'Detail Client',
+          address: '456 Main',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          offlineStoreProvider.overrideWith(() => _TestOfflineStore(seeded)),
+        ],
+        child: const MaterialApp(
+          home: ClientDetailPage(clientId: 'client-2'),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('client_detail_edit_button')), findsNothing);
+    expect(find.byKey(const ValueKey('client_detail_delete_button')), findsNothing);
+    expect(
+        find.byKey(const ValueKey('client_detail_create_service_button')),
+        findsNothing);
+  });
 }

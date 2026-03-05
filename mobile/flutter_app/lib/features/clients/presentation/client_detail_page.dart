@@ -72,12 +72,14 @@ class ClientDetailPage extends ConsumerWidget {
         actions: [
           if (isManager)
             IconButton(
+              key: const ValueKey('client_detail_edit_button'),
               onPressed: () => _showClientForm(context, ref, current),
               icon: const Icon(Icons.edit_outlined),
               tooltip: strings.edit,
             ),
           if (isManager)
             IconButton(
+              key: const ValueKey('client_detail_delete_button'),
               onPressed: () => _deleteClient(context, ref, current),
               icon: const Icon(Icons.delete_outline),
               tooltip: strings.delete,
@@ -94,6 +96,14 @@ class ClientDetailPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    strings.client,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: DsColorTokens.textPrimary,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(current.name,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700,
@@ -192,16 +202,18 @@ class ClientDetailPage extends ConsumerWidget {
                                   color: DsColorTokens.textSecondary)),
                           trailing: _StatusDot(status: task.status),
                         )),
-                  ListTile(
-                    leading: const Icon(Icons.add_circle_outline,
-                        color: DsColorTokens.actionPrimary),
-                    title: Text(strings.createService,
-                        style: const TextStyle(
-                            color: DsColorTokens.actionPrimary,
-                            fontWeight: FontWeight.bold)),
-                    onTap: () =>
-                        _showCreateService(context, ref, current, state),
-                  ),
+                  if (isManager)
+                    ListTile(
+                      key: const ValueKey('client_detail_create_service_button'),
+                      leading: const Icon(Icons.add_circle_outline,
+                          color: DsColorTokens.actionPrimary),
+                      title: Text(strings.createService,
+                          style: const TextStyle(
+                              color: DsColorTokens.actionPrimary,
+                              fontWeight: FontWeight.bold)),
+                      onTap: () =>
+                          _showCreateService(context, ref, current, state),
+                    ),
                 ],
               ),
             ),
@@ -296,6 +308,9 @@ class ClientDetailPage extends ConsumerWidget {
 
   Future<void> _showClientForm(
       BuildContext context, WidgetRef ref, Client client) async {
+    final isManager =
+        ref.read(offlineStoreProvider).session?.role == UserRole.manager;
+    if (!isManager) return;
     final strings = AppStrings.of(Localizations.localeOf(context));
     final nameCtrl = TextEditingController(text: client.name);
     final phoneCtrl = TextEditingController(text: client.phone);
@@ -428,7 +443,12 @@ class ClientDetailPage extends ConsumerWidget {
                   key: const ValueKey('client_form_save_button'),
                   onPressed: () {
                     final name = nameCtrl.text.trim();
-                    if (name.isEmpty) return;
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(strings.completeClientName)),
+                      );
+                      return;
+                    }
                     final channels = <DeliveryChannel>[
                       if (enableEmail) DeliveryChannel.email,
                       if (enableWhatsApp) DeliveryChannel.whatsapp,
@@ -464,6 +484,9 @@ class ClientDetailPage extends ConsumerWidget {
 
   Future<void> _deleteClient(
       BuildContext context, WidgetRef ref, Client client) async {
+    final isManager =
+        ref.read(offlineStoreProvider).session?.role == UserRole.manager;
+    if (!isManager) return;
     final strings = AppStrings.of(Localizations.localeOf(context));
     final confirmed = await showDialog<bool>(
           context: context,
@@ -499,6 +522,7 @@ class ClientDetailPage extends ConsumerWidget {
 
   Future<void> _showCreateService(BuildContext context, WidgetRef ref,
       Client client, OfflineState state) async {
+    if (state.session?.role != UserRole.manager) return;
     final strings = AppStrings.of(Localizations.localeOf(context));
     final isManager = state.session?.role == UserRole.manager;
     final titleCtrl = TextEditingController();

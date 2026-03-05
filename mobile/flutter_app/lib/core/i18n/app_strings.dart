@@ -90,6 +90,9 @@ class AppStrings {
   String get reset => _isEs ? 'Reiniciar' : 'Reset';
   String get newClient => _isEs ? 'Nuevo cliente' : 'New client';
   String get clientName => _isEs ? 'Nombre del cliente' : 'Client name';
+  String get completeClientName => _isEs
+      ? 'Completa el nombre del cliente.'
+      : 'Complete the client name.';
   String get phone => _isEs ? 'Teléfono' : 'Phone';
   String get date => _isEs ? 'Fecha' : 'Date';
   String get start => _isEs ? 'Inicio' : 'Start';
@@ -98,6 +101,16 @@ class AppStrings {
   String get save => _isEs ? 'Guardar' : 'Save';
   String get title => _isEs ? 'Título' : 'Title';
   String get notes => _isEs ? 'Notas' : 'Notes';
+  String get requiredField =>
+      _isEs ? 'Campo obligatorio' : 'Required field';
+  String get completeRequiredFields => _isEs
+      ? 'Completa los campos obligatorios.'
+      : 'Complete required fields.';
+  String get invalidTimeRange => _isEs
+      ? 'La hora final debe ser posterior a la inicial.'
+      : 'End time must be after start time.';
+  String get serviceCreated =>
+      _isEs ? 'Servicio creado con éxito.' : 'Service created successfully.';
   String get change => _isEs ? 'Cambiar' : 'Change';
   String get execution => _isEs ? 'Ejecución' : 'Execution';
   String get checkIn => _isEs ? 'Check-in' : 'Check-in';

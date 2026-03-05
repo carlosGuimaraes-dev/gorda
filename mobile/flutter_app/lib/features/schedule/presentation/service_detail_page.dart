@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
-import '../../../core/theme/app_card.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
@@ -121,6 +119,9 @@ class ServiceDetailPage extends ConsumerWidget {
                           ref
                               .read(offlineStoreProvider.notifier)
                               .markTaskCheckIn(currentTask.id, DateTime.now());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(strings.checkIn)),
+                          );
                         },
                         title: strings.checkIn,
                       ),
@@ -129,6 +130,9 @@ class ServiceDetailPage extends ConsumerWidget {
                           ref
                               .read(offlineStoreProvider.notifier)
                               .markTaskCheckOut(currentTask.id, DateTime.now());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(strings.checkOut)),
+                          );
                         },
                         child: Text(strings.checkOut),
                       ),
@@ -138,6 +142,9 @@ class ServiceDetailPage extends ConsumerWidget {
                             ref
                                 .read(offlineStoreProvider.notifier)
                                 .advanceTaskStatus(currentTask.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(strings.advanceStatus)),
+                            );
                           },
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: DsColorTokens.actionPrimary),

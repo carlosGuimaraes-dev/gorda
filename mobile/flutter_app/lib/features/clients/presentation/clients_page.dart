@@ -62,6 +62,7 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
         ),
         actions: [
           IconButton(
+            key: const ValueKey('clients_filters_button'),
             onPressed: () => _showFiltersSheet(context, teams),
             icon: const Icon(Icons.tune),
             tooltip: strings.filters,
@@ -78,27 +79,53 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: TextField(
+              key: const ValueKey('clients_search_field'),
               decoration: InputDecoration(
                 hintText: strings.searchClient,
                 prefixIcon: const Icon(Icons.search),
+                isDense: true,
               ),
               onChanged: (value) => setState(() => _searchText = value),
             ),
           ),
           Expanded(
             child: clients.isEmpty
-                ? Center(
-                    child: Text(
-                      strings.noClientsForFilter,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppThemeTokens.secondaryText,
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: DsCard(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 28),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.search_off_rounded,
+                                color: DsColorTokens.textSecondary,
+                                size: 26,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                strings.noClientsForFilter,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: AppThemeTokens.secondaryText,
+                                    ),
+                              ),
+                            ],
                           ),
+                        ),
+                      ),
                     ),
                   )
-                : ListView.builder(
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                     itemCount: clients.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 0),
                     itemBuilder: (context, index) => _ClientCard(
                       client: clients[index],
                       state: state,
@@ -367,6 +394,8 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
   }
 
   Future<void> _showAddClientDialog() async {
+    final isManager = ref.read(offlineStoreProvider).session?.role == UserRole.manager;
+    if (!isManager) return;
     final strings = AppStrings.of(Localizations.localeOf(context));
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
@@ -492,7 +521,12 @@ class _ClientsPageState extends ConsumerState<ClientsPage> {
                   key: const ValueKey('client_form_save_button'),
                   onPressed: () {
                     final name = nameCtrl.text.trim();
-                    if (name.isEmpty) return;
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(strings.completeClientName)),
+                      );
+                      return;
+                    }
                     final channels = <DeliveryChannel>[
                       if (enableEmail) DeliveryChannel.email,
                       if (enableWhatsApp) DeliveryChannel.whatsapp,

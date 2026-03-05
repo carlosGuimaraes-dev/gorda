@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_strings.dart';
-import '../../../core/theme/app_card.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_session.dart';
 import '../../offline/application/offline_store.dart';
 import '../../services/domain/service_task.dart';
@@ -66,11 +64,13 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
         ),
         actions: [
           IconButton(
+            key: const ValueKey('schedule_add_service_button'),
             onPressed: () => _showNewServiceDialog(context, state),
             icon: const Icon(Icons.add),
             tooltip: strings.newService,
           ),
           IconButton(
+            key: const ValueKey('schedule_sync_button'),
             onPressed: () => ref
                 .read(offlineStoreProvider.notifier)
                 .syncPendingChanges(),
@@ -137,9 +137,39 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
           const SizedBox(height: 4),
           Expanded(
             child: filteredTasks.isEmpty
-                ? Center(child: Text(strings.noTasksForFilter))
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: DsCard(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 28),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.event_busy_outlined,
+                                size: 26,
+                                color: DsColorTokens.textSecondary,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                strings.noTasksForFilter,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: DsColorTokens.textSecondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
                 : _scope == AgendaScope.day
                     ? ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                         itemCount: filteredTasks.length,
                         itemBuilder: (context, index) => _TaskRow(
                           task: filteredTasks[index],
@@ -150,6 +180,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                         ),
                       )
                     : ListView(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                         children: groupedByDay.entries.map((entry) {
                           final day = entry.key;
                           final tasks = entry.value;
@@ -302,8 +333,10 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
   }
 
   Future<void> _showNewServiceDialog(
-      BuildContext context, OfflineState state) async {
-    final strings = AppStrings.of(Localizations.localeOf(context));
+      BuildContext pageContext, OfflineState state) async {
+    final strings = AppStrings.of(Localizations.localeOf(pageContext));
+    final formKey = GlobalKey<FormState>();
+    bool autovalidate = false;
     final titleCtrl = TextEditingController();
     final clientCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
@@ -313,6 +346,11 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
         DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 9, 0);
     DateTime endTime = DateTime(
         selectedDate.year, selectedDate.month, selectedDate.day, 10, 0);
+    String selectedClientId =
+        state.activeClients.isEmpty ? '' : state.activeClients.first.id;
+    if (state.activeClients.isNotEmpty) {
+      clientCtrl.text = state.activeClients.first.name;
+    }
     String assignedEmployeeId = '';
     if (widget.role == UserRole.manager) {
       if (state.activeEmployees.isNotEmpty) {
@@ -328,85 +366,212 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     }
 
     await showDialog<void>(
-      context: context,
+      context: pageContext,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
               title: Text(strings.newService),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: InputDecoration(labelText: strings.title),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: clientCtrl,
-                      decoration: InputDecoration(labelText: strings.client),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: addressCtrl,
-                      decoration: InputDecoration(labelText: strings.address),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: notesCtrl,
-                      decoration: InputDecoration(labelText: strings.notes),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${strings.date}: ${DateFormat.yMd(Localizations.localeOf(context).toLanguageTag()).format(selectedDate)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: selectedDate,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked == null) return;
-                            setModalState(() {
-                              selectedDate = DateTime(
-                                  picked.year, picked.month, picked.day);
-                              startTime = DateTime(selectedDate.year,
-                                  selectedDate.month, selectedDate.day, 9, 0);
-                              endTime = DateTime(selectedDate.year,
-                                  selectedDate.month, selectedDate.day, 10, 0);
-                            });
-                          },
-                          child: Text(strings.change),
-                        ),
-                      ],
-                    ),
-                    if (state.activeEmployees.isNotEmpty &&
-                        widget.role == UserRole.manager)
-                      DropdownButtonFormField<String>(
-                        value: assignedEmployeeId,
-                        decoration:
-                            InputDecoration(labelText: strings.employee),
-                        items: state.activeEmployees
-                            .map((employee) => DropdownMenuItem(
-                                  value: employee.id,
-                                  child: Text(employee.name),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setModalState(() => assignedEmployeeId = value);
+                child: Form(
+                  key: formKey,
+                  autovalidateMode: autovalidate
+                      ? AutovalidateMode.always
+                      : AutovalidateMode.disabled,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        key: const ValueKey('schedule_form_title'),
+                        controller: titleCtrl,
+                        decoration: InputDecoration(labelText: strings.title),
+                        validator: (value) {
+                          if ((value ?? '').trim().isEmpty) {
+                            return strings.requiredField;
+                          }
+                          return null;
                         },
                       ),
-                  ],
+                      const SizedBox(height: 8),
+                      if (state.activeClients.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          key: const ValueKey('schedule_form_client_picker'),
+                          value: selectedClientId,
+                          decoration: InputDecoration(labelText: strings.client),
+                          items: state.activeClients
+                              .map((client) => DropdownMenuItem<String>(
+                                    value: client.id,
+                                    child: Text(client.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            final client = state.activeClients.firstWhere(
+                              (item) => item.id == value,
+                            );
+                            setModalState(() {
+                              selectedClientId = value;
+                              clientCtrl.text = client.name;
+                            });
+                          },
+                          validator: (_) {
+                            if (selectedClientId.trim().isEmpty) {
+                              return strings.requiredField;
+                            }
+                            return null;
+                          },
+                        )
+                      else
+                        TextFormField(
+                          key: const ValueKey('schedule_form_client'),
+                          controller: clientCtrl,
+                          decoration: InputDecoration(labelText: strings.client),
+                          validator: (value) {
+                            if ((value ?? '').trim().isEmpty) {
+                              return strings.requiredField;
+                            }
+                            return null;
+                          },
+                        ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        key: const ValueKey('schedule_form_address'),
+                        controller: addressCtrl,
+                        decoration: InputDecoration(labelText: strings.address),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        key: const ValueKey('schedule_form_notes'),
+                        controller: notesCtrl,
+                        decoration: InputDecoration(labelText: strings.notes),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${strings.date}: ${DateFormat.yMd(Localizations.localeOf(context).toLanguageTag()).format(selectedDate)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked == null) return;
+                              setModalState(() {
+                                selectedDate = DateTime(
+                                    picked.year, picked.month, picked.day);
+                                startTime = DateTime(selectedDate.year,
+                                    selectedDate.month, selectedDate.day, 9, 0);
+                                endTime = DateTime(selectedDate.year,
+                                    selectedDate.month, selectedDate.day, 10, 0);
+                              });
+                            },
+                            child: Text(strings.change),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${strings.start}: ${DateFormat.Hm(Localizations.localeOf(context).toLanguageTag()).format(startTime)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.fromDateTime(startTime),
+                              );
+                              if (picked == null) return;
+                              setModalState(() {
+                                startTime = DateTime(
+                                  selectedDate.year,
+                                  selectedDate.month,
+                                  selectedDate.day,
+                                  picked.hour,
+                                  picked.minute,
+                                );
+                              });
+                            },
+                            child: Text(strings.change),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${strings.end}: ${DateFormat.Hm(Localizations.localeOf(context).toLanguageTag()).format(endTime)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.fromDateTime(endTime),
+                              );
+                              if (picked == null) return;
+                              setModalState(() {
+                                endTime = DateTime(
+                                  selectedDate.year,
+                                  selectedDate.month,
+                                  selectedDate.day,
+                                  picked.hour,
+                                  picked.minute,
+                                );
+                              });
+                            },
+                            child: Text(strings.change),
+                          ),
+                        ],
+                      ),
+                      if (!endTime.isAfter(startTime))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            strings.invalidTimeRange,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.red),
+                          ),
+                        ),
+                      if (state.activeEmployees.isNotEmpty &&
+                          widget.role == UserRole.manager)
+                        DropdownButtonFormField<String>(
+                          key: const ValueKey('schedule_form_employee_picker'),
+                          value: assignedEmployeeId,
+                          decoration:
+                              InputDecoration(labelText: strings.employee),
+                          items: state.activeEmployees
+                              .map((employee) => DropdownMenuItem(
+                                    value: employee.id,
+                                    child: Text(employee.name),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setModalState(() => assignedEmployeeId = value);
+                          },
+                          validator: (_) {
+                            if (assignedEmployeeId.trim().isEmpty) {
+                              return strings.requiredField;
+                            }
+                            return null;
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -415,14 +580,24 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                   child: Text(strings.close),
                 ),
                 FilledButton(
+                  key: const ValueKey('schedule_form_save_button'),
                   onPressed: () {
-                    final title = titleCtrl.text.trim();
-                    final clientName = clientCtrl.text.trim();
-                    if (title.isEmpty ||
-                        clientName.isEmpty ||
-                        assignedEmployeeId.trim().isEmpty) {
+                    setModalState(() => autovalidate = true);
+                    final isFormValid = formKey.currentState?.validate() ?? false;
+                    if (!isFormValid) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(strings.completeRequiredFields)),
+                      );
                       return;
                     }
+                    if (!endTime.isAfter(startTime)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(strings.invalidTimeRange)),
+                      );
+                      return;
+                    }
+                    final title = titleCtrl.text.trim();
+                    final clientName = clientCtrl.text.trim();
                     final address = addressCtrl.text.trim();
                     ref.read(offlineStoreProvider.notifier).addTask(
                           ServiceTask(
@@ -440,6 +615,9 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                         );
                     setState(() => _selectedDate = selectedDate);
                     Navigator.of(context).pop();
+                    ScaffoldMessenger.of(pageContext).showSnackBar(
+                      SnackBar(content: Text(strings.serviceCreated)),
+                    );
                   },
                   child: Text(strings.save),
                 ),
