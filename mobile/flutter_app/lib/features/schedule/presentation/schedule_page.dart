@@ -680,7 +680,7 @@ class _TaskRow extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: AppThemeTokens.secondaryText),
+                    ?.copyWith(color: DsColorTokens.textSecondary),
               ),
             Text('${strings.client}: ${task.clientName}'),
             Text(
@@ -688,7 +688,7 @@ class _TaskRow extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(color: AppThemeTokens.secondaryText),
+                  ?.copyWith(color: DsColorTokens.textSecondary),
             ),
             if (role == UserRole.manager && employeeName != null)
               Text(
@@ -696,7 +696,7 @@ class _TaskRow extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: AppThemeTokens.secondaryText),
+                    ?.copyWith(color: DsColorTokens.textSecondary),
               ),
             if (task.notes.trim().isNotEmpty)
               Text(
@@ -704,7 +704,7 @@ class _TaskRow extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: AppThemeTokens.secondaryText),
+                    ?.copyWith(color: DsColorTokens.textSecondary),
               ),
           ],
         ),
