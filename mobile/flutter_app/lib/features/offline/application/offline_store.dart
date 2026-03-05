@@ -1063,6 +1063,7 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   Future<void> syncPendingChanges() async {
+    final syncStartedAt = DateTime.now();
     final latestByEntity = _latestPendingByEntityKey();
 
     final gateway = ref.read(syncGatewayProvider);
@@ -1098,9 +1099,44 @@ class OfflineStore extends Notifier<OfflineState> {
         since: state.lastSync,
       );
 
+      final attemptedKeys = latestByEntity.keys.toSet();
+      final rejectedKeys = pushResult.rejected
+          .map((item) => '${item.entity}:${item.entityId}')
+          .toSet();
+      final explicitAppliedKeys = pushResult.applied
+          .map((item) => _appliedEntityKey(item, latestByEntity))
+          .whereType<String>()
+          .toSet();
+      final appliedKeys = explicitAppliedKeys.isNotEmpty
+          ? explicitAppliedKeys
+          : rejectedKeys.isEmpty
+              ? attemptedKeys
+              : attemptedKeys.difference(rejectedKeys);
+      final nextPendingByKey = _latestPendingByEntityKeyFromList(
+        state.pendingChanges,
+      );
+      for (final key in appliedKeys) {
+        final queued = nextPendingByKey[key];
+        if (queued == null) continue;
+        if (queued.timestamp.isAfter(syncStartedAt)) continue;
+        nextPendingByKey.remove(key);
+      }
+
+      final rejectedConflicts = pushResult.rejected
+          .map(
+            (item) => ConflictLogEntry(
+              id: 'sync-rejected-${_uuid.v4()}',
+              entity: item.entity,
+              field: item.fields.isNotEmpty ? item.fields.first : 'payload',
+              summary: item.summary,
+              timestamp: pushResult.serverTime,
+            ),
+          )
+          .toList(growable: false);
       final mergedConflicts = [
         ...state.conflictLog,
         ...pushResult.conflicts,
+        ...rejectedConflicts,
         ...pullResult.conflicts,
         ...endpointConflicts,
       ];
@@ -1117,7 +1153,7 @@ class OfflineStore extends Notifier<OfflineState> {
 
       state = state.copyWith(
         tasks: remoteMerge.tasks,
-        pendingChanges: const [],
+        pendingChanges: _sortedPendingChanges(nextPendingByKey.values),
         lastSync: pullResult.serverTime,
         conflictLog: [...mergedConflicts, ...remoteMerge.conflicts],
         auditLog: mergedAudit.length > 200
@@ -1134,14 +1170,44 @@ class OfflineStore extends Notifier<OfflineState> {
   }
 
   Map<String, PendingChange> _latestPendingByEntityKey() {
+    return _latestPendingByEntityKeyFromList(state.pendingChanges);
+  }
+
+  Map<String, PendingChange> _latestPendingByEntityKeyFromList(
+    List<PendingChange> queue,
+  ) {
     final latestByEntity = <String, PendingChange>{};
-    final sorted = [...state.pendingChanges]
+    final sorted = [...queue]
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     for (final item in sorted) {
       final entity = _entityFromOperation(item.operation);
       latestByEntity['$entity:${item.entityId}'] = item;
     }
     return latestByEntity;
+  }
+
+  List<PendingChange> _sortedPendingChanges(Iterable<PendingChange> items) {
+    final sorted = [...items]
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return sorted;
+  }
+
+  String? _appliedEntityKey(
+    SyncAppliedChange change,
+    Map<String, PendingChange> attemptedByEntity,
+  ) {
+    if (change.entity.trim().isNotEmpty && change.entityId.trim().isNotEmpty) {
+      return '${change.entity}:${change.entityId}';
+    }
+
+    // Backward compatibility: old backend returns only ["entityId"].
+    if (change.entityId.trim().isEmpty) return null;
+    for (final entry in attemptedByEntity.entries) {
+      if (entry.value.entityId == change.entityId) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> _payloadForPendingChange(PendingChange change) {

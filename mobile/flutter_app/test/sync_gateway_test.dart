@@ -19,7 +19,23 @@ void main() {
         return http.Response(
           jsonEncode({
             'serverTime': '2026-03-05T00:00:00Z',
-            'applied': ['client-1'],
+            'applied': [
+              {
+                'entity': 'client',
+                'entityId': 'client-1',
+                'op': 'upsert',
+              }
+            ],
+            'rejected': [
+              {
+                'entity': 'task',
+                'entityId': 'task-1',
+                'op': 'upsert',
+                'reason': 'missing_required_fields',
+                'fields': ['title'],
+                'summary': 'Rejected task payload',
+              }
+            ],
             'conflicts': [
               {
                 'id': 'conf-1',
@@ -58,6 +74,12 @@ void main() {
 
     expect(result.conflicts.length, 1);
     expect(result.conflicts.first.field, 'email');
+    expect(result.applied.length, 1);
+    expect(result.applied.first.entity, 'client');
+    expect(result.applied.first.entityId, 'client-1');
+    expect(result.rejected.length, 1);
+    expect(result.rejected.first.entity, 'task');
+    expect(result.rejected.first.reason, 'missing_required_fields');
   });
 
   test('pullChanges calls endpoint with since and limit', () async {
@@ -141,6 +163,10 @@ void main() {
     expect(result.changes.first.entity, 'task');
     expect(result.changes.first.entityId, 'task-1');
     expect(result.changes.first.operation, 'upsert');
+    expect(
+      result.changes.first.serverUpdatedAt.toIso8601String(),
+      '2026-03-05T01:00:01.000Z',
+    );
     expect(result.changes.first.payload['title'], 'Remote task');
     expect(result.conflicts, hasLength(1));
     expect(result.conflicts.first.field, 'status');

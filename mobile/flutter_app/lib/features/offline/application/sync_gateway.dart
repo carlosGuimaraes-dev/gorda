@@ -33,11 +33,45 @@ class SyncPushChange {
 class SyncPushResult {
   const SyncPushResult({
     required this.serverTime,
+    this.applied = const [],
+    this.rejected = const [],
     this.conflicts = const [],
   });
 
   final DateTime serverTime;
+  final List<SyncAppliedChange> applied;
+  final List<SyncRejectedChange> rejected;
   final List<ConflictLogEntry> conflicts;
+}
+
+class SyncAppliedChange {
+  const SyncAppliedChange({
+    required this.entity,
+    required this.entityId,
+    required this.operation,
+  });
+
+  final String entity;
+  final String entityId;
+  final String operation;
+}
+
+class SyncRejectedChange {
+  const SyncRejectedChange({
+    required this.entity,
+    required this.entityId,
+    required this.operation,
+    required this.reason,
+    required this.summary,
+    this.fields = const [],
+  });
+
+  final String entity;
+  final String entityId;
+  final String operation;
+  final String reason;
+  final String summary;
+  final List<String> fields;
 }
 
 class SyncRemoteChange {
@@ -153,6 +187,8 @@ class HttpSyncGateway implements SyncGateway {
     final data = _asMap(jsonDecode(response.body));
     return SyncPushResult(
       serverTime: _parseDate(data['serverTime']) ?? DateTime.now().toUtc(),
+      applied: _parseAppliedChanges(data['applied']),
+      rejected: _parseRejectedChanges(data['rejected']),
       conflicts: _parseConflicts(data['conflicts']),
     );
   }
@@ -263,8 +299,8 @@ class HttpSyncGateway implements SyncGateway {
         entity: '${item['entity'] ?? ''}',
         entityId: '${item['entityId'] ?? ''}',
         operation: '${item['op'] ?? item['operation'] ?? 'upsert'}',
-        serverUpdatedAt:
-            _parseDate(item['serverUpdatedAt']) ?? DateTime.now().toUtc(),
+        serverUpdatedAt: _parseDate(item['serverUpdatedAt'] ?? item['updatedAt']) ??
+            DateTime.now().toUtc(),
         payload: payload is Map<String, dynamic>
             ? payload
             : payload is Map
@@ -272,5 +308,63 @@ class HttpSyncGateway implements SyncGateway {
                 : const <String, dynamic>{},
       );
     }).toList(growable: false);
+  }
+
+  List<SyncAppliedChange> _parseAppliedChanges(dynamic value) {
+    if (value is! List) return const [];
+    final parsed = <SyncAppliedChange>[];
+    for (final raw in value) {
+      if (raw is String && raw.trim().isNotEmpty) {
+        // Backward compatibility with old backend shape: ["entityId"].
+        parsed.add(
+          SyncAppliedChange(
+            entity: '',
+            entityId: raw,
+            operation: 'upsert',
+          ),
+        );
+        continue;
+      }
+      final item = _asMap(raw);
+      final entityId = '${item['entityId'] ?? item['id'] ?? ''}'.trim();
+      if (entityId.isEmpty) continue;
+      parsed.add(
+        SyncAppliedChange(
+          entity: '${item['entity'] ?? ''}',
+          entityId: entityId,
+          operation: '${item['op'] ?? item['operation'] ?? 'upsert'}',
+        ),
+      );
+    }
+    return parsed;
+  }
+
+  List<SyncRejectedChange> _parseRejectedChanges(dynamic value) {
+    if (value is! List) return const [];
+    final parsed = <SyncRejectedChange>[];
+    for (final raw in value) {
+      final item = _asMap(raw);
+      final entity = '${item['entity'] ?? ''}'.trim();
+      final entityId = '${item['entityId'] ?? ''}'.trim();
+      if (entity.isEmpty || entityId.isEmpty) continue;
+      final fieldsRaw = item['fields'];
+      final fields = fieldsRaw is List
+          ? fieldsRaw
+              .map((field) => '$field'.trim())
+              .where((field) => field.isNotEmpty)
+              .toList(growable: false)
+          : const <String>[];
+      parsed.add(
+        SyncRejectedChange(
+          entity: entity,
+          entityId: entityId,
+          operation: '${item['op'] ?? item['operation'] ?? 'upsert'}',
+          reason: '${item['reason'] ?? 'validation_error'}',
+          summary: '${item['summary'] ?? 'Change rejected by sync backend'}',
+          fields: fields,
+        ),
+      );
+    }
+    return parsed;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/i18n/app_strings.dart';
 import '../../auth/domain/user_session.dart';
@@ -601,7 +602,7 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
                     final address = addressCtrl.text.trim();
                     ref.read(offlineStoreProvider.notifier).addTask(
                           ServiceTask(
-                            id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+                            id: const Uuid().v4(),
                             title: title,
                             date: selectedDate,
                             status: TaskStatus.scheduled,

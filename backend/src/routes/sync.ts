@@ -10,6 +10,29 @@ type EntityConfig = {
   required: string[];
 };
 
+type PushConflict = {
+  entity: string;
+  entityId: string;
+  fields: string[];
+  summary: string;
+  serverUpdatedAt: string;
+};
+
+type PushApplied = {
+  entity: string;
+  entityId: string;
+  op: "upsert" | "delete";
+};
+
+type PushRejected = {
+  entity: string;
+  entityId: string;
+  op: string;
+  reason: string;
+  fields: string[];
+  summary: string;
+};
+
 const entityConfigs: Record<string, EntityConfig> = {
   client: {
     table: "clients",
@@ -104,11 +127,12 @@ async function recordConflict(
   tenantId: string,
   entity: string,
   entityId: string,
+  fields: string[],
   summary: string
 ) {
   await query(
     "INSERT INTO conflict_logs (tenant_id, entity, entity_id, fields, summary) VALUES ($1, $2, $3, $4, $5)",
-    [tenantId, entity, entityId, [], summary]
+    [tenantId, entity, entityId, fields, summary]
   );
 }
 
@@ -138,23 +162,72 @@ function buildUpsertSQL(config: EntityConfig) {
   };
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizeValue(value: unknown): unknown {
+  if (value === undefined) return null;
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function changedFields(
+  config: EntityConfig,
+  existingRow: Record<string, unknown> | null,
+  payload: Record<string, unknown>
+): string[] {
+  if (!existingRow) return [];
+  const fields: string[] = [];
+  for (const [apiField, dbField] of Object.entries(config.columns)) {
+    if (!(apiField in payload)) continue;
+    const incoming = normalizeValue(payload[apiField]);
+    const current = normalizeValue(existingRow[dbField]);
+    if (incoming !== current) {
+      fields.push(apiField);
+    }
+  }
+  return fields;
+}
+
+function rejectChange(
+  rejected: PushRejected[],
+  conflicts: PushConflict[],
+  entity: string,
+  entityId: string,
+  op: string,
+  reason: string,
+  fields: string[],
+  summary: string
+) {
+  rejected.push({ entity, entityId, op, reason, fields, summary });
+  conflicts.push({
+    entity,
+    entityId,
+    fields,
+    summary,
+    serverUpdatedAt: new Date().toISOString()
+  });
+}
+
 router.post("/push", requireTenant, async (req: TenantRequest, res) => {
   const { changes } = req.body ?? {};
   if (!Array.isArray(changes)) {
     res.status(400).json({ error: { code: "INVALID_REQUEST", message: "changes must be an array" } });
     return;
   }
-  const applied: string[] = [];
-  const conflicts: Array<{ entity: string; entityId: string; summary: string }> = [];
+  const applied: PushApplied[] = [];
+  const conflicts: PushConflict[] = [];
+  const rejected: PushRejected[] = [];
   const tenantId = req.tenant!.id;
   const actor = req.auth?.name ?? req.auth?.clerkUserId ?? "system";
 
   for (const change of changes) {
-    const op = change?.op;
-    const entity = change?.entity;
-    const entityId = change?.entityId;
+    const op = String(change?.op ?? "");
+    const entity = String(change?.entity ?? "");
+    const entityId = String(change?.entityId ?? "");
     const clientUpdatedAt = change?.clientUpdatedAt;
-    const payload = change?.payload ?? {};
+    const payload = (change?.payload ?? {}) as Record<string, unknown>;
 
     if (!op || !entity || !entityId || !clientUpdatedAt) {
       continue;
@@ -165,14 +238,33 @@ router.post("/push", requireTenant, async (req: TenantRequest, res) => {
       continue;
     }
 
-    const existing = await queryOne<{ updated_at: string }>(
-      `SELECT updated_at FROM ${config.table} WHERE id = $1 AND tenant_id = $2`,
+    if (!isUuid(entityId)) {
+      const summary = `Rejected ${entity}: invalid entityId format (expected uuid).`;
+      rejectChange(
+        rejected,
+        conflicts,
+        entity,
+        entityId,
+        op,
+        "invalid_entity_id",
+        ["id"],
+        summary
+      );
+      continue;
+    }
+
+    const existing = await queryOne<Record<string, unknown>>(
+      `SELECT * FROM ${config.table} WHERE id = $1 AND tenant_id = $2`,
       [entityId, tenantId]
     );
-    if (existing && new Date(existing.updated_at) > new Date(clientUpdatedAt)) {
-      const summary = `Server updated after client timestamp; client overwrite applied.`;
-      conflicts.push({ entity, entityId, summary });
-      await recordConflict(tenantId, entity, entityId, summary);
+    const serverUpdatedAt = String(existing?.updated_at ?? new Date().toISOString());
+    if (existing && new Date(serverUpdatedAt) > new Date(clientUpdatedAt)) {
+      const fields = changedFields(config, existing, payload);
+      const summary = fields.length > 0
+        ? `Server had newer values for: ${fields.join(", ")}. Client overwrite applied (LWW).`
+        : "Server updated after client timestamp; client overwrite applied (LWW).";
+      conflicts.push({ entity, entityId, fields, summary, serverUpdatedAt });
+      await recordConflict(tenantId, entity, entityId, fields, summary);
     }
 
     if (op === "delete") {
@@ -181,11 +273,23 @@ router.post("/push", requireTenant, async (req: TenantRequest, res) => {
         [entityId, tenantId]
       );
       await recordAudit(tenantId, entity, entityId, "deleted", actor, `Deleted ${entity}`);
-      applied.push(entityId);
+      applied.push({ entity, entityId, op: "delete" });
       continue;
     }
 
     if (!hasRequiredFields(payload, config.required)) {
+      const summary = `Rejected ${entity}: required fields missing (${config.required.join(", ")}).`;
+      rejectChange(
+        rejected,
+        conflicts,
+        entity,
+        entityId,
+        op,
+        "missing_required_fields",
+        config.required,
+        summary
+      );
+      await recordConflict(tenantId, entity, entityId, config.required, summary);
       continue;
     }
 
@@ -201,10 +305,10 @@ router.post("/push", requireTenant, async (req: TenantRequest, res) => {
       ON CONFLICT (id) DO UPDATE SET ${updateAssignments}`;
     await query(sql, values);
     await recordAudit(tenantId, entity, entityId, "upserted", actor, `Upserted ${entity}`);
-    applied.push(entityId);
+    applied.push({ entity, entityId, op: "upsert" });
   }
 
-  res.json({ serverTime: new Date().toISOString(), applied, conflicts });
+  res.json({ serverTime: new Date().toISOString(), applied, rejected, conflicts });
 });
 
 router.get("/pull", requireTenant, async (req: TenantRequest, res) => {
@@ -217,6 +321,7 @@ router.get("/pull", requireTenant, async (req: TenantRequest, res) => {
     entity: string;
     entityId: string;
     updatedAt: string;
+    serverUpdatedAt: string;
     payload?: Record<string, unknown>;
   }> = [];
 
@@ -229,14 +334,27 @@ router.get("/pull", requireTenant, async (req: TenantRequest, res) => {
       const updatedAt = String(row.updated_at ?? new Date().toISOString());
       const deletedAt = row.deleted_at as string | null;
       if (deletedAt) {
-        changes.push({ op: "delete", entity, entityId: String(row.id), updatedAt });
+        changes.push({
+          op: "delete",
+          entity,
+          entityId: String(row.id),
+          updatedAt,
+          serverUpdatedAt: updatedAt
+        });
         continue;
       }
       const payload: Record<string, unknown> = {};
       for (const [apiField, dbField] of Object.entries(config.columns)) {
         payload[apiField] = row[dbField] ?? null;
       }
-      changes.push({ op: "upsert", entity, entityId: String(row.id), updatedAt, payload });
+      changes.push({
+        op: "upsert",
+        entity,
+        entityId: String(row.id),
+        updatedAt,
+        serverUpdatedAt: updatedAt,
+        payload
+      });
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
@@ -604,7 +605,7 @@ class ClientDetailPage extends ConsumerWidget {
                   if (title.isEmpty || employeeId.trim().isEmpty) return;
                   ref.read(offlineStoreProvider.notifier).addTask(
                         ServiceTask(
-                          id: 'task-${DateTime.now().millisecondsSinceEpoch}',
+                          id: const Uuid().v4(),
                           title: title,
                           date: selectedDate,
                           status: TaskStatus.scheduled,

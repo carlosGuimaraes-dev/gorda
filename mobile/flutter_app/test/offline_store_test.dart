@@ -709,6 +709,57 @@ void main() {
       },
     );
 
+    test('syncPendingChanges keeps rejected changes in offline queue', () async {
+      final pullTime = DateTime.parse('2026-03-05T13:00:00Z');
+      final fakeGateway = _FakeSyncGateway(
+        pushResult: SyncPushResult(
+          serverTime: DateTime.parse('2026-03-05T12:59:00Z'),
+          rejected: const [
+            SyncRejectedChange(
+              entity: 'client',
+              entityId: 'sync-rejected-client',
+              operation: 'upsert',
+              reason: 'missing_required_fields',
+              summary: 'Rejected client payload',
+              fields: ['name'],
+            ),
+          ],
+        ),
+        pullResult: SyncPullResult(serverTime: pullTime),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          syncGatewayProvider.overrideWithValue(fakeGateway),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(offlineStoreProvider.notifier);
+
+      notifier.addClient(
+        const Client(
+          id: 'sync-rejected-client',
+          name: 'Rejected Client',
+          address: 'Addr',
+          phone: '+1',
+        ),
+      );
+
+      await notifier.syncPendingChanges();
+
+      final state = container.read(offlineStoreProvider);
+      expect(
+        state.pendingChanges
+            .any((item) => item.entityId == 'sync-rejected-client'),
+        isTrue,
+      );
+      expect(
+        state.conflictLog.any((item) => item.summary == 'Rejected client payload'),
+        isTrue,
+      );
+      expect(state.lastSync, pullTime);
+    });
+
     test('syncPendingChanges keeps queue on network error', () async {
       final container = ProviderContainer(
         overrides: [
